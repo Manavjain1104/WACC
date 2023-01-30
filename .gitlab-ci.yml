@@ -1,0 +1,27 @@
+stages:          # List of stages for jobs, and their order of execution
+  - compile
+  - pass-test
+  - fail-test
+
+compile-job:       # This job runs in the build stage, which runs first.
+  stage: compile
+  script:
+    - sbt compile
+
+pass-test-job: # This job runs in the test stage.
+  stage: test    # It only starts when the job in the build stage completes successfully.
+  script:
+    - sbt "testOnly wacc.DummyTestPass"
+
+fail-test-job:			# Valid invalid etc etc
+  stage: test
+  script:
+    - sbt "testOnly wacc.DummyTestFail"
+
+
+
+# Don't test everything
+# Tag tests and use "PENDING" using scala test
+# test pass rate and coverage
+# write unit tests so you can mark them as pending. 
+# scalability, coverage and many tests it's passing
