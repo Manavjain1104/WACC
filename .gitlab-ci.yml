@@ -8,12 +8,12 @@ compile-job:       # This job runs in the build stage, which runs first.
   script:
     - sbt compile
 
-pass-test-job: # This job runs in the test stage.
+pass-test: # This job runs in the test stage.
   stage: test    # It only starts when the job in the build stage completes successfully.
   script:
     - sbt "testOnly wacc.DummyTestPass"
 
-#fail-test-job:			# Valid invalid etc etc
+#fail-test:			# Valid invalid etc etc
 #  stage: test
 #  script:
 #    - sbt "testOnly wacc.DummyTestFail"
