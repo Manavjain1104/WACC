@@ -13,10 +13,10 @@ pass-test-job: # This job runs in the test stage.
   script:
     - sbt "testOnly wacc.DummyTestPass"
 
-fail-test-job:			# Valid invalid etc etc
-  stage: test
-  script:
-    - sbt "testOnly wacc.DummyTestFail"
+#fail-test-job:			# Valid invalid etc etc
+#  stage: test
+#  script:
+#    - sbt "testOnly wacc.DummyTestFail"
 
 
 
