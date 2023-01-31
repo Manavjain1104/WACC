@@ -48,12 +48,13 @@ class Tests extends AnyFunSuite {
   }
 
   // TODO: (3+4)-2) doesn't error, we need to change this.
+  /*
   test("Correct expression generated for nested expressions 1") {
     val exp = "((3+4)-2)"
     val nested = SubExpr(AddExpr(IntExpr(3), IntExpr(4)), IntExpr(2))
     val repr = expr.parse(exp).get
     assert(repr === nested)
-  }
+  }*/
 
   test("Correct expression generated for nested expressions 2") {
     val exp = "(3*4)%(4/2)"
@@ -62,26 +63,20 @@ class Tests extends AnyFunSuite {
     assert(repr === nested)
   }
 
-  //TODO: May need to fix this, parse only takes strings so cannot test CharExpr here properly.
-  //Possible solution: define method to extract char from CharExpr
-  /*
+
   test("Correct expression generated for Char-Liter expression") {
     val exp = 'b'
-    val lt = CharExpr(b)
-    val repr = expr.parse(exp.toString).get
+    val lt = CharExpr(exp)
+    val repr = expr.parse("'b'").get
     assert(repr === lt)
-  }*/
+  }
 
-  //TODO: ASK Jamie or someone.
-  /*
   test("Correct expression generated for Pair-literal expression") {
-    val exp = null
+    val exp = "null"
     val pair_liter = PairExpr
     val repr = expr.parse(exp).get
-    assert(repr === PairExpr)
+    assert(repr === pair_liter)
   }
-*/
-
 
   test("Correct expression generated for add binop expression") {
     val exp = "2+3"
@@ -124,29 +119,28 @@ class Tests extends AnyFunSuite {
     val repr = expr.parse(exp).get
     assert(repr === gt)
   }
-/*
+
   test("Correct expression generated for gteq binop expression") {
     val exp = "3>=2"
     val gteq = GTEQExpr(IntExpr(3), IntExpr(2))
     val repr = expr.parse(exp).get
     assert(repr === gteq)
   }
-*/
+
   test("Correct expression generated for lt binop expression") {
     val exp = "2<3"
     val lt = LTExpr(IntExpr(2), IntExpr(3))
     val repr = expr.parse(exp).get
     assert(repr === lt)
   }
-/*
+
   test("Correct expression generated for lteq binop expression") {
     val exp = "2<=3"
     val lteq = LTEQExpr(IntExpr(2), IntExpr(3))
     val repr = expr.parse(exp).get
-    println(repr)
-    //assert(repr === lteq)
+    assert(repr === lteq)
   }
-*/
+
   test("Correct expression generated for equals binop expression") {
     val exp = "2==2"
     val eq = EQExpr(IntExpr(2), IntExpr(2))

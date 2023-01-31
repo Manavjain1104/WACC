@@ -9,10 +9,10 @@ object Main {
     println("Hello WACC_25!")
 
 
-    waccType.parse(args.head) match {
-      case Success(x) => println(s"${args.head} = $x")
-      case Failure(msg) => println(msg)
-    }
+//    waccType.parse(args.head) match {
+//      case Success(x) => println(s"${args.head} = $x")
+//      case Failure(msg) => println(msg)
+//    }
 //    lvalue.parse(args.head) match {
 //      case Success(x) => println(s"${args.head} = $x")
 //      case Failure(msg) => println(msg)
@@ -21,9 +21,9 @@ object Main {
 //          case Success(x) => println(s"${args.head} = $x")
 //          case Failure(msg) => println(msg)
 //        }
-//    expr.parse(args.head) match {
-//      case Success(x) => println(s"${args.head} = $x")
-//      case Failure(msg) => println(msg)
-//    }
+    expr.parse(args.head) match {
+      case Success(x) => println(s"${args.head} = $x")
+      case Failure(msg) => println(msg)
+    }
   }
 }
