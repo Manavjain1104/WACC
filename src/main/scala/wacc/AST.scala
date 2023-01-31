@@ -1,6 +1,6 @@
 package wacc
 
-import parsley.genericbridges.{ParserBridge0, ParserBridge1}
+import parsley.genericbridges.{ParserBridge0, ParserBridge1, ParserBridge2}
 
 object AST {
 
@@ -11,24 +11,23 @@ object AST {
 
   // WACC Type heirarchy
   sealed trait Type
-
   sealed trait BaseType extends Type with PairElemType
-  case object IntType extends BaseType
-  case object BoolType extends BaseType
-  case object CharType extends BaseType
-  case object StringType extends BaseType
+  case object IntType extends BaseType with ParserBridge0[BaseType]
+  case object BoolType extends BaseType with ParserBridge0[BaseType]
+  case object CharType extends BaseType with ParserBridge0[BaseType]
+  case object StringType extends BaseType with ParserBridge0[BaseType]
   case class ArrayType(t: Type) extends Type with PairElemType
+  object ArrayType extends ParserBridge1[Type, ArrayType]
   case class PairType(pt1: PairElemType, pt2: PairElemType) extends Type
+  object PairType extends ParserBridge2[PairElemType, PairElemType, Type]
   sealed trait PairElemType
-  case object EmptyPair extends PairElemType
-
+  case object DummyPair extends PairElemType with ParserBridge0[PairElemType]
 
   // Expr heirarchy
   sealed trait Expr extends RValue
 
   case class IntExpr(x: BigInt) extends Expr
   object IntExpr extends ParserBridge1[BigInt, Expr]
-//  IntExpr(Int) -- > Parsley[Expr]
   case class BoolExpr(b: Boolean) extends Expr
   object BoolExpr extends ParserBridge1[Boolean, Expr]
   case class CharExpr(c: Char) extends Expr
@@ -63,11 +62,11 @@ object AST {
   case class AndExpr(e1 : Expr, e2 : Expr) extends BinopExpr
   case class OrExpr(e1 : Expr, e2 : Expr) extends BinopExpr
 
-
   sealed trait PairElem extends LValue with RValue
   case class Fst(lvalue: LValue) extends PairElem
+  object Fst extends ParserBridge1[LValue, PairElem]
   case class Snd(lvalue: LValue) extends PairElem
-
+  object Snd extends ParserBridge1[LValue, PairElem]
 
   // Statement branch of AST
   sealed trait Statement
@@ -89,11 +88,16 @@ object AST {
   // LValue branch of AST
   sealed trait LValue
   case class IdentValue(s: String) extends LValue
+  object IdentValue extends ParserBridge1[String, LValue]
+  case class ArrayElem(ident : String, exprs : List[Expr]) extends LValue with Expr
+  object ArrayElem extends ParserBridge2[String, List[Expr], ArrayElem]
 
   // RValue branch of AST
   sealed trait RValue
   case class ArrayLiter(exprs: List[Expr]) extends RValue
+  object ArrayLiter extends ParserBridge1[List[Expr], RValue]
   case class NewPair(expr1: Expr, expr2: Expr) extends RValue
+  object NewPair extends ParserBridge2[Expr, Expr, RValue]
   case class Call(ident: String, args: List[Expr]) extends RValue
-
+  object Call extends ParserBridge2[String, List[Expr], RValue]
 }
