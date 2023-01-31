@@ -18,8 +18,8 @@ object parser {
     BoolExpr(BOOL) <|>
     CharExpr(CHAR) <|>
     StringExpr(STRING) <|>
+    attempt(arrayelem) <|>
     IdentExpr(IDENT) <|>
-    arrayelem <|>
     (PAIR_LITER #> PairExpr)
 
   lazy val expr: Parsley[Expr] =
@@ -71,7 +71,7 @@ object parser {
   val scopeStat: Parsley[Statement] = ScopeStat(BEGIN ~> statement <~ END)
 
   val statAtoms: Parsley[Statement] = skip <|> assigneq <|> equals <|> read <|>
-    free <|> returnStat <|> exit <|> print <|> println <|>
+    free <|> returnStat <|> exit <|> attempt(println) <|> print <|>
     ifStat <|> whileStat <|> scopeStat
 
   lazy val statement: Parsley[Statement]
@@ -83,7 +83,7 @@ object parser {
 
   val func: Parsley[Func]
   = Func(waccType, IDENT, OPENPAREN ~> paramList <~ CLOSEDPAREN, (IS ~> statement <~ END))
-//  val manfunc: Parsley[List[Func]] = many(attempt(func))
+
 
   val program: Parsley[Program] = Program(BEGIN ~> many(attempt(func)), (statement <~ END))
 

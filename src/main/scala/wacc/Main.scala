@@ -8,9 +8,9 @@ import wacc.parser.{expr, func, lvalue, program, rvalue, waccType}
 object Main {
 
   def main(args: Array[String]): Unit = {
-    println("Hello WACC_25!")
     val fileContents = Source.fromFile("/Users/ruchit/Imperial/wacc/WACC_25/src/main/scala/wacc/testProg.txt")
     val text : String = fileContents.getLines.mkString("\n")
+    println(text)
     fully(program).parse(text) match {
       case Success(x) => println(s"$x")
       case Failure(msg) => println(msg)

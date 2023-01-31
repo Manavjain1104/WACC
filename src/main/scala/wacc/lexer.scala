@@ -46,7 +46,13 @@ object lexer {
     textDesc = TextDesc.plain.copy(
       escapeSequences = EscapeDesc.plain.copy(
         escBegin = '\\',
-        literals = escapes,
+        literals = Set('\'', '\"', '\\'),
+        singleMap = Map('0' -> 0x0000,
+          'b' -> 0x0008,
+          'f' -> 0x000c,
+          'n' -> 0x000a,
+          'r' -> 0x000d,
+          't' -> 0x0009),
       ),
       graphicCharacter = predicate.Basic(graphicChar)
     ),
@@ -89,7 +95,6 @@ object lexer {
   val STRING: Parsley[String] = lexer.lexeme.text.string.ascii
   val IDENT: Parsley[String] = lexer.lexeme.names.identifier
   val PAIR_LITER: Parsley[Unit] = lexer.lexeme.symbol("null")
-
 
   val OPENSQUAREBRAC: Parsley[Unit] = lexer.lexeme.symbol.openSquare
   val CLOSESQUAREBRAC: Parsley[Unit] = lexer.lexeme.symbol.closingSquare
