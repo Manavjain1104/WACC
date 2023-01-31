@@ -6,6 +6,8 @@ import parsley.token.descriptions.NameDesc
 import parsley.token.descriptions.text.{EscapeDesc, TextDesc}
 import parsley.token.symbol.ImplicitSymbol
 
+import java.lang.Character.isWhitespace
+
 object lexer {
 
   import parsley.token.{descriptions, predicate}
@@ -17,6 +19,8 @@ object lexer {
 
   def graphicChar(c: Char): Boolean = ((c >= ' ') && (!Set('\\', '\'', '\"').contains(c))) || escapes.contains(c)
 
+  def isSpace(c : Char): Boolean = c == '\n' || isWhitespace(c.toInt)
+
   val escapes = Set('\\', '\u0000', '\b', '\t', '\n', '\f', '\r', '\"', '\'')
 
   private val desc = LexicalDesc.plain.copy(
@@ -27,7 +31,7 @@ object lexer {
     spaceDesc = SpaceDesc.plain.copy(
       commentLine = "#",
       commentLineAllowsEOF = true,
-      space = predicate.Basic(Character.isWhitespace)
+      space = predicate.Basic(isSpace)
     ),
     symbolDesc = SymbolDesc.plain.copy(
       hardKeywords = Set[String]("begin", "end", "is", "skip", "free", "read",

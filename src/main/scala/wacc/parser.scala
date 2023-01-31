@@ -1,8 +1,7 @@
 package wacc
 
 import parsley.Parsley.attempt
-import parsley.character.string
-import parsley.combinator.sepBy
+import parsley.combinator.{many, sepBy}
 import parsley.expr.{Prefix, chain, precedence}
 
 object parser {
@@ -55,7 +54,7 @@ object parser {
     ("string" #> StringType)
   lazy val arrayType: Parsley[ArrayType] = chain.postfix1((baseType <|> pairType), (OPENSQUAREBRAC ~> CLOSESQUAREBRAC) #> ArrayType)
   val pairType: Parsley[Type] = PairType(PAIR ~> OPENPAREN ~> pairelemType, COMMA ~> pairelemType <~ CLOSEDPAREN)
-  lazy val pairelemType: Parsley[PairElemType] =  attempt(arrayType) <|> baseType <|> (PAIR #> DummyPair)
+  lazy val pairelemType: Parsley[PairElemType] = attempt(arrayType) <|> baseType <|> (PAIR #> DummyPair)
 
   // Statement Parsers
   val skip: Parsley[Statement] = "skip" #> Skip
@@ -72,9 +71,22 @@ object parser {
   val scopeStat: Parsley[Statement] = ScopeStat(BEGIN ~> statement <~ END)
 
   val statAtoms: Parsley[Statement] = skip <|> assigneq <|> equals <|> read <|>
-              free <|> returnStat <|> exit <|> print <|> println <|>
-              ifStat <|> whileStat <|> scopeStat
+    free <|> returnStat <|> exit <|> print <|> println <|>
+    ifStat <|> whileStat <|> scopeStat
 
-  lazy val statement: Parsley[Statement] = chain.left1[Statement](statAtoms, SEMICOLON #> ConsecStat)
+  lazy val statement: Parsley[Statement]
+  = chain.left1[Statement](statAtoms, SEMICOLON #> ConsecStat)
+
+  // highest level parsers
+  lazy val param: Parsley[Param] = Param(waccType, IDENT)
+  lazy val paramList: Parsley[List[Param]] = sepBy(param, ",")
+
+  val func: Parsley[Func]
+  = Func(waccType, IDENT, OPENPAREN ~> paramList <~ CLOSEDPAREN, (IS ~> statement <~ END))
+//  val manfunc: Parsley[List[Func]] = many(attempt(func))
+
+  val program: Parsley[Program] = Program(BEGIN ~> many(attempt(func)), (statement <~ END))
+
+
 }
 
