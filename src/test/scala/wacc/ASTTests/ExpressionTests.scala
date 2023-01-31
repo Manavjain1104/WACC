@@ -31,7 +31,7 @@ class ExpressionTests extends AnyFunSuite {
     assert(repr === bool_liter)
   }
 
-  //TODO: how can we represent StringExpr? Any string "abcde" is an IdentExpr.
+  //TODO: how can we represent StringExpr? Any string "abcde" is an .
   /*
   test("Correct expression generated for Str-Liter expression") {
     val exp = "hello"
@@ -157,14 +157,14 @@ class ExpressionTests extends AnyFunSuite {
 
   test("Correct expression generated for logical AND binop expression") {
     val exp = "a&&b"
-    val log_and = AndExpr(IndentExpr("a"), IndentExpr("b"))
+    val log_and = AndExpr(IdentExpr("a"), IdentExpr("b"))
     val repr = expr.parse(exp).get
     assert(repr === log_and)
   }
 
   test("Correct expression generated for logical OR binop expression") {
     val exp = "a||b"
-    val log_or = OrExpr(IndentExpr("a"), IndentExpr("b"))
+    val log_or = OrExpr(IdentExpr("a"), IdentExpr("b"))
     val repr = expr.parse(exp).get
     assert(repr === log_or)
   }
@@ -185,14 +185,14 @@ class ExpressionTests extends AnyFunSuite {
 
   test("Correct expression generated for len unop expression") {
     val exp = "len x"
-    val len = LenExpr(IndentExpr("x"))
+    val len = LenExpr(IdentExpr("x"))
     val repr = expr.parse(exp).get
     assert(repr === len)
   }
 
   test("Correct expression generated for ord unop expression") {
     val exp = "ord a"
-    val ord = OrdExpr(IndentExpr("a"))
+    val ord = OrdExpr(IdentExpr("a"))
     val repr = expr.parse(exp).get
     assert(repr === ord)
   }
