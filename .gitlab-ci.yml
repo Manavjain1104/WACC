@@ -1,7 +1,6 @@
 stages:          # List of stages for jobs, and their order of execution
   - compile
-  - pass-test
-  - fail-test
+  - test
 
 compile-job:       # This job runs in the build stage, which runs first.
   stage: compile
@@ -9,14 +8,9 @@ compile-job:       # This job runs in the build stage, which runs first.
     - sbt compile
 
 pass-test-job: # This job runs in the test stage.
-  stage: pass-test    # It only starts when the job in the build stage completes successfully.
+  stage: test    # It only starts when the job in the build stage completes successfully.
   script:
-    - sbt "testOnly wacc.DummyTestPass"
-
-fail-test-job:			# Valid invalid etc etc
-  stage: fail-test
-  script:
-    - sbt "testOnly wacc.DummyTestFail"
+    - sbt test
 
 
 
