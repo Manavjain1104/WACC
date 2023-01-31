@@ -1,37 +1,38 @@
 package wacc
 
 import parsley.Parsley.attempt
-import parsley.combinator.{exactly, sepBy}
-import parsley.expr.{Prefix, precedence}
+import parsley.character.string
+import parsley.combinator.sepBy
+import parsley.expr.{Prefix, chain, precedence}
 
 object parser {
 
   import AST._
   import lexer._
+  import lexer.implicits.implicitSymbol
   import parsley.Parsley
   import parsley.combinator.some
   import parsley.expr.{InfixL, Ops}
-  import parsley.implicits.character.charLift
 
   // Expr parsers
   lazy val atomExpr: Parsley[Expr] = IntExpr(INT) <|>
     BoolExpr(BOOL) <|>
     CharExpr(CHAR) <|>
     StringExpr(STRING) <|>
-    IndentExpr(IDENT) <|>
+    IdentExpr(IDENT) <|>
     arrayelem <|>
     (PAIR_LITER #> PairExpr)
 
   lazy val expr: Parsley[Expr] =
     precedence(atomExpr, OPENPAREN ~> expr <~ CLOSEDPAREN)(
-      Ops(Prefix)(symbol("!") #> NotExpr, symbol("-") #> NegExpr, symbol("len") #> LenExpr, symbol("ord") #> OrdExpr,
-        symbol("chr") #> ChrExpr),
-      Ops(InfixL)(symbol("%") #> ModExpr, symbol("/") #> DivExpr, symbol("*") #> MulExpr),
-      Ops(InfixL)(symbol("+") #> AddExpr, symbol("-") #> SubExpr),
-      Ops(InfixL)(attempt(symbol(">=") #> GTEQExpr), symbol(">") #> GTExpr, attempt(symbol("<=") #> LTEQExpr), symbol("<") #> LTExpr),
-      Ops(InfixL)(symbol("==") #> EQExpr, symbol("!=") #> NEQExpr),
-      Ops(InfixL)(symbol("&&") #> AndExpr),
-      Ops(InfixL)(symbol("||") #> OrExpr)
+      Ops(Prefix)("!" #> NotExpr, "-" #> NegExpr, "len" #> LenExpr, "ord" #> OrdExpr,
+        ("chr") #> ChrExpr),
+      Ops(InfixL)(("%") #> ModExpr, ("/") #> DivExpr, ("*") #> MulExpr),
+      Ops(InfixL)(("+") #> AddExpr, ("-") #> SubExpr),
+      Ops(InfixL)(attempt((">=") #> GTEQExpr), (">") #> GTExpr, attempt(("<=") #> LTEQExpr), ("<") #> LTExpr),
+      Ops(InfixL)(("==") #> EQExpr, ("!=") #> NEQExpr),
+      Ops(InfixL)(("&&") #> AndExpr),
+      Ops(InfixL)(("||") #> OrExpr)
     )
 
   // Lvalue parsers
@@ -41,31 +42,39 @@ object parser {
 
   // Rvalue parsers
   lazy val rvalue: Parsley[RValue] = call <|> expr <|> pairelem <|> newPair <|> arrayLiter
-  val call: Parsley[RValue] = Call((CALL ~> IDENT <~ OPENPAREN), (expList <~ CLOSEDPAREN))
-  val newPair: Parsley[RValue] = NewPair((NEWPAIR ~> OPENPAREN ~> expr), (COMMA ~> expr <~ CLOSEDPAREN))
-  lazy val expList: Parsley[List[Expr]] = sepBy(expr, symbol(","))
+  val call: Parsley[RValue] = Call((CALL ~> IDENT <~ OPENPAREN), expList <~ CLOSEDPAREN)
+  val newPair: Parsley[RValue] = NewPair((NEWPAIR ~> OPENPAREN ~> expr), COMMA ~> expr <~ CLOSEDPAREN)
+  lazy val expList: Parsley[List[Expr]] = sepBy(expr, ",")
   val arrayLiter: Parsley[RValue] = ArrayLiter(OPENSQUAREBRAC ~> expList <~ CLOSESQUAREBRAC)
 
   // type heirarchy parsers
-  lazy val waccType : Parsley[Type] = attempt(arrayType) <|> baseType <|> pairType
-  val baseType: Parsley[BaseType] = (symbol("int") #> IntType) <|>
-    (symbol("bool") #> BoolType) <|>
-    (symbol("char") #> CharType) <|>
-    (symbol("string") #> StringType)
-  lazy val arrayType : Parsley[ArrayType] = ArrayType(~waccType <~ OPENSQUAREBRAC <~ CLOSESQUAREBRAC)
-  val pairType: Parsley[Type] = PairType((PAIR ~> OPENPAREN ~> pairelemType), (COMMA ~> pairelemType <~ CLOSEDPAREN))
-  lazy val pairelemType : Parsley[PairElemType] = baseType <|> (PAIR #> DummyPair) <|> arrayType
-
-
-
-  /*
-  * What and how do we test - show what Krkn have been doing
-  * Recursive type problem = laziness
-  * Invalid bracketing doesnt take care
-  * Difference between String and Ident
-  * */
+  lazy val waccType: Parsley[Type] = attempt(arrayType) <|> baseType <|> pairType
+  val baseType: Parsley[BaseType] = ("int" #> IntType) <|>
+    ("bool" #> BoolType) <|>
+    ("char" #> CharType) <|>
+    ("string" #> StringType)
+  lazy val arrayType: Parsley[ArrayType] = chain.postfix1((baseType <|> pairType), (OPENSQUAREBRAC ~> CLOSESQUAREBRAC) #> ArrayType)
+  val pairType: Parsley[Type] = PairType(PAIR ~> OPENPAREN ~> pairelemType, COMMA ~> pairelemType <~ CLOSEDPAREN)
+  lazy val pairelemType: Parsley[PairElemType] =  attempt(arrayType) <|> baseType <|> (PAIR #> DummyPair)
 
   // Statement Parsers
+  val skip: Parsley[Statement] = "skip" #> Skip
+  val assigneq: Parsley[Statement] = AssignEq(waccType, IDENT, ("=" ~> rvalue))
+  val equals: Parsley[Statement] = Equals(lvalue, ("=" ~> rvalue))
+  val read: Parsley[Statement] = Read(READ ~> lvalue)
+  val free: Parsley[Statement] = Free(FREE ~> expr)
+  val returnStat: Parsley[Statement] = Return(RETURN ~> expr)
+  val exit: Parsley[Statement] = Exit(EXIT ~> expr)
+  val print: Parsley[Statement] = Print(PRINT ~> expr)
+  val println: Parsley[Statement] = Println(PRINTLN ~> expr)
+  val ifStat: Parsley[Statement] = If((IF ~> expr), (THEN ~> statement), (ELSE ~> statement <~ FI))
+  val whileStat: Parsley[Statement] = While((WHILE ~> expr), (DO ~> statement <~ DONE))
+  val scopeStat: Parsley[Statement] = ScopeStat(BEGIN ~> statement <~ END)
 
+  val statAtoms: Parsley[Statement] = skip <|> assigneq <|> equals <|> read <|>
+              free <|> returnStat <|> exit <|> print <|> println <|>
+              ifStat <|> whileStat <|> scopeStat
+
+  lazy val statement: Parsley[Statement] = chain.left1[Statement](statAtoms, SEMICOLON #> ConsecStat)
 }
 

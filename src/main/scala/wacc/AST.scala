@@ -1,6 +1,6 @@
 package wacc
 
-import parsley.genericbridges.{ParserBridge0, ParserBridge1, ParserBridge2}
+import parsley.genericbridges.{ParserBridge0, ParserBridge1, ParserBridge2, ParserBridge3}
 
 object AST {
 
@@ -17,7 +17,7 @@ object AST {
   case object CharType extends BaseType with ParserBridge0[BaseType]
   case object StringType extends BaseType with ParserBridge0[BaseType]
   case class ArrayType(t: Type) extends Type with PairElemType
-  object ArrayType extends ParserBridge1[Type, ArrayType]
+//  object ArrayType extends ParserBridge1[Type, Type]
   case class PairType(pt1: PairElemType, pt2: PairElemType) extends Type
   object PairType extends ParserBridge2[PairElemType, PairElemType, Type]
   sealed trait PairElemType
@@ -36,8 +36,8 @@ object AST {
   object StringExpr extends ParserBridge1[String, Expr]
   case object PairExpr extends Expr with ParserBridge0[Expr]
 
-  case class IndentExpr(ident: String) extends Expr
-  object IndentExpr extends ParserBridge1[String, Expr]
+  case class IdentExpr(ident: String) extends Expr
+  object IdentExpr extends ParserBridge1[String, Expr]
 
 
   sealed trait UnopExpr extends Expr
@@ -70,19 +70,31 @@ object AST {
 
   // Statement branch of AST
   sealed trait Statement
-  case object Skip extends Statement
+  case object Skip extends Statement with ParserBridge0[Statement]
   case class AssignEq(assignType: Type, ident: String, rvalue: RValue) extends Statement
-  case class Equals(lvalue: LValue, rvalue: RValue)
+  object AssignEq extends ParserBridge3[Type, String, RValue, Statement]
+  case class Equals(lvalue: LValue, rvalue: RValue) extends Statement
+  object Equals extends ParserBridge2[LValue, RValue, Statement]
   case class Read(lvalue: LValue) extends Statement
+  object Read extends ParserBridge1[LValue, Statement]
   case class Free(e: Expr) extends Statement
+  object Free extends ParserBridge1[Expr, Statement]
   case class Return(e: Expr) extends Statement
+  object Return extends ParserBridge1[Expr, Statement]
   case class Exit(e: Expr) extends Statement
+  object Exit extends ParserBridge1[Expr, Statement]
   case class Print(e: Expr) extends Statement
+  object Print extends ParserBridge1[Expr, Statement]
   case class Println(e: Expr) extends Statement
+  object Println extends ParserBridge1[Expr, Statement]
   case class If(cond: Expr, thenStat: Statement, elseStat: Statement) extends Statement
+  object If extends ParserBridge3[Expr, Statement, Statement, Statement]
   case class While(cond: Expr, doStat: Statement) extends Statement
+  object While extends ParserBridge2[Expr, Statement, Statement]
   case class ScopeStat(stat: Statement) extends Statement
+  object ScopeStat extends ParserBridge1[Statement, Statement]
   case class ConsecStat(first: Statement, next: Statement) extends Statement
+//  object ConsecStat extends ParserBridge2[Statement, Statement, Statement]
 
 
   // LValue branch of AST

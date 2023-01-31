@@ -82,7 +82,7 @@ object lexer {
   val INT: Parsley[BigInt] = lexer.lexeme.numeric.integer.decimal
   val BOOL: Parsley[Boolean] = lexer.lexeme.symbol("true") #> true | lexer.lexeme.symbol("false") #> false
   val CHAR: Parsley[Char] = lexer.lexeme.text.character.ascii
-  val STRING: Parsley[String] = symbol("\"") ~> lexer.lexeme.text.string.ascii <~ symbol("\"")
+  val STRING: Parsley[String] = lexer.lexeme.text.string.ascii
   val IDENT: Parsley[String] = lexer.lexeme.names.identifier
   val PAIR_LITER: Parsley[Unit] = lexer.lexeme.symbol("null")
 
