@@ -1,7 +1,12 @@
 all:
-	sbt compile assembly
+	sbt compile
+
+test:
+	sbt test
 
 clean:
-	sbt clean && rm -rf wacc-25-compiler.jar
+	rm -rf *.jar
+	sbt clean
 
-.PHONY: all clean
+.PHONY: all test clean
+
