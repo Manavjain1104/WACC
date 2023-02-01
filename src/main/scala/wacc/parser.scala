@@ -2,6 +2,7 @@ package wacc
 
 import parsley.Parsley.attempt
 import parsley.combinator.{many, sepBy}
+import parsley.errors.combinator.{ErrorMethods, amend, entrench, fail}
 import parsley.expr.{Prefix, chain, precedence}
 
 object parser {
@@ -13,26 +14,38 @@ object parser {
   import parsley.combinator.some
   import parsley.expr.{InfixL, Ops}
 
+
   // Expr parsers
-  lazy val atomExpr: Parsley[Expr] = IntExpr(INT) <|>
+  lazy val atomExpr: Parsley[Expr] = (IntExpr(INT) <|>
     BoolExpr(BOOL) <|>
     CharExpr(CHAR) <|>
     StringExpr(STRING) <|>
     attempt(arrayelem) <|>
     IdentExpr(IDENT) <|>
-    (PAIR_LITER #> PairExpr)
+    (PAIR_LITER #> PairExpr)).label("Atomic Literal")
+    .explain("--> Atomic Literals includes booleans, chars, strings, " +
+      "array-elems `identifier[]` or identifiers")
 
   lazy val expr: Parsley[Expr] =
     precedence(atomExpr, OPENPAREN ~> expr <~ CLOSEDPAREN)(
-      Ops(Prefix)("!" #> NotExpr, "-" #> NegExpr, "len" #> LenExpr, "ord" #> OrdExpr,
-        ("chr") #> ChrExpr),
-      Ops(InfixL)(("%") #> ModExpr, ("/") #> DivExpr, ("*") #> MulExpr),
-      Ops(InfixL)(("+") #> AddExpr, ("-") #> SubExpr),
-      Ops(InfixL)(attempt((">=") #> GTEQExpr), (">") #> GTExpr, attempt(("<=") #> LTEQExpr), ("<") #> LTExpr),
-      Ops(InfixL)(("==") #> EQExpr, ("!=") #> NEQExpr),
-      Ops(InfixL)(("&&") #> AndExpr),
-      Ops(InfixL)(("||") #> OrExpr)
-    )
+      Ops(Prefix)("!".label("unary op") #> NotExpr, "-".label("unary op") #> NegExpr,
+        "len".label("unary op") #> LenExpr, "ord".label("unary op") #> OrdExpr,
+        "chr".label("unary op") #> ChrExpr),
+      Ops(InfixL)(("%").label("binary op") #> ModExpr,
+        ("/").label("binary op") #> DivExpr, ("*").label("binary op") #> MulExpr),
+      Ops(InfixL)(("+").label("binary op") #> AddExpr,
+        ("-").label("binary op") #> SubExpr),
+      Ops(InfixL)(attempt((">=").label("comparison op") #> GTEQExpr),
+        (">").label("comparison op") #> GTExpr,
+        attempt(("<=").label("comparison op") #> LTEQExpr),
+        ("<").label("comparison op") #> LTExpr),
+      Ops(InfixL)(("==").label("comparison op") #> EQExpr,
+        ("!=").label("comparison op") #> NEQExpr),
+      Ops(InfixL)(("&&").label("logical op") #> AndExpr),
+      Ops(InfixL)(("||").label("logical op") #> OrExpr)
+    ).label("expression")
+      .explain("--> Expressions are atomic literals preceded by or followed by" +
+        " unary, binary, logical and comparison operators")
 
   // Lvalue parsers
   lazy val lvalue: Parsley[LValue] = attempt(arrayelem) <|> IdentValue(IDENT) <|> pairelem
@@ -62,31 +75,56 @@ object parser {
   val equals: Parsley[Statement] = Equals(lvalue, ("=" ~> rvalue))
   val read: Parsley[Statement] = Read(READ ~> lvalue)
   val free: Parsley[Statement] = Free(FREE ~> expr)
-  val returnStat: Parsley[Statement] = Return(RETURN ~> expr)
-  val exit: Parsley[Statement] = Exit(EXIT ~> expr)
   val print: Parsley[Statement] = Print(PRINT ~> expr)
   val println: Parsley[Statement] = Println(PRINTLN ~> expr)
   val ifStat: Parsley[Statement] = If((IF ~> expr), (THEN ~> statement), (ELSE ~> statement <~ FI))
   val whileStat: Parsley[Statement] = While((WHILE ~> expr), (DO ~> statement <~ DONE))
   val scopeStat: Parsley[Statement] = ScopeStat(BEGIN ~> statement <~ END)
 
+  // terminal statements
+  lazy val terminalStat: Parsley[Statement] = returnStat <|> exit
+  val returnStat: Parsley[Statement] = Return(RETURN ~> expr)
+  val exit: Parsley[Statement] = Exit(EXIT ~> expr)
+
   val statAtoms: Parsley[Statement] = skip <|> assigneq <|> equals <|> read <|>
-    free <|> returnStat <|> exit <|> attempt(println) <|> print <|>
+    free <|> attempt(println) <|> print <|>
     ifStat <|> whileStat <|> scopeStat
 
   lazy val statement: Parsley[Statement]
-  = chain.left1[Statement](statAtoms, SEMICOLON #> ConsecStat)
+  = chain.left1[Statement](statAtoms <|> terminalStat, SEMICOLON #> ConsecStat)
 
   // highest level parsers
   lazy val param: Parsley[Param] = Param(waccType, IDENT)
   lazy val paramList: Parsley[List[Param]] = sepBy(param, ",")
 
   val func: Parsley[Func]
-  = Func(waccType, IDENT, OPENPAREN ~> paramList <~ CLOSEDPAREN, (IS ~> statement <~ END))
+  = Func(waccType,
+    IDENT,
+    OPENPAREN ~> paramList <~ CLOSEDPAREN,
+    (IS ~> statement.filter(isValidFuncStatement) <~ END))
 
+  val func_body: Parsley[Statement]
+  = amend(attempt(waccType ~> IDENT ~> OPENPAREN
+      ~> fail("Function starting here must have a return or exit statement on all paths")) <|>
+    entrench(statement))
 
-  val program: Parsley[Program] = Program(BEGIN ~> many(attempt(func)), (statement <~ END))
+  def isValidFuncStatement(stat: Statement): Boolean = {
+    stat match {
+      case ConsecStat(first, next) =>
+        val found2 = isValidFuncStatement(next)
+        if (!found2) {
+          isValidFuncStatement(first)
+        } else true
+      case If(_, thenStat, elseStat) =>
+        isValidFuncStatement(thenStat) && isValidFuncStatement(elseStat)
+      case While(_, doStat) => isValidFuncStatement(doStat)
+      case ScopeStat(stat) => isValidFuncStatement(stat)
+      case Exit(e) => true
+      case Return(e) => true
+      case _ => false
+    }
+  }
 
-
+  val program: Parsley[Program] = Program(BEGIN ~> many(attempt(func)), ((func_body) <~ END))
 }
 

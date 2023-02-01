@@ -4,21 +4,23 @@ import parsley.genericbridges._
 
 object AST {
 
+  sealed trait AST
+
   // Higheest level program branch of AST
-  case class Program(funcs: List[Func], stat: Statement)
+  case class Program(funcs: List[Func], stat: Statement) extends AST
 
   object Program extends ParserBridge2[List[Func], Statement, Program]
 
-  case class Func(retType: Type, ident: String, params: List[Param], stat: Statement)
+  case class Func(retType: Type, ident: String, params: List[Param], stat: Statement) extends AST
 
   object Func extends ParserBridge4[Type, String, List[Param], Statement, Func]
 
-  case class Param(paramType: Type, ident: String)
+  case class Param(paramType: Type, ident: String) extends AST
 
   object Param extends ParserBridge2[Type, String, Param]
 
   // WACC Type heirarchy
-  sealed trait Type
+  sealed trait Type extends AST
 
   sealed trait BaseType extends Type with PairElemType
 
@@ -37,7 +39,7 @@ object AST {
 
   object PairType extends ParserBridge2[PairElemType, PairElemType, Type]
 
-  sealed trait PairElemType
+  sealed trait PairElemType extends AST
 
   case object DummyPair extends PairElemType with ParserBridge0[PairElemType]
 
@@ -118,7 +120,7 @@ object AST {
   object Snd extends ParserBridge1[LValue, PairElem]
 
   // Statement branch of AST
-  sealed trait Statement
+  sealed trait Statement extends AST
 
   case object Skip extends Statement with ParserBridge0[Statement]
 
@@ -169,7 +171,7 @@ object AST {
   case class ConsecStat(first: Statement, next: Statement) extends Statement
 
   // LValue branch of AST
-  sealed trait LValue
+  sealed trait LValue extends AST
 
   case class IdentValue(s: String) extends LValue
 
@@ -180,7 +182,7 @@ object AST {
   object ArrayElem extends ParserBridge2[String, List[Expr], ArrayElem]
 
   // RValue branch of AST
-  sealed trait RValue
+  sealed trait RValue extends AST
 
   case class ArrayLiter(exprs: List[Expr]) extends RValue
 
