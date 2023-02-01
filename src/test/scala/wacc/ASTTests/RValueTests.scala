@@ -7,6 +7,7 @@ import wacc.ASTTests.SyntacticTests
 import wacc.parser.{expr, rvalue}
 
 object RValueTests extends Tag("RValueTests")
+
 class RValueTests extends AnyFlatSpec {
 
   behavior of "ident RValue"

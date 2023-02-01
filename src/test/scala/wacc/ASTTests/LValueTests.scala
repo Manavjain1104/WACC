@@ -6,6 +6,7 @@ import wacc.AST.{ArrayElem, Fst, IdentValue, IntExpr, Snd}
 import wacc.parser._
 
 object LValueTests extends Tag("LValueTests")
+
 class LValueTests extends AnyFlatSpec {
 
   behavior of "ident LValue"
