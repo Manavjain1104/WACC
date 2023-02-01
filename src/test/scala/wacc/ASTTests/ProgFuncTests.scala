@@ -11,9 +11,11 @@ class ProgFuncTests extends AnyFlatSpec {
 
   behavior of "program"
   it should "generate the correct output of the program" taggedAs(ProgFuncTests, SyntacticTests) in {
-    val prog = "begin char a (char b, char c, char d) is skip end skip end"
-    val ptest = Program(List(Func(CharType,"a",List(Param(CharType,"b"), Param(CharType,"c"), Param(CharType,"d"))
-      ,Skip)),Skip)
+    val prog = "begin char a (char b, char c, char d) is exit 0 end skip end"
+
+    val ptest = Program(List(Func(CharType,"a",List(Param(CharType,"b"), Param(CharType,"c"),
+      Param(CharType,"d")),Exit(IntExpr(0)))),Skip)
+
     val repr = program.parse(prog).get
     assert(repr === ptest)
   }

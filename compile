@@ -3,7 +3,10 @@
 # You are free to change the language used for this script,
 # but do *not* change its name.
 
-java -jar wacc-25-compiler.jar $@
+#java -jar wacc-25-compiler.jar $@
+
+sbt "run $1"
 
 exit $?
+
 
