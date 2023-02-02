@@ -44,10 +44,10 @@ class semantic_analyser {
         }
         matchTypes(assignType, checkRvalueAndReturnType(rvalue, symbolTable))
         symbolTable.add(ident, assignType)
-        return true
+        true
       }
       case Assign(lvalue, rvalue) => {
-
+       false
       }
     }
   }
