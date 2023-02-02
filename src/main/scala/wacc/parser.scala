@@ -2,7 +2,7 @@ package wacc
 
 import parsley.Parsley.attempt
 import parsley.combinator.{many, sepBy}
-import parsley.errors.combinator.{ErrorMethods, amend, entrench, fail}
+import parsley.errors.combinator.{ErrorMethods, amend, fail}
 import parsley.expr.{Prefix, chain, precedence}
 
 object parser {
@@ -104,10 +104,12 @@ object parser {
     (IS ~> statement.filter(isValidFuncStatement) <~ END))
 
   val func_body: Parsley[Statement]
-  = amend(attempt(waccType ~> IDENT ~> OPENPAREN
-    ~> fail("Function starting here must have a return/exit statement on all paths " +
-    "and also end with one")) <|>
-    entrench(statement))
+  = amend {
+    attempt(waccType ~> IDENT ~> OPENPAREN
+      ~> fail("Function starting here must have a return/exit statement on all paths " +
+      "and also end with one"))
+  } <|>
+    statement
 
   def isValidFuncStatement(stat: Statement): Boolean = {
     stat match {

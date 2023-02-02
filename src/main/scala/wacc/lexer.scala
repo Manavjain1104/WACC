@@ -20,13 +20,15 @@ object lexer {
 
   def graphicChar(c: Char): Boolean = ((c >= ' ') && (!Set('\\', '\'', '\"').contains(c))) || escapes.contains(c)
 
-  def isSpace(c : Char): Boolean = c == '\n' || isWhitespace(c.toInt)
+  def isSpace(c: Char): Boolean = c == '\n' || isWhitespace(c.toInt)
 
-  val escapes = Set('\\', '\u0000', '\b', '\t', '\n', '\f', '\r', '\"', '\'')
+  def validInt(x: BigInt): Boolean = (x <= Int.MaxValue) && (x >= Int.MinValue)
+
+  val escapes = Set('\u0000', '\b', '\t', '\f', '\r')
 
   private val desc = LexicalDesc.plain.copy(
     nameDesc = NameDesc.plain.copy(
-      identifierStart = predicate.Basic(identStart), // ask Jamie about Basic
+      identifierStart = predicate.Basic(identStart),
       identifierLetter = predicate.Basic(identContinue)
     ),
     spaceDesc = SpaceDesc.plain.copy(
@@ -55,6 +57,7 @@ object lexer {
           'r' -> 0x000d,
           't' -> 0x0009),
       ),
+      multiStringEnds = Set.empty,
       graphicCharacter = predicate.Basic(graphicChar)
     ),
   )
@@ -90,7 +93,8 @@ object lexer {
   val CALL: Parsley[Unit] = symbol("call")
 
   // making lexer for Expr branch
-  val INT: Parsley[BigInt] = lexer.lexeme.numeric.integer.decimal
+  val INT: Parsley[BigInt] = lexer.lexeme.numeric.integer.decimal.
+      filter(validInt).explain("Only 32-bit signed intergers allowed ")
   val BOOL: Parsley[Boolean] = symbol("true") #> true | symbol("false") #> false
   val CHAR: Parsley[Char] = lexer.lexeme.text.character.ascii
   val STRING: Parsley[String] = lexer.lexeme.text.string.ascii
