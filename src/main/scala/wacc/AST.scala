@@ -124,13 +124,13 @@ object AST {
 
   case object Skip extends Statement with ParserBridge0[Statement]
 
-  case class AssignEq(assignType: Type, ident: String, rvalue: RValue) extends Statement
+  case class VarDec(assignType: Type, ident: String, rvalue: RValue) extends Statement
 
-  object AssignEq extends ParserBridge3[Type, String, RValue, Statement]
+  object VarDec extends ParserBridge3[Type, String, RValue, Statement]
 
-  case class Equals(lvalue: LValue, rvalue: RValue) extends Statement
+  case class Assign(lvalue: LValue, rvalue: RValue) extends Statement
 
-  object Equals extends ParserBridge2[LValue, RValue, Statement]
+  object Assign extends ParserBridge2[LValue, RValue, Statement]
 
   case class Read(lvalue: LValue) extends Statement
 

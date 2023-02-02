@@ -12,14 +12,17 @@ object Main {
     //    println(args.head)
         val fileContents = Source.fromFile(args.head)
         val text: String = fileContents.getLines().mkString("\n")
+        println(text)
         fully(program).parse(text) match {
           case Success(x) => {
             //println(s"$x")
             println("Exit code: 0")
+            println(x)
             sys.exit(0)
           }
-          case Failure(_) => {
+          case Failure(msg) => {
             println("Syntax error!")
+            println(msg)
             println("Exit code: 100")
             sys.exit(100)
           }

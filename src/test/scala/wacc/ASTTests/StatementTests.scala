@@ -19,7 +19,7 @@ class StatementTests extends AnyFlatSpec {
   behavior of "variable assignment statement"
   it should "generate the correct statement" taggedAs(StatementTests, SyntacticTests) in {
     val exp = "int x = 5"
-    val var_ass = AssignEq(IntType,"x",IntExpr(5))
+    val var_ass = VarDec(IntType,"x",IntExpr(5))
     val repr = statement.parse(exp).get
     assert(repr === var_ass)
   }
@@ -27,7 +27,7 @@ class StatementTests extends AnyFlatSpec {
   behavior of "eq statement"
   it should "generate the correct statement" taggedAs(StatementTests, SyntacticTests) in {
     val exp = "y = 5"
-    val eq = Equals(IdentValue("y"),IntExpr(5))
+    val eq = Assign(IdentValue("y"),IntExpr(5))
     val repr = statement.parse(exp).get
     assert(repr === eq)
   }

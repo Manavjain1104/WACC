@@ -71,8 +71,8 @@ object parser {
 
   // Statement Parsers
   val skip: Parsley[Statement] = "skip".label("Statement beginning") #> Skip
-  val assigneq: Parsley[Statement] = AssignEq(waccType, IDENT, ("=" ~> rvalue))
-  val equals: Parsley[Statement] = Equals(lvalue, ("=" ~> rvalue))
+  val assigneq: Parsley[Statement] = VarDec(waccType, IDENT, ("=" ~> rvalue))
+  val equals: Parsley[Statement] = Assign(lvalue, ("=" ~> rvalue))
   val read: Parsley[Statement] = Read(READ.label("Statement beginning") ~> lvalue)
   val free: Parsley[Statement] = Free(FREE.label("Statement beginning") ~> expr)
   val print: Parsley[Statement] = Print(PRINT.label("Statement beginning") ~> expr)
