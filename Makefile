@@ -1,5 +1,5 @@
 all:
-	sbt compile
+	sbt assembly
 
 test:
 	sbt test
