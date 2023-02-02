@@ -114,11 +114,7 @@ object parser {
   def isValidFuncStatement(stat: Statement): Boolean = {
     stat match {
       case ConsecStat(first, next) =>
-        val found2 = isValidFuncStatement(next)
-        if (!found2) {
-          //          isValidFuncStatement(first)
-          false
-        } else true
+        isValidFuncStatement(next)
       case If(_, thenStat, elseStat) =>
         isValidFuncStatement(thenStat) && isValidFuncStatement(elseStat)
       case While(_, doStat) => isValidFuncStatement(doStat)
