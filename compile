@@ -2,11 +2,10 @@
 # Bash front-end for your compiler.
 # You are free to change the language used for this script,
 # but do *not* change its name.
-
-#java -jar wacc-25-compiler.jar $@
-
-sbt "run $1"
+# shellcheck disable=SC2068
+java -jar wacc-25-compiler.jar $@
 
 exit $?
+
 
 
