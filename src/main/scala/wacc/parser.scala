@@ -5,6 +5,7 @@ import parsley.combinator.{many, sepBy}
 import parsley.errors.combinator.{ErrorMethods, amend, fail}
 import parsley.expr.{Prefix, chain, precedence}
 
+
 object parser {
 
   import AST._
@@ -28,21 +29,21 @@ object parser {
 
   lazy val expr: Parsley[Expr] =
     precedence(atomExpr, OPENPAREN ~> expr <~ CLOSEDPAREN)(
-      Ops(Prefix)("!".label("unary op") #> NotExpr, "-".label("unary op") #> NegExpr,
-        "len".label("unary op") #> LenExpr, "ord".label("unary op") #> OrdExpr,
-        "chr".label("unary op") #> ChrExpr),
-      Ops(InfixL)(("%").label("binary op") #> ModExpr,
-        ("/").label("binary op") #> DivExpr, ("*").label("binary op") #> MulExpr),
-      Ops(InfixL)(("+").label("binary op") #> AddExpr,
-        ("-").label("binary op") #> SubExpr),
-      Ops(InfixL)(attempt((">=").label("comparison op") #> GTEQExpr),
-        (">").label("comparison op") #> GTExpr,
-        attempt(("<=").label("comparison op") #> LTEQExpr),
-        ("<").label("comparison op") #> LTExpr),
-      Ops(InfixL)(("==").label("comparison op") #> EQExpr,
-        ("!=").label("comparison op") #> NEQExpr),
-      Ops(InfixL)(("&&").label("logical op") #> AndExpr),
-      Ops(InfixL)(("||").label("logical op") #> OrExpr)
+      Ops(Prefix)(NotExpr <# "!".label("unary op"), NegExpr <# NEGATE.label("unary op"),
+        LenExpr <# "len".label("unary op"), OrdExpr <# "ord".label("unary op"),
+        ChrExpr <# "chr".label("unary op")),
+      Ops(InfixL)(ModExpr <# ("%").label("binary op"),
+        DivExpr <# ("/").label("binary op"), MulExpr <# "*".label("binary op")),
+      Ops(InfixL)(AddExpr <# ("+").label("binary op"),
+        SubExpr <# ("-").label("binary op")),
+      Ops(InfixL)(attempt(GTEQExpr <# (">=").label("comparison op")),
+        GTExpr <# (">").label("comparison op"),
+        attempt(LTEQExpr <# ("<=").label("comparison op")),
+        LTExpr <# ("<").label("comparison op")),
+      Ops(InfixL)(EQExpr <# ("==").label("comparison op"),
+        NEQExpr <# ("!=").label("comparison op")),
+      Ops(InfixL)(AndExpr <# ("&&").label("logical op")),
+      Ops(InfixL)(OrExpr <# ("||").label("logical op"))
     ).label("expression")
       .explain("--> Expressions are atomic literals preceded by or followed by" +
         " unary, binary, logical and comparison operators")
@@ -61,18 +62,18 @@ object parser {
 
   // type heirarchy parsers
   lazy val waccType: Parsley[Type] = attempt(arrayType) <|> baseType <|> pairType
-  val baseType: Parsley[BaseType] = (("int" #> IntType) <|>
-    ("bool" #> BoolType) <|>
-    ("char" #> CharType) <|>
-    ("string" #> StringType)).label("primitive base type")
+  val baseType: Parsley[BaseType] = ((IntType <# "int") <|>
+    (BoolType <# "bool") <|>
+    (CharType <# "char") <|>
+    (StringType <# "string")).label("primitive base type")
   lazy val arrayType: Parsley[ArrayType] = chain.postfix1((baseType <|> pairType), (OPENSQUAREBRAC ~> CLOSESQUAREBRAC) #> ArrayType)
   val pairType: Parsley[Type] = PairType(PAIR ~> OPENPAREN ~> pairelemType, COMMA ~> pairelemType <~ CLOSEDPAREN)
   lazy val pairelemType: Parsley[PairElemType] = attempt(arrayType) <|> baseType <|> (PAIR #> DummyPair)
 
   // Statement Parsers
-  val skip: Parsley[Statement] = "skip".label("Statement beginning") #> Skip
-  val assigneq: Parsley[Statement] = VarDec(waccType, IDENT, ("=" ~> rvalue))
-  val equals: Parsley[Statement] = Assign(lvalue, ("=" ~> rvalue))
+  val skip: Parsley[Statement] = Skip <# "skip".label("Statement beginning")
+  val vardec: Parsley[Statement] = VarDec(waccType, IDENT, ("=" ~> rvalue))
+  val assign: Parsley[Statement] = Assign(lvalue, ("=" ~> rvalue))
   val read: Parsley[Statement] = Read(READ.label("Statement beginning") ~> lvalue)
   val free: Parsley[Statement] = Free(FREE.label("Statement beginning") ~> expr)
   val print: Parsley[Statement] = Print(PRINT.label("Statement beginning") ~> expr)
@@ -86,7 +87,7 @@ object parser {
   val returnStat: Parsley[Statement] = Return(RETURN ~> expr)
   val exit: Parsley[Statement] = Exit(EXIT ~> expr)
 
-  val statAtoms: Parsley[Statement] = skip <|> assigneq <|> equals <|> read <|>
+  val statAtoms: Parsley[Statement] = skip <|> vardec <|> assign <|> read <|>
     free <|> attempt(println) <|> print <|>
     ifStat <|> whileStat <|> scopeStat
 

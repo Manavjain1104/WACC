@@ -3,7 +3,7 @@ package wacc
 import wacc.AST.AST
 import collection.mutable.Map
 
-class SymbolTable(val encSymTable: SymbolTable, val map: Map[String, AST]) {
+class SymbolTable(val encSymTable: Option[SymbolTable], val map: Map[String, AST]) {
 
   def add(name : String, node : AST) = {
     map.addOne(name, node)
@@ -11,16 +11,16 @@ class SymbolTable(val encSymTable: SymbolTable, val map: Map[String, AST]) {
 
   def lookup(name :String): Option[AST] = map.get(name)
 
-  def lookupAll(name : String) : AST = {
-    var table : SymbolTable = this
+  def lookupAll(name : String) : Option[AST] = {
+    var table : Option[SymbolTable] = Option(this)
 
-    while (table != null) {
-      val opVal = table.lookup(name)
+    while (table.isDefined) {
+      val opVal = table.get.lookup(name)
       if (opVal.isDefined) {
-        return opVal.get
+        return opVal
       }
-      table = table.encSymTable
+      table = table.get.encSymTable
     }
-    null
+    None
   }
 }

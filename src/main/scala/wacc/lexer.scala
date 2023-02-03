@@ -1,6 +1,8 @@
 package wacc
 
 import parsley.Parsley
+import parsley.Parsley.{attempt, notFollowedBy}
+import parsley.character.{char, digit}
 import parsley.errors.combinator.ErrorMethods
 import parsley.token.Lexer
 import parsley.token.descriptions.NameDesc
@@ -22,7 +24,7 @@ object lexer {
 
   def isSpace(c: Char): Boolean = c == '\n' || isWhitespace(c.toInt)
 
-  def validInt(x: BigInt): Boolean = (x <= Int.MaxValue) && (x >= Int.MinValue)
+  def validInt(x: Int): Boolean = (x <= Int.MaxValue) && (x >= Int.MinValue)
 
   val escapes = Set('\u0000', '\b', '\t', '\f', '\r')
 
@@ -93,8 +95,7 @@ object lexer {
   val CALL: Parsley[Unit] = symbol("call")
 
   // making lexer for Expr branch
-  val INT: Parsley[BigInt] = lexer.lexeme.numeric.integer.decimal.
-      filter(validInt).explain("Only 32-bit signed intergers allowed ")
+  val INT: Parsley[Int] = lexer.lexeme.numeric.signed.decimal32.filter(validInt).explain("Only 32-bit signed intergers allowed ")
   val BOOL: Parsley[Boolean] = symbol("true") #> true | symbol("false") #> false
   val CHAR: Parsley[Char] = lexer.lexeme.text.character.ascii
   val STRING: Parsley[String] = lexer.lexeme.text.string.ascii
@@ -104,6 +105,8 @@ object lexer {
   val OPENSQUAREBRAC: Parsley[Unit] = lexer.lexeme.symbol.openSquare.label("\'[\'")
   val CLOSESQUAREBRAC: Parsley[Unit] = lexer.lexeme.symbol.closingSquare.label("\']\'")
   val PAIR: Parsley[Unit] = symbol("pair")
+
+  val NEGATE = lexer.lexeme(attempt(char('-') *> notFollowedBy(digit)))
 
   def fully[A](p: Parsley[A]) = lexer.fully(p)
 
