@@ -7,10 +7,23 @@ compile-job:       # This job runs in the build stage, which runs first.
   script:
     - sbt compile
 
-all-syntactic-test-job:
+all-AST-syntactic-test-job:
   stage: test
   script:
     - sbt "testOnly -- -n SyntacticTests"
+
+all-valid-tests:
+  stage: test
+  script:
+    - sbt "testOnly -- -n ChecksAllValid"
+
+all-syntax-invalid-tests:
+  stage: test
+  script:
+    - sbt "testOnly -- -n ChecksAllSyntaxInvalid"
+
+
+
 
 
 # Don't test everything

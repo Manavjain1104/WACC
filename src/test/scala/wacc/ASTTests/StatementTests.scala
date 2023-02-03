@@ -19,7 +19,7 @@ class StatementTests extends AnyFlatSpec {
   behavior of "variable assignment statement"
   it should "generate the correct statement" taggedAs(StatementTests, SyntacticTests) in {
     val exp = "int x = 5"
-    val var_ass = VarDec(IntType,"x",IntExpr(5))
+    val var_ass = VarDec(IntType()(0,0),"x",IntExpr(5)(0,0))(0,0)
     val repr = statement.parse(exp).get
     assert(repr === var_ass)
   }
@@ -27,7 +27,7 @@ class StatementTests extends AnyFlatSpec {
   behavior of "eq statement"
   it should "generate the correct statement" taggedAs(StatementTests, SyntacticTests) in {
     val exp = "y = 5"
-    val eq = Assign(IdentValue("y"),IntExpr(5))
+    val eq = Assign(IdentValue("y")(0,0),IntExpr(5)(0,0))(0,0)
     val repr = statement.parse(exp).get
     assert(repr === eq)
   }
@@ -35,7 +35,7 @@ class StatementTests extends AnyFlatSpec {
   behavior of "read statement"
   it should "generate the correct statement" taggedAs(StatementTests, SyntacticTests) in {
     val exp = "read abc"
-    val read_stmt = Read(IdentValue("abc"))
+    val read_stmt = Read(IdentValue("abc")(0,0))(0,0)
     val repr = statement.parse(exp).get
     assert(repr === read_stmt)
   }
@@ -43,7 +43,7 @@ class StatementTests extends AnyFlatSpec {
   behavior of "return statement"
   it should "generate the correct statement" taggedAs(StatementTests, SyntacticTests) in {
     val exp = "return 5"
-    val ret_stmt = Return(IntExpr(5))
+    val ret_stmt = Return(IntExpr(5)(0,0))(0,0)
     val repr = statement.parse(exp).get
     assert(repr === ret_stmt)
   }
@@ -51,7 +51,7 @@ class StatementTests extends AnyFlatSpec {
   behavior of "exit statement"
   it should "generate the correct statement" taggedAs(StatementTests, SyntacticTests) in {
     val exp = "exit 0"
-    val exit_stmt = Exit(IntExpr(0))
+    val exit_stmt = Exit(IntExpr(0)(0,0))(0,0)
     val repr = statement.parse(exp).get
     assert(repr === exit_stmt)
   }
@@ -59,7 +59,7 @@ class StatementTests extends AnyFlatSpec {
   behavior of "free statement"
   it should "generate the correct statement" taggedAs(StatementTests, SyntacticTests) in {
     val exp = "free 5"
-    val free_stmt = Free(IntExpr(5))
+    val free_stmt = Free(IntExpr(5)(0,0))(0,0)
     val repr = statement.parse(exp).get
     assert(repr === free_stmt)
   }
@@ -67,7 +67,7 @@ class StatementTests extends AnyFlatSpec {
   behavior of "print statement"
   it should "generate the correct statement" taggedAs(StatementTests, SyntacticTests) in {
     val exp = "print 5"
-    val print_stmt = Print(IntExpr(5))
+    val print_stmt = Print(IntExpr(5)(0,0))(0,0)
     val repr = statement.parse(exp).get
     assert(repr === print_stmt)
   }
@@ -75,7 +75,7 @@ class StatementTests extends AnyFlatSpec {
   behavior of "println statement"
   it should "generate the correct statement" taggedAs(StatementTests, SyntacticTests) in {
     val exp = "println 5"
-    val println_stmt = Println(IntExpr(5))
+    val println_stmt = Println(IntExpr(5)(0,0))(0,0)
     val repr = statement.parse(exp).get
     assert(repr === println_stmt)
   }
@@ -83,7 +83,7 @@ class StatementTests extends AnyFlatSpec {
   behavior of "if statement"
   it should "generate the correct statement" taggedAs(StatementTests, SyntacticTests) in {
     val exp = "if x then return y else skip fi"
-    val if_stmt = If(IdentExpr("x"),Return(IdentExpr("y")),Skip)
+    val if_stmt = If(IdentExpr("x")(0,0),Return(IdentExpr("y")(0,0))(0,0),Skip)(0,0)
     val repr = statement.parse(exp).get
     assert(repr === if_stmt)
   }
@@ -91,7 +91,7 @@ class StatementTests extends AnyFlatSpec {
   behavior of "while statement"
   it should "generate the correct statement" taggedAs(StatementTests, SyntacticTests) in {
     val exp =  "while x do if y then skip else return z fi done"
-    val while_stmt = While(IdentExpr("x"),If(IdentExpr("y"),Skip,Return(IdentExpr("z"))))
+    val while_stmt = While(IdentExpr("x")(0,0),If(IdentExpr("y")(0,0),Skip,Return(IdentExpr("z")(0,0))(0,0))(0,0))(0,0)
     val repr = statement.parse(exp).get
     assert(repr === while_stmt)
   }
@@ -99,8 +99,8 @@ class StatementTests extends AnyFlatSpec {
   behavior of "scope statement"
   it should "generate the correct statement" taggedAs(StatementTests, SyntacticTests) in {
     val exp = "begin while x do if y then skip else return z fi done end"
-    val scope_stmt = ScopeStat(While(IdentExpr("x"),If(IdentExpr("y"),Skip,
-      Return(IdentExpr("z")))))
+    val scope_stmt = ScopeStat(While(IdentExpr("x")(0,0),If(IdentExpr("y")(0,0),Skip,
+      Return(IdentExpr("z")(0,0))(0,0))(0,0))(0,0))(0,0)
     val repr = statement.parse(exp).get
     assert(repr === scope_stmt)
   }
@@ -108,8 +108,8 @@ class StatementTests extends AnyFlatSpec {
   behavior of "consec statements"
   it should "generate the correct statement" taggedAs(StatementTests, SyntacticTests) in {
     val exp = "read abc; return 5; exit 100"
-    val consec_stmts = ConsecStat(ConsecStat(Read(IdentValue("abc")),
-      Return(IntExpr(5))),Exit(IntExpr(100)))
+    val consec_stmts = ConsecStat(ConsecStat(Read(IdentValue("abc")(0,0))(0,0),
+      Return(IntExpr(5)(0,0))(0,0)),Exit(IntExpr(100)(0,0))(0,0))
     val repr = statement.parse(exp).get
     assert(repr === consec_stmts)
   }
