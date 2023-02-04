@@ -38,7 +38,7 @@ class ChecksAllSyntaxInvalid extends AnyFlatSpec {
     file.toString.endsWith(".wacc") match {
       case true => {
         println(s"processing $file")
-        println(s"./compile $file test" !!)
+        println(s"./compile $file check" !!)
         //println("echo $?" !!)
         //        fully(program).parse(scala.io.Source.fromFile(file).mkString) match {
         //          case Failure(_) => ("failed")//sys.exit(100)

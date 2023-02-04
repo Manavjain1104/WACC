@@ -46,7 +46,7 @@ class ChecksAllValid extends AnyFlatSpec {
         println(s"processing $file")
 
 
-        println(s"./compile $file test" !!)
+        println(s"./compile $file check" !!)
 
 
 
