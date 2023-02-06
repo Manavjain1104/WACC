@@ -1,23 +1,25 @@
 package wacc
 
-import wacc.AST.AST
-import collection.mutable.Map
+import wacc.SemTypes.SemType
 
-class SymbolTable(val encSymTable: Option[SymbolTable], val map: Map[String, AST]) {
+import scala.collection.mutable
 
-  def add(name : String, node : AST) = {
-    map.addOne(name, node)
+class SymbolTable(val encSymTable: Option[SymbolTable],
+                  val map : mutable.Map[String, SemType] = mutable.Map.empty) {
+
+  def add(name : String, ty: SemType) = {
+    map.addOne(name, ty)
   }
 
-  def lookup(name :String): Option[AST] = map.get(name)
+  def lookup(name :String): Option[SemType] = map.get(name)
 
-  def lookupAll(name : String) : Option[AST] = {
+  def lookupAll(name : String) : Option[SemType] = {
     var table : Option[SymbolTable] = Option(this)
 
     while (table.isDefined) {
-      val opVal = table.get.lookup(name)
-      if (opVal.isDefined) {
-        return opVal
+      val optype = table.get.lookup(name)
+      if (optype.isDefined) {
+        return optype
       }
       table = table.get.encSymTable
     }

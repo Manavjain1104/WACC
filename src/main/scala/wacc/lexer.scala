@@ -2,7 +2,7 @@ package wacc
 
 import parsley.Parsley
 import parsley.Parsley.{attempt, notFollowedBy}
-import parsley.character.{char, digit}
+import parsley.character.{char, digit, string, whitespace}
 import parsley.errors.combinator.ErrorMethods
 import parsley.token.Lexer
 import parsley.token.descriptions.NameDesc
@@ -106,7 +106,10 @@ object lexer {
   val CLOSESQUAREBRAC: Parsley[Unit] = lexer.lexeme.symbol.closingSquare.label("\']\'")
   val PAIR: Parsley[Unit] = symbol("pair")
 
-  val NEGATE = lexer.lexeme(attempt(char('-') *> notFollowedBy(digit)))
+  val NEGATE: Parsley[Unit] = lexer.lexeme(attempt(char('-') *> notFollowedBy(digit)))
+  val LEN: Parsley[String] = lexer.lexeme(attempt(string("len") <* whitespace))
+  val ORD: Parsley[String] = lexer.lexeme(attempt(string("ord") <* whitespace))
+  val CHR: Parsley[String] = lexer.lexeme(attempt(string("chr") <* whitespace))
 
   def fully[A](p: Parsley[A]) = lexer.fully(p)
 

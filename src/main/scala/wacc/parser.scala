@@ -1,6 +1,7 @@
 package wacc
 
-import parsley.Parsley.attempt
+import parsley.Parsley.{attempt, notFollowedBy}
+import parsley.character.{digit, letter}
 import parsley.combinator.{many, sepBy}
 import parsley.errors.combinator.{ErrorMethods, amend, fail}
 import parsley.expr.{Prefix, chain, precedence}
@@ -30,8 +31,8 @@ object parser {
   lazy val expr: Parsley[Expr] =
     precedence(atomExpr, OPENPAREN ~> expr <~ CLOSEDPAREN)(
       Ops(Prefix)(NotExpr <# "!".label("unary op"), NegExpr <# NEGATE.label("unary op"),
-        LenExpr <# "len".label("unary op"), OrdExpr <# "ord".label("unary op"),
-        ChrExpr <# "chr".label("unary op")),
+        LenExpr <# LEN.label("unary op"), OrdExpr <# ORD.label("unary op"),
+        ChrExpr <# CHR.label("unary op")),
       Ops(InfixL)(ModExpr <# ("%").label("binary op"),
         DivExpr <# ("/").label("binary op"), MulExpr <# "*".label("binary op")),
       Ops(InfixL)(AddExpr <# ("+").label("binary op"),
@@ -92,7 +93,11 @@ object parser {
     ifStat <|> whileStat <|> scopeStat
 
   lazy val statement: Parsley[Statement]
-  = chain.left1[Statement](statAtoms <|> terminalStat, SEMICOLON #> ConsecStat)
+    = chain.left1[Statement](statAtoms <|> terminalStat, SEMICOLON #> ConsecStat)
+//  lazy val statementWithoutReturn : Parsley[Statement]
+//    = chain.left1[Statement](statAtoms <|> exit <|>
+//    amend(RETURN ~> fail("Main body cannot have return statements")),
+//    SEMICOLON #> ConsecStat)
 
   // highest level parsers
   lazy val param: Parsley[Param] = Param(waccType, IDENT)
@@ -104,7 +109,7 @@ object parser {
     OPENPAREN ~> paramList <~ CLOSEDPAREN,
     (IS ~> statement.filter(isValidFuncStatement) <~ END))
 
-  val func_body: Parsley[Statement]
+  val main_body: Parsley[Statement]
   = amend {
     attempt(waccType ~> IDENT ~> OPENPAREN
       ~> fail("Function starting here must have a return/exit statement on all paths " +
@@ -112,7 +117,9 @@ object parser {
   } <|>
     statement
 
-  def isValidFuncStatement(stat: Statement): Boolean = {
+  val program: Parsley[Program] = Program(BEGIN ~> many(attempt(func)), (main_body <~ END))
+
+  private def isValidFuncStatement(stat: Statement): Boolean = {
     stat match {
       case ConsecStat(first, next) =>
         isValidFuncStatement(next)
@@ -126,6 +133,5 @@ object parser {
     }
   }
 
-  val program: Parsley[Program] = Program(BEGIN ~> many(attempt(func)), ((func_body) <~ END))
 }
 

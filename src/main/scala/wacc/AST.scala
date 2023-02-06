@@ -5,21 +5,44 @@ import parsley.genericbridges.{ParserBridge0, ParserBridge2, ParserSingletonBrid
 import parsley.lift.lift2
 import parsley.implicits.zipped.{Zipped2, Zipped3, Zipped4}
 import parsley.position.pos
+import wacc.SemTypes._
 
 object AST {
 
-  // Parser Bridge Pattern Generics
+  // * Parser Bridge Pattern Generics * //
+
+  // * Symbol Table and Position Aware Bridges * //
+
   trait ParserBridgeSymPos1[-A, +B] {
     def apply(x: A)(symbolTable: Option[SymbolTable], pos: (Int, Int)): B
     def apply(x: Parsley[A]): Parsley[B] = pos <**> x.map(x => (p : (Int, Int)) => this.apply(x)(None, p))
   }
+
+  trait ParserBridgeSymPos2[-A, -B, +C] {
+    def apply(x: A, y: B)(st: Option[SymbolTable], pos: (Int, Int)): C
+    def apply(x: Parsley[A], y: Parsley[B]): Parsley[C]
+    = pos <**> (x, y).zipped((a : A, b : B) => (p : (Int, Int)) => this.apply(a, b) (None, p))
+  }
+
+  trait ParserBridgeSymPos3[-A, -B, -C, +D] {
+    def apply(x: A, y: B, z: C)(st: Option[SymbolTable], pos: (Int, Int)): D
+    def apply(x: Parsley[A], y: Parsley[B], z: Parsley[C]): Parsley[D]
+    = pos <**> (x, y, z).zipped((a : A, b : B, c :C) => (p : (Int, Int)) => this.apply(a, b, c) (None, p))
+  }
+
+  trait ParserBridgeSymPos4[-A, -B, -C, -D, +E] {
+    def apply(x: A, y: B, z: C, w: D)(st: Option[SymbolTable], pos: (Int, Int)): E
+    def apply(x: Parsley[A], y: Parsley[B], z: Parsley[C], w: Parsley[D]): Parsley[E]
+      = pos <**> (x, y, z, w).zipped((a : A, b : B, c :C, d :D) => (p : (Int, Int)) => this.apply(a, b, c, d) (None, p))
+  }
+
+  // * Only Position Aware Parsers * //
 
   trait ParserSingletonPosBridge[+A] {
     def con(pos: (Int, Int)): A
     def <#(op: Parsley[_]): Parsley[A] = pos.map(this.con) <* op
   }
 
-  // Position Aware Parsers
   trait ParserBridgePos0[+A] extends ParserSingletonPosBridge[A] {
     def apply()(pos : (Int, Int)) : A
     override def con(pos: (Int, Int)): A = this.apply()(pos)
@@ -34,48 +57,44 @@ object AST {
   trait ParserBridgePos2[-A, -B, +C] extends ParserSingletonPosBridge[(A, B) => C] {
     def apply(x: A, y: B)(pos: (Int, Int)): C
     def apply(x: Parsley[A], y: =>Parsley[B]): Parsley[C] =
-      pos <**> (x, y).zipped(this.apply(_, _) _)
+      pos <**> (x, y).zipped((a : A, b : B) => this.apply(a, b))
     override final def con(pos: (Int, Int)): (A, B) => C = this.apply(_, _)(pos)
   }
 
   trait ParserBridgePos3[-A, -B, -C, +D] extends ParserSingletonPosBridge[(A, B, C) => D] {
     def apply(x: A, y: B, z:C)(pos: (Int, Int)): D
     def apply(x: Parsley[A], y: =>Parsley[B], z: =>Parsley[C]): Parsley[D] =
-      pos <**> (x, y, z).zipped(this.apply(_, _, _) _)
+      pos <**> (x, y, z).zipped((a : A, b : B, c : C) => this.apply(a, b, c))
     override final def con(pos: (Int, Int)): (A, B, C) => D = this.apply(_, _, _)(pos)
   }
 
   trait ParserBridgePos4[-A, -B, -C, -D, +E] extends ParserSingletonPosBridge[(A, B, C, D) => E] {
     def apply(x: A, y: B, z:C, w :D)(pos: (Int, Int)): E
     def apply(x: Parsley[A], y: =>Parsley[B], z: =>Parsley[C], w: =>Parsley[D]): Parsley[E] =
-      pos <**> (x, y, z, w).zipped(this.apply(_, _, _, _) _)
+      pos <**> (x, y, z, w).zipped((a : A, b : B, c : C, d : D) => this.apply(a, b, c, d))
     override final def con(pos: (Int, Int)): (A, B, C, D) => E = this.apply(_, _, _, _)(pos)
   }
 
-  //  case class ScopeStat(stat: Statement)(var symtab: Option[SymbolTable]) extends Statement
-  //
-  //  object ScopeStat extends ParserBridge1[Statement, ScopeStat] {
-  //    override def apply(stmt: Statement): ScopeStat = new ScopeStat(stmt)(None)
-  //  }
-
+  // * Abstract Syntax Tree * //
   sealed trait AST
 
-  // Higheest level program branch of AST
+  // * Highest Level Program Branch of the Abstract Syntax Tree * //
   case class Program(funcs: List[Func], stat: Statement)(val pos : (Int, Int)) extends AST
 
   object Program extends ParserBridgePos2[List[Func], Statement, Program]
 
   case class
-    Func(retType: Type, ident: String, params: List[Param], stat: Statement)(val pos : (Int, Int))
+    Func(retType: Type, ident: String, params: List[Param], stat: Statement)(var st: Option[SymbolTable], val pos : (Int, Int))
     extends AST
 
-  object Func extends ParserBridgePos4[Type, String, List[Param], Statement, Func]
+  object Func extends ParserBridgeSymPos4[Type, String, List[Param], Statement, Func]
 
   case class Param(paramType: Type, ident: String)(val pos : (Int, Int)) extends AST
 
   object Param extends ParserBridgePos2[Type, String, Param]
 
-  // WACC Type heirarchy
+  // WACC Type hierarchy
+
   sealed trait Type extends AST
 
   sealed trait BaseType extends Type with PairElemType
@@ -101,7 +120,7 @@ object AST {
 
   case object DummyPair extends PairElemType with ParserBridge0[PairElemType]
 
-  // Expr heirarchy
+  // Expr hierarchy
   sealed trait Expr extends RValue
 
   case class IntExpr(x: Int)(val pos : (Int, Int)) extends Expr
@@ -205,9 +224,9 @@ object AST {
 
   object Assign extends ParserBridgePos2[LValue, RValue, Statement]
 
-  case class Read(lvalue: LValue)(val pos : (Int, Int)) extends Statement
+  case class Read(lvalue: LValue)(var symbolTable: Option[SymbolTable], val pos : (Int, Int)) extends Statement
 
-  object Read extends ParserBridgePos1[LValue, Statement]
+  object Read extends ParserBridgeSymPos1[LValue, Statement]
 
   case class Free(e: Expr)(val pos : (Int, Int)) extends Statement
 
@@ -221,13 +240,13 @@ object AST {
 
   object Exit extends ParserBridgePos1[Expr, Statement]
 
-  case class Print(e: Expr)(val pos : (Int, Int)) extends Statement
+  case class Print(e: Expr)(var symbolTable: Option[SymbolTable], val pos : (Int, Int)) extends Statement
 
-  object Print extends ParserBridgePos1[Expr, Statement]
+  object Print extends ParserBridgeSymPos1[Expr, Statement]
 
-  case class Println(e: Expr)(val pos : (Int, Int)) extends Statement
+  case class Println(e: Expr)(var symbolTable: Option[SymbolTable], val pos : (Int, Int)) extends Statement
 
-  object Println extends ParserBridgePos1[Expr, Statement]
+  object Println extends ParserBridgeSymPos1[Expr, Statement]
 
   case class If(cond: Expr, thenStat: Statement, elseStat: Statement)(val pos : (Int, Int)) extends Statement
 
