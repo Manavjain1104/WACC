@@ -2,45 +2,47 @@ package wacc
 
 import wacc.AST._
 import wacc.SemTypes._
+import wacc.error._
 
 import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 
 class semantic_analyser {
 
+  // error errorLog for semantic analysis
+  private final val errorLog = mutable.ListBuffer.empty[SemanticError]
+
+  // to store function return type in the intermediate scope
   private final val ENCLOSING_FUNC_RETURN_TYPE = "?_returnType"
 
-  def checkProgram(program : Program, topLevelSymbolTable: SymbolTable): Option[SymbolTable] = {
-
-    var err = false
+  def checkProgram(program : Program, topLevelSymbolTable: SymbolTable): Option[ListBuffer[SemanticError]] = {
 
     // first pass to develop function names on the top level symbol table
+    val funcDefinitions = mutable.Set.empty[Func]
     for (func <- program.funcs) {
       if (topLevelSymbolTable.lookup("$" + func.ident).isEmpty) {
         topLevelSymbolTable.add("$" + func.ident, convertToSem(func))
+        funcDefinitions.add(func)
       } else {
-        err = true
         println("Func: " + func.ident + " defined twice")
+        errorLog += DuplicateIdentifier(func.pos, func.ident, Some("Duplicate function definition."))
       }
     }
 
-    for (func <- program.funcs) {
-      if (checkFunction(func, topLevelSymbolTable).isEmpty) {
-        err = true
-        println("Func: " + func.ident + " had semantic issues")
-      }
+    for (func <- funcDefinitions) {
+      checkFunction(func, topLevelSymbolTable)
     }
 
-    if (checkStatement(program.stat, topLevelSymbolTable).isDefined && !err) {
-      println("ALL GOOD")
-      Some(topLevelSymbolTable)
-    } else {
-      println("err val", err)
-      println("ERROR: Check Program Check Statement Failed")
+    checkStatement(program.stat, topLevelSymbolTable)
+
+    if (errorLog.isEmpty) {
       None
+    } else {
+      Some(errorLog)
     }
   }
 
-  def convertToSem(ty: Type): SemType = {
+  private def convertToSem(ty: Type): SemType = {
     ty match {
       case IntType() => IntSemType
       case BoolType() => BoolSemType
@@ -52,7 +54,7 @@ class semantic_analyser {
     }
   }
 
-  def convertToSem(pty: PairElemType): SemType = {
+  private def convertToSem(pty: PairElemType): SemType = {
     pty match{
       case IntType() => IntSemType
       case BoolType() => BoolSemType
@@ -63,14 +65,12 @@ class semantic_analyser {
       case _ => throw new RuntimeException("Should not reach here")
     }
   }
-
-  def convertToSem(func: Func): SemType = {
+  private def convertToSem(func: Func): SemType = {
     FuncSemType(convertToSem(func.retType),
       func.params.map(param => convertToSem(param.paramType)),
       func.params.length)
   }
-
-  def matchTypes(type1: SemType, type2: SemType): Boolean = {
+  private def matchTypes(type1: SemType, type2: SemType): Boolean = {
     println("matchTypes got ", type1, type2)
     type1 match {
       case InternalPairSemType => {
@@ -105,7 +105,6 @@ class semantic_analyser {
   }
 
   private def matchBaseTypes(t1: SemType, t2: SemType): Boolean = {
-//    println("matching base ", t1, t2)
     t1 match {
       case BoolSemType => {
         t2 match {
@@ -138,7 +137,7 @@ class semantic_analyser {
     }
   }
 
-  def checkExpr(expr: Expr, symbolTable: SymbolTable): Option[SemType] = {
+  private def checkExpr(expr: Expr, symbolTable: SymbolTable): Option[SemType] = {
     println("In CheckExpr")
     expr match {
       // atomic expressions
@@ -169,7 +168,7 @@ class semantic_analyser {
         if (opType.isDefined) {
           opType.get match {
             case ArraySemType(_) => return Some(IntSemType)
-            case _ => return None// err
+            case t => return None// TypeError(pos, expectedType ArraySemType, foundType t, varName e)
           }
         }
         println("LenOpType Issue")
@@ -180,7 +179,7 @@ class semantic_analyser {
         if (opType.isDefined) {
           opType.get match {
             case IntSemType => return Some(CharSemType)
-            case _ => return None// err
+            case t => return None// TypeError(pos, expectedType IntSemType, foundType t, varName e)
           }
         }
         println("ChrOpType Issue")
@@ -191,7 +190,7 @@ class semantic_analyser {
         if (opType.isDefined) {
           opType.get match {
             case CharSemType => return Some(IntSemType)
-            case _ => return None// err
+            case t => return None// TypeError(pos, expectedType CharSemType, foundType t, varName e)
           }
         }
         None
@@ -219,7 +218,7 @@ class semantic_analyser {
     }
   }
 
-  def checkEqBinOp(e1 : Expr, e2 : Expr, symbolTable: SymbolTable): Option[SemType] = {
+  private def checkEqBinOp(e1 : Expr, e2 : Expr, symbolTable: SymbolTable): Option[SemType] = {
     val e1Type: Option[SemType] = checkExpr(e1, symbolTable)
     if (e1Type.isDefined) {
       val e2Type: Option[SemType] = checkExpr(e2, symbolTable)
@@ -232,7 +231,7 @@ class semantic_analyser {
     None
   }
 
-  def checkComparisonBinop(e1 : Expr, e2 : Expr, symbolTable: SymbolTable): Option[SemType] = {
+  private def checkComparisonBinop(e1 : Expr, e2 : Expr, symbolTable: SymbolTable): Option[SemType] = {
     val e1Type: Option[SemType] = checkExpr(e1, symbolTable)
     if (e1Type.isDefined) {
       val e2Type: Option[SemType] = checkExpr(e2, symbolTable)
@@ -246,7 +245,7 @@ class semantic_analyser {
     None
   }
 
-  def checkBinOpWithType(e1 : Expr, e2 : Expr,
+  private def checkBinOpWithType(e1 : Expr, e2 : Expr,
                          symbolTable: SymbolTable, matchBaseType : SemType): Option[SemType] = {
     val e1Type: Option[SemType] = checkExpr(e1, symbolTable)
     if (e1Type.isDefined) {
@@ -260,7 +259,7 @@ class semantic_analyser {
     None
   }
 
-  def checkRvalue(rvalue: RValue, symbolTable: SymbolTable): Option[SemType] = {
+  private def checkRvalue(rvalue: RValue, symbolTable: SymbolTable): Option[SemType] = {
     rvalue match {
       case expr: Expr => checkExpr(expr, symbolTable)
       case arrayLiter: ArrayLiter => checkArrayLiteral(arrayLiter, symbolTable)
@@ -271,15 +270,16 @@ class semantic_analyser {
           if (e2Type.isDefined) {
             return Some(PairSemType(e1Type.get, e2Type.get))
           }
+          //UnknownIdentifierError(pos, e2Type, "variable"?)
         }
-        None // err
+        None // UnknownIdentifierError(pos, e1Type, "variable"?)
       }
       case Call(ident, args) => {
         // valid function in symbol table
         val identSemType = symbolTable.lookupAll("$" + ident)
         if (identSemType.isEmpty) {
           println(ident + " : function not found! 1")
-          return None // err
+          return None // UnknownIdentifierError(pos, ident, "function")
         }
         println("matching + " + ident)
         println(identSemType.get)
@@ -289,7 +289,7 @@ class semantic_analyser {
             // parameters length match
             if (functype.numParams != args.length) {
               println("argument lengths dont match")
-              return None // argument lengths don't match
+              return None // ArityMismatch(pos, functype.numParams, args.length, "wrong number of function arguments")
             }
 
             // parameters and arguments type match
@@ -308,6 +308,7 @@ class semantic_analyser {
             Some(functype.retType)
           }
           case _ => None // err tried calling variable!
+          //UnknownIdentifierError(pos, identSemType.get, can only call functions)
         }
       }
 
@@ -316,8 +317,7 @@ class semantic_analyser {
         None
     }
   }
-
-  def checkLvalue(lvalue: LValue, symbolTable: SymbolTable): Option[SemType] = {
+  private def checkLvalue(lvalue: LValue, symbolTable: SymbolTable): Option[SemType] = {
     lvalue match {
       case IdentValue(name: String) => {
         symbolTable.lookupAll(name)
@@ -326,8 +326,7 @@ class semantic_analyser {
       case elem: PairElem => checkPairElem(elem, symbolTable)
     }
   }
-
-  def checkArrayElem(arrayElem: ArrayElem, symbolTable : SymbolTable): Option[SemType] = {
+  private def checkArrayElem(arrayElem: ArrayElem, symbolTable : SymbolTable): Option[SemType] = {
     val identType: Option[SemType] = symbolTable.lookupAll(arrayElem.ident)
     if (identType.isDefined) {
       var arrayTypeHolder: SemType = identType.get
@@ -338,7 +337,7 @@ class semantic_analyser {
             val indexType: Option[SemType] = checkExpr(arrayElem.exprs(i), symbolTable)
             if (indexType.isEmpty || !matchTypes(indexType.get, IntSemType)) {
               println("Index type was not Int")
-              return None // err
+              return None // TypeError(pos, indexType.get or null if indexType.isEmpty, IntSemType, arrays must have int indexes)
             }
             arrayTypeHolder = t
           }
@@ -352,10 +351,9 @@ class semantic_analyser {
       return Some(arrayTypeHolder)
     }
     println("array elem identifier " + arrayElem.ident + " not found")
-    None // err
+    None // UnknownIdentifierError(pos, arrayElem.ident, identifier is undefined
   }
-
-  def checkPairElem(pe : PairElem, symbolTable: SymbolTable) : Option[SemType] = {
+  private def checkPairElem(pe : PairElem, symbolTable: SymbolTable) : Option[SemType] = {
     var is_fst: Boolean = false
     val insideLval: LValue = pe match {
       case Fst(lvalue) => {
@@ -383,14 +381,15 @@ class semantic_analyser {
               }
             }
             case InternalPairSemType => Some(InternalPairSemType)
-            case _ => {
+            case t => {
               println("cant do fst/snd of non pair types")
-              None
+              return None
+              //TypeError(pos, PairType, t, can only call fst or snd on pairs)
             }
           }
         }
         None
-      } // err cant do fst or snd of ArrayElem
+      } // cant do fst or snd of ArrayElem
       case IdentValue(s) => {
         val identType: Option[SemType] = symbolTable.lookupAll(s)
         if (identType.isDefined) {
@@ -402,15 +401,14 @@ class semantic_analyser {
                 return Some(pt2)
               }
             }
-            case _ => None // err cant do fst snd of non pair
+            case _ => None //TypeError(pos, PairType, t, can only call fst or snd on pairs)
           }
         }
-        None // identifier not found
+        None //UnknownIdentifierError(pos, identType.get, identType isn't defined)
       }
     }
   }
-
-  def checkFunction(func: Func, symbolTable: SymbolTable): Option[SemType] = {
+  private def checkFunction(func: Func, symbolTable: SymbolTable): Option[SemType] = {
     val intermediateTable = new SymbolTable(Some(symbolTable))
     if (!checkParams(func.params, intermediateTable, mutable.Set.empty[String])) {
       None
@@ -427,7 +425,7 @@ class semantic_analyser {
     }
   }
 
-    def checkStatement(node: Statement, symbolTable: SymbolTable): Option[SemType] = {
+  private def checkStatement(node: Statement, symbolTable: SymbolTable): Option[SemType] = {
       node match {
         case Skip => Option(InternalPairSemType) // not an error here
 
@@ -435,7 +433,7 @@ class semantic_analyser {
           println("Start VarDec of ", ident)
           if (symbolTable.lookup(ident).isDefined) {
             println("Cannot have duplicate variable names")
-            None // err
+            None //DuplicateIdentifier(pos, ident, variable)
           } else {
             val rvalType: Option[SemType] = checkRvalue(rvalue, symbolTable)
             if (rvalType.isEmpty) {
@@ -457,13 +455,13 @@ class semantic_analyser {
           val oplvalSemType: Option[SemType] = checkLvalue(lvalue, symbolTable)
           if (oplvalSemType.isEmpty) {
             println("lvalue assignment identifier not found", lvalue, rvalue)
-            None // error not defined
+            None // TypeError(pos, oplvalSemType, none, oplvalSemType is empty)
           } else {
             oplvalSemType.get match {
               case FuncSemType(_, _, _) => {
                 println("Can't assign to a function")
                 None
-              } // err function cant be lvalue of assignment
+              } // TypeError(pos, ident/pair-elem/array-elem, function, function cant be lvalue of assignment
               case lvalSemType: SemType => {
 
                 // there are 5 rvalue cases
@@ -492,19 +490,19 @@ class semantic_analyser {
                   case NewPair(expr1, expr2) => {
                     val pt: PairSemType = lvalSemType match {
                       case p@PairSemType(pt1, pt2) => p
-                      case _ => return None // err lhs is not pair type
+                      case t => return None // TypeError(pos, PairType, t, lhs is not pair type)
                     }
                     val expr1Type = checkExpr(expr1, symbolTable)
                     if (expr1Type.isEmpty) {
-                      return None // err
+                      return None // TypeError(pos, some expr, none, expr is empty)
                     }
                     val expr2Type = checkExpr(expr2, symbolTable)
                     if (expr2Type.isEmpty) {
-                      return None // err
+                      return None // TypeError(pos, some expr, none, expr is empty)
                     }
 
                     if (!matchTypes(expr1Type.get, pt.pt1) || !matchTypes(expr2Type.get, pt.pt2)) {
-                      None // err
+                      None // TypeError(pos, pair-elem-type, pt.pt1 or pt.pt2 (whichever fails), expression type mismatch)
                     } else Some(pt)
                   }
 
@@ -512,11 +510,11 @@ class semantic_analyser {
                   case Snd(rhsLVal) => checkPairElemAssign(rhsLVal, lvalSemType, symbolTable, is_fst = false)
 
                   case expr: Expr => {
-                    println("Start Expr assigment", lvalue, expr)
+                    println("Start Expr assignment", lvalue, expr)
                     val exprSemType: Option[SemType] = checkExpr(expr, symbolTable)
                     if (exprSemType.isDefined) {
                       if (matchTypes(exprSemType.get, lvalSemType)) {
-                        println("End Expr assigment", lvalue, expr)
+                        println("End Expr assignment", lvalue, expr)
                         return Some(lvalSemType)
                       }
                     }
@@ -526,7 +524,7 @@ class semantic_analyser {
                     None
                 }
               }
-              case _ => None // err not a
+              case t => None // TypeError(pos, SemType, t, expected rvalue SemType)
             }
           }
         }
@@ -647,7 +645,7 @@ class semantic_analyser {
       }
     }
 
-    def checkParams(params: List[Param], symbolTable: SymbolTable, paramNames: mutable.Set[String]): Boolean = {
+  private def checkParams(params: List[Param], symbolTable: SymbolTable, paramNames: mutable.Set[String]): Boolean = {
       for (param <- params) {
         if (paramNames.contains(param.ident)) {
           return false // duplicate func names
@@ -658,10 +656,8 @@ class semantic_analyser {
       }
       true
     }
-
-  def isConcrete(pt1: SemType) : Boolean = pt1 != InternalPairSemType
-
-  def checkPairElemAssign(rhsLval: LValue, lvalSemType: SemType, symbolTable: SymbolTable, is_fst: Boolean): Option[SemType] = {
+  private def isConcrete(pt1: SemType) : Boolean = pt1 != InternalPairSemType
+  private def checkPairElemAssign(rhsLval: LValue, lvalSemType: SemType, symbolTable: SymbolTable, is_fst: Boolean): Option[SemType] = {
       println("kun faya ")
       val rhsLvalType: Option[SemType] = checkLvalue(rhsLval, symbolTable)
       if (rhsLvalType.isEmpty) {
@@ -676,7 +672,7 @@ class semantic_analyser {
             if (matchTypes(pt1, lvalSemType)) {
               if (!isConcrete(lvalSemType) && !isConcrete(pt1)) {
                 println("cant have Internal Pair type on both")
-                return None // cant have Internal Pair type on both
+                return None // cant have Internal Pair type on both, TypeError
               }
               else return Some(lvalSemType)
             }
@@ -684,7 +680,7 @@ class semantic_analyser {
             if (matchTypes(pt2, lvalSemType)) {
               if (!isConcrete(lvalSemType) && !isConcrete(pt2)) {
                 println("cant have Internal Pair type on both")
-                return None // cant have Internal Pair type on both
+                return None // cant have Internal Pair type on both, TypeError
               }
               else return Some(lvalSemType)
             }
@@ -699,22 +695,22 @@ class semantic_analyser {
       }
     }
 
-    def checkArrayLiteral(arraylit: ArrayLiter, symbolTable: SymbolTable): Option[SemType] = {
+  private def checkArrayLiteral(arraylit: ArrayLiter, symbolTable: SymbolTable): Option[SemType] = {
       if (arraylit.exprs.nonEmpty) {
         val expType = checkExpr(arraylit.exprs.head, symbolTable)
         if (expType.isEmpty) {
           println("Head expr of ", arraylit, " could not be evaluated")
-          return None // err
+          return Some(ArraySemType(InternalPairSemType))
         } else {
           for (expr <- arraylit.exprs.tail) {
             val expTypeRest = checkExpr(expr, symbolTable)
             if (expTypeRest.isEmpty) {
               println("Expr ", expr, "of ", arraylit, " could not be evaluated")
-              return None
+              return Some(ArraySemType(InternalPairSemType))
             } else {
               if (!matchTypes(expType.get, expTypeRest.get)) {
                 println(arraylit, " has different types of elements")
-                return None
+                return None // TypeError(pos, expTypeRest.get, , arraylit elems of different types)
               }
             }
           }

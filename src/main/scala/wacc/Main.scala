@@ -1,67 +1,79 @@
 package wacc
 
+import parsley.io.ParseFromIO
+
 import scala.io.Source
 import parsley.{Failure, Success}
-import wacc.lexer.fully
+import wacc.lexer.{fully, implicits}
 import wacc.parser.{expr, func, lvalue, program, rvalue, statement, waccType}
+
+import java.io.File
 import scala.Boolean
+import scala.collection.mutable.ListBuffer
 
 object Main {
 
+  final val SYNTAX_ERROR_CODE = 100
+  final val SEMANTIC_ERROR_CODE = 200
+  final val OK_EXIT_CODE = 0
+
   def main(args: Array[String]): Unit = {
 
-    //    println("hi")
-    //    println(args.head)
-
     val sem: semantic_analyser = new semantic_analyser
-    val fileContents = Source.fromFile(args.head)
-    val text: String = fileContents.getLines().mkString("\n")
-    //println(text)
-    fully(program).parse(text) match {
-      case Success(x) => {
-        //println(s"$x")
-        //println("Passing code to semantics :-")
-        //println(x)
+    val file : File = new File(args.head)
 
-        val topST = new SymbolTable(None)
-        val retST = sem.checkProgram(x, topST)
+    implicit val eb: error.SyntaxErrorBuilder = new error.SyntaxErrorBuilder
+    fully(program).parseFromFile(file) match {
+      case util.Success(value) => {
+        value match {
+          case Success(prog) => {
+            val topST = new SymbolTable(None)
+            val errLog: Option[ListBuffer[error.SemanticError]] = sem.checkProgram(prog, topST)
 
-        if (retST.isDefined) {
-          if (args.length > 1) {
-            val test = args(1)
-            if (test == "check") {
-              println("returning 0")
-              return
+            if (errLog.isDefined) {
+              if (args.length > 1) {
+                val test = args(1)
+                if (test == "check") {
+                  println("returning 200")
+                  return
+                }
+              }
+              println("SEMANTIC ERROR(s) FOUND")
+              // TODO : write code to print errLog.get
+              println(errLog.get)
+              sys.exit(SEMANTIC_ERROR_CODE)
+            } else {
+              // semantic check passed
+              if (args.length > 1) {
+                val test = args(1)
+                if (test == "check") {
+                  println("returning 0")
+                  return
+                }
+              }
+              println("Semantic pass: SUCCESS")
+              sys.exit(OK_EXIT_CODE)
             }
           }
-          println("ALL GOOD")
-          sys.exit(0)
-        } else {
-          if (args.length > 1) {
-            val test = args(1)
-            if (test == "check") {
-              println("returning 200")
-              return
+
+          case Failure(msg) => {
+            if (args.length > 1) {
+              val test = args(1)
+              if (test == "check") {
+                println("returning 100")
+                return
+              }
             }
+            println("Syntax error!")
+            println(msg)
+            println("Exit code: 100")
+            sys.exit(SYNTAX_ERROR_CODE)
           }
-          println("SEMANTIC ERROR")
-          sys.exit(200)
         }
       }
-
-
-      case Failure(msg) => {
-        if (args.length > 1) {
-          val test = args(1)
-          if (test == "check") {
-            println("returning 100")
-            return
-          }
-        }
-        println("Syntax error!")
-        //println(msg)
-        println("Exit code: 100")
-        sys.exit(100)
+      case util.Failure(exception) => {
+        System.err.println("Cannot read from input file ", file.getPath)
+        System.err.println(exception)
       }
     }
 
