@@ -13,47 +13,57 @@ object Main {
     //    println("hi")
     //    println(args.head)
 
+    val sem: semantic_analyser = new semantic_analyser
+    val fileContents = Source.fromFile(args.head)
+    val text: String = fileContents.getLines().mkString("\n")
+    //println(text)
+    fully(program).parse(text) match {
+      case Success(x) => {
+        //println(s"$x")
+        //println("Passing code to semantics :-")
+        //println(x)
 
+        val topST = new SymbolTable(None)
+        val retST = sem.checkProgram(x, topST)
 
-        val fileContents = Source.fromFile(args.head)
-
-
-
-
-
-        val text: String = fileContents.getLines().mkString("\n")
-        //println(text)
-        fully(program).parse(text) match {
-          case Success(x) => {
-            if (args.length > 1) {
-              val test = args(1)
-              if (test == "check") {
-                println("returning 0")
-                return
-              }
+        if (retST.isDefined) {
+          if (args.length > 1) {
+            val test = args(1)
+            if (test == "check") {
+              println("returning 0")
+              return
             }
-
-            //println(s"$x")
-            println("Exit code: 0")
-            //println(x)
-            sys.exit(0)
-
           }
-          case Failure(msg) => {
-            if (args.length > 1) {
-              val test = args(1)
-              if (test == "check") {
-                println("returning 100")
-                return
-              }
+          println("ALL GOOD")
+          sys.exit(0)
+        } else {
+          if (args.length > 1) {
+            val test = args(1)
+            if (test == "check") {
+              println("returning 200")
+              return
             }
-            println("Syntax error!")
-            //println(msg)
-            println("Exit code: 100")
-            sys.exit(100)
+          }
+          println("SEMANTIC ERROR")
+          sys.exit(200)
+        }
+      }
+
+
+      case Failure(msg) => {
+        if (args.length > 1) {
+          val test = args(1)
+          if (test == "check") {
+            println("returning 100")
+            return
           }
         }
-
+        println("Syntax error!")
+        //println(msg)
+        println("Exit code: 100")
+        sys.exit(100)
+      }
+    }
 
 
 //        val fileContents = Source.fromFile("/Users/krishmaha/wacc/new/WACC_25/src/main/scala/wacc/testProg.txt")

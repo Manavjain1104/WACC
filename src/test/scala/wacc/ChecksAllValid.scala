@@ -46,14 +46,13 @@ class ChecksAllValid extends AnyFlatSpec {
         println(s"processing $file")
 
 
-        println(s"./compile $file check" !!)
+        val o = s"./compile $file check" !!
 
-
+        if (o.contains("100") || o.contains("200")) {
+          fail("Wrong exit code")
+        }
 
         //println("echo $?" !!)
-
-
-
 //        fully(program).parse(scala.io.Source.fromFile(file).mkString) match {
 //          case Failure(_) => ("failed")//sys.exit(100)
 //        } //sys.exit(100) }

@@ -22,6 +22,11 @@ all-syntax-invalid-tests:
   script:
     - sbt "testOnly -- -n ChecksAllSyntaxInvalid"
 
+all-semantic-invalid-tests:
+  stage: test
+  script:
+    - sbt "testOnly -- -n ChecksAllSemanticInvalid"
+
 
 
 
