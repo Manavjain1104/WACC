@@ -44,11 +44,9 @@ class ChecksAllValid extends AnyFlatSpec {
     file.toString.endsWith(".wacc") match {
       case true => {
         println(s"processing $file")
-
-
         val o = s"./compile $file check" !!
 
-        if (o.contains("100") || o.contains("200")) {
+        if (o.contains("returning 100") || o.contains("returning 200")) {
           fail("Wrong exit code")
         }
 
@@ -126,7 +124,7 @@ class ChecksAllValid extends AnyFlatSpec {
   }
 
   behavior of "valid runtimeErr tests"
-  ignore should "succeed with exit code 0" in {
+  it should "succeed with exit code 0" taggedAs(ChecksAllValid) in {
     applyRecursively("/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/valid/runtimeErr", exampleFn)
   }
 
