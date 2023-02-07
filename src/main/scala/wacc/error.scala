@@ -1,0 +1,5 @@
+package wacc
+
+object error {
+
+}

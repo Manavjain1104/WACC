@@ -15,8 +15,8 @@ class semantic_analyser {
 
     // first pass to develop function names on the top level symbol table
     for (func <- program.funcs) {
-      if (topLevelSymbolTable.lookup(func.ident).isEmpty) {
-        topLevelSymbolTable.add(func.ident, convertToSem(func))
+      if (topLevelSymbolTable.lookup("$" + func.ident).isEmpty) {
+        topLevelSymbolTable.add("$" + func.ident, convertToSem(func))
       } else {
         err = true
         println("Func: " + func.ident + " defined twice")
@@ -276,7 +276,7 @@ class semantic_analyser {
       }
       case Call(ident, args) => {
         // valid function in symbol table
-        val identSemType = symbolTable.lookupAll(ident)
+        val identSemType = symbolTable.lookupAll("$" + ident)
         if (identSemType.isEmpty) {
           println(ident + " : function not found! 1")
           return None // err
@@ -289,7 +289,7 @@ class semantic_analyser {
             // parameters length match
             if (functype.numParams != args.length) {
               println("argument lengths dont match")
-              return None // argument lengths dont match
+              return None // argument lengths don't match
             }
 
             // parameters and arguments type match
@@ -371,7 +371,26 @@ class semantic_analyser {
         }
         None
       }
-      case ArrayElem(_, _) => None // err cant do fst or snd of ArrayElem
+      case arrayElem: ArrayElem => {
+        val opArrayItemType= checkArrayElem(arrayElem, symbolTable)
+        if (opArrayItemType.isDefined) {
+          opArrayItemType.get match {
+            case PairSemType(pt1, pt2) => {
+              if (is_fst) {
+                return Some(pt1)
+              } else {
+                return Some(pt2)
+              }
+            }
+            case InternalPairSemType => Some(InternalPairSemType)
+            case _ => {
+              println("cant do fst/snd of non pair types")
+              None
+            }
+          }
+        }
+        None
+      } // err cant do fst or snd of ArrayElem
       case IdentValue(s) => {
         val identType: Option[SemType] = symbolTable.lookupAll(s)
         if (identType.isDefined) {
@@ -413,8 +432,10 @@ class semantic_analyser {
         case Skip => Option(InternalPairSemType) // not an error here
 
         case VarDec(assignType, ident, rvalue) => {
+          println("Start VarDec of ", ident)
           if (symbolTable.lookup(ident).isDefined) {
-            None // err duplicate variable in scope
+            println("Cannot have duplicate variable names")
+            None // err
           } else {
             val rvalType: Option[SemType] = checkRvalue(rvalue, symbolTable)
             if (rvalType.isEmpty) {
@@ -425,6 +446,7 @@ class semantic_analyser {
                 None
               } else {
                 symbolTable.add(ident, assignSemType)
+                println("End VarDec of ", ident)
                 Some(assignSemType)
               }
             }
@@ -434,10 +456,14 @@ class semantic_analyser {
         case Assign(lvalue, rvalue) => {
           val oplvalSemType: Option[SemType] = checkLvalue(lvalue, symbolTable)
           if (oplvalSemType.isEmpty) {
+            println("lvalue assignment identifier not found", lvalue, rvalue)
             None // error not defined
           } else {
             oplvalSemType.get match {
-              case FuncSemType(_, _, _) => None // err function cant be lvalue of assignment
+              case FuncSemType(_, _, _) => {
+                println("Can't assign to a function")
+                None
+              } // err function cant be lvalue of assignment
               case lvalSemType: SemType => {
 
                 // there are 5 rvalue cases
@@ -451,45 +477,16 @@ class semantic_analyser {
                     }
                     None
                   }
-                  case Call(ident, args) => {
-                    println("call start")
-                    // valid function in symbol table
-                    val identSemType = symbolTable.lookupAll(ident)
-                    if (identSemType.isEmpty) {
-                      println(ident + " : function not found! 2")
-                      return None // err
-                    }
-                    identSemType.get match {
-                      case functype: FuncSemType => {
-                        // parameters length match
-                        if (functype.numParams != args.length) {
-                          println("args len dont match")
-                          return None // argument lengths dont match
-                        }
 
-                        // return type of function should match
-                        if (!matchTypes(functype.retType, lvalSemType)) {
-                          println("Function return type does not match")
-                          return None // err
-                        }
-
-                        // parameters and arguments type match
-                        for (i <- args.indices) {
-                          val expType = checkExpr(args(i), symbolTable)
-                          if (expType.isEmpty) {
-                            println(ident + " arg expr wrong for " + args(i))
-                            return None
-                          }
-                          if (!matchTypes(expType.get, functype.paramTypes(i))) {
-                            println("arg param dont match")
-                            return None
-                          }
-                        }
-                        println("call end")
-                        Some(functype.retType) // TODO : do call rvals need symbol table reference
+                  case rCall@Call(ident, _) => {
+                    val opFuncRetType: Option[SemType] = checkRvalue(rCall, symbolTable)
+                    if (opFuncRetType.isDefined) {
+                      if (matchTypes(opFuncRetType.get, lvalSemType)) {
+                        return opFuncRetType
                       }
-                      case _ => None // err tried calling variable!
                     }
+                    println("Call " + ident, " had issues")
+                    None
                   }
 
                   case NewPair(expr1, expr2) => {
@@ -515,10 +512,11 @@ class semantic_analyser {
                   case Snd(rhsLVal) => checkPairElemAssign(rhsLVal, lvalSemType, symbolTable, is_fst = false)
 
                   case expr: Expr => {
-                    println("LOLOLOLOL", lvalue, expr)
+                    println("Start Expr assigment", lvalue, expr)
                     val exprSemType: Option[SemType] = checkExpr(expr, symbolTable)
                     if (exprSemType.isDefined) {
                       if (matchTypes(exprSemType.get, lvalSemType)) {
+                        println("End Expr assigment", lvalue, expr)
                         return Some(lvalSemType)
                       }
                     }
