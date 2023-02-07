@@ -35,7 +35,7 @@ class StatementTests extends AnyFlatSpec {
   behavior of "read statement"
   it should "generate the correct statement" taggedAs(StatementTests, SyntacticTests) in {
     val exp = "read abc"
-    val read_stmt = Read(IdentValue("abc")(0,0))(0,0)
+    val read_stmt = Read(IdentValue("abc")(0,0))(None,(0,0))
     val repr = statement.parse(exp).get
     assert(repr === read_stmt)
   }
@@ -67,7 +67,7 @@ class StatementTests extends AnyFlatSpec {
   behavior of "print statement"
   it should "generate the correct statement" taggedAs(StatementTests, SyntacticTests) in {
     val exp = "print 5"
-    val print_stmt = Print(IntExpr(5)(0,0))(0,0)
+    val print_stmt = Print(IntExpr(5)(0,0))(None,(0,0))
     val repr = statement.parse(exp).get
     assert(repr === print_stmt)
   }
@@ -75,7 +75,7 @@ class StatementTests extends AnyFlatSpec {
   behavior of "println statement"
   it should "generate the correct statement" taggedAs(StatementTests, SyntacticTests) in {
     val exp = "println 5"
-    val println_stmt = Println(IntExpr(5)(0,0))(0,0)
+    val println_stmt = Println(IntExpr(5)(0,0))(None,(0,0))
     val repr = statement.parse(exp).get
     assert(repr === println_stmt)
   }
@@ -108,7 +108,7 @@ class StatementTests extends AnyFlatSpec {
   behavior of "consec statements"
   it should "generate the correct statement" taggedAs(StatementTests, SyntacticTests) in {
     val exp = "read abc; return 5; exit 100"
-    val consec_stmts = ConsecStat(ConsecStat(Read(IdentValue("abc")(0,0))(0,0),
+    val consec_stmts = ConsecStat(ConsecStat(Read(IdentValue("abc")(0,0))(None,(0,0)),
       Return(IntExpr(5)(0,0))(0,0)),Exit(IntExpr(100)(0,0))(0,0))
     val repr = statement.parse(exp).get
     assert(repr === consec_stmts)

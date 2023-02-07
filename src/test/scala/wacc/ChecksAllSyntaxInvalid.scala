@@ -1,13 +1,12 @@
 package wacc
 
-import java.io.File
-import scala.Console.out
+import java.io.{ByteArrayOutputStream, File, PrintStream}
 import org.scalatest.Tag
 import org.scalatest.flatspec.AnyFlatSpec
 
-import java.io.File
 import scala.Console.out
 import scala.language.postfixOps
+import scala.reflect.internal.util.NoFile.output
 import sys.process._
 
 object ChecksAllSyntaxInvalid extends Tag("ChecksAllSyntaxInvalid")
@@ -38,7 +37,15 @@ class ChecksAllSyntaxInvalid extends AnyFlatSpec {
     file.toString.endsWith(".wacc") match {
       case true => {
         println(s"processing $file")
-        println(s"./compile $file check" !!)
+        val o = s"./compile $file check" !!
+
+//        if (o.contains(" 0") || o.contains("200")) {
+//          false
+//        }
+        println(s"o: $o")
+        if (o.contains(" 0") || o.contains("200")) {
+          fail("Wrong exit code")
+        }
         //println("echo $?" !!)
         //        fully(program).parse(scala.io.Source.fromFile(file).mkString) match {
         //          case Failure(_) => ("failed")//sys.exit(100)
@@ -52,6 +59,7 @@ class ChecksAllSyntaxInvalid extends AnyFlatSpec {
   behavior of "invalid syntax array tests"
   it should "fail with exit code 100" taggedAs(ChecksAllSyntaxInvalid) in {
     applyRecursively("/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/invalid/syntaxErr/array", exampleFn)
+
   }
 
   behavior of "invalid syntax basic tests"
