@@ -8,6 +8,8 @@ import scala.Console.out
 import scala.language.postfixOps
 import scala.reflect.internal.util.NoFile.output
 import sys.process._
+import java.nio.file.{FileSystems, Files}
+import scala.collection.JavaConverters._
 
 object ChecksAllSyntaxInvalid extends Tag("ChecksAllSyntaxInvalid")
 
@@ -16,7 +18,14 @@ class ChecksAllSyntaxInvalid extends AnyFlatSpec {
   def applyRecursively(dir: String, fn: (File) => Any) {
     def listAndProcess(dir: File) {
       dir.listFiles match {
-        case null => out.println("exception: dir cannot be listed: " + dir.getPath); List[File]()
+        case null => {
+          println(dir.getPath + " couldn't do")
+          val d = FileSystems.getDefault.getPath(dir.getPath)
+          getListOfFiles(d)
+          //Files.walk(d).iterator().asScala.filter(Files.isRegularFile(_)).foreach(println)
+//          Files.list(d).iterator().asScala.foreach(println)
+        } //out.println("exception: dir cannot be listed: " + dir.getPath); List[File]()
+
         case files => files.toList.sortBy(_.getName).foreach(file => {
           fn(file)
           if (!java.nio.file.Files.isSymbolicLink(file.toPath) && file.isDirectory) listAndProcess(file)
@@ -34,6 +43,8 @@ class ChecksAllSyntaxInvalid extends AnyFlatSpec {
 
     //s"./compile $file"
     //println(s"./")
+
+
     file.toString.endsWith(".wacc") match {
       case true => {
         println(s"processing $file")
@@ -54,6 +65,13 @@ class ChecksAllSyntaxInvalid extends AnyFlatSpec {
       case false => Nil
     }
 
+  }
+
+  def getListOfFiles(dir: String): List[String] = {
+    val file = new File(dir)
+    file.listFiles.filter(_.isFile)
+      .filter(_.getName.endsWith(".wacc"))
+      .map(_.getPath).toList
   }
 
   behavior of "invalid syntax array tests"

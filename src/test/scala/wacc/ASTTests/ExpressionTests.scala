@@ -74,7 +74,7 @@ class ExpressionTests extends AnyFunSuite with SyntacticTests {
 
   test("Correct expression generated for Pair-literal expression", ExpressionTests, SyntacticTests) {
     val exp = "null"
-    val pair_liter = PairExpr
+    val pair_liter = PairExpr()(0,0)
     val repr = expr.parse(exp).get
     assert(repr === pair_liter)
   }
