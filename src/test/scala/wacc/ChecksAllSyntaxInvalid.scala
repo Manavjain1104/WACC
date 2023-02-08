@@ -21,7 +21,7 @@ class ChecksAllSyntaxInvalid extends AnyFlatSpec {
         case null => {
           println(dir.getPath + " couldn't do")
           val d = FileSystems.getDefault.getPath(dir.getPath)
-          getListOfFiles(d)
+//          getListOfFiles(d)
           //Files.walk(d).iterator().asScala.filter(Files.isRegularFile(_)).foreach(println)
 //          Files.list(d).iterator().asScala.foreach(println)
         } //out.println("exception: dir cannot be listed: " + dir.getPath); List[File]()
