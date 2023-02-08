@@ -24,7 +24,7 @@ object parser {
     StringExpr(STRING) <|>
     attempt(arrayelem) <|>
     IdentExpr(IDENT) <|>
-    (PAIR_LITER #> PairExpr)).label("Atomic Literal")
+    (PairExpr <# PAIR_LITER)).label("Atomic Literal")
     .explain("--> Atomic Literals includes booleans, chars, strings, " +
       "array-elems `identifier[]` or identifiers")
 
@@ -121,14 +121,14 @@ object parser {
 
   private def isValidFuncStatement(stat: Statement): Boolean = {
     stat match {
-      case ConsecStat(first, next) =>
+      case ConsecStat(_, next) =>
         isValidFuncStatement(next)
       case If(_, thenStat, elseStat) =>
         isValidFuncStatement(thenStat) && isValidFuncStatement(elseStat)
       case While(_, doStat) => isValidFuncStatement(doStat)
       case ScopeStat(stat) => isValidFuncStatement(stat)
-      case Exit(e) => true
-      case Return(e) => true
+      case Exit(_) => true
+      case Return(_) => true
       case _ => false
     }
   }

@@ -73,72 +73,62 @@ class semantic_analyser {
   private def matchTypes(type1: SemType, type2: SemType): Boolean = {
     println("matchTypes got ", type1, type2)
     type1 match {
-      case InternalPairSemType => {
+      case InternalPairSemType =>
         println("t1 was ", InternalPairSemType)
         true
-      }
-      case FuncSemType(_, _, _) => {
+      case FuncSemType(_, _, _) =>
         println("t1 was function")
         false
-      }
-      case ArraySemType(t1) => {
+      case ArraySemType(t1) =>
         println("t1 was array sem")
         type2 match {
           case ArraySemType(t2) => matchTypes(t1, t2)
           case InternalPairSemType => true
           case _ => false
         }
-      }
-      case PairSemType(pt1, pt2) => {
+      case PairSemType(pt1, pt2) =>
         println("t1 was pair sem")
         type2 match {
           case PairSemType(t1, t2) => matchTypes(pt1, t1) && matchTypes(pt2, t2)
           case InternalPairSemType => true
           case _ => false
         }
-      }
-      case _ => {
+      case _ =>
         println("t1 was base type")
         matchBaseTypes(type1, type2)
-      }
     }
   }
 
   private def matchBaseTypes(t1: SemType, t2: SemType): Boolean = {
     t1 match {
-      case BoolSemType => {
+      case BoolSemType =>
         t2 match {
           case BoolSemType => true
           case InternalPairSemType => true
           case _ => false
         }
-      }
-      case CharSemType => {
+      case CharSemType =>
         t2 match {
           case CharSemType => true
           case InternalPairSemType => true
           case _ => false
         }
-      }
-      case IntSemType => {
+      case IntSemType =>
         t2 match {
           case IntSemType => true
           case InternalPairSemType => true
           case _ => false
         }
-      }
-      case StringSemType => {
+      case StringSemType =>
         t2 match {
           case StringSemType => true
           case InternalPairSemType => true
           case _ => false
         }
-      }
     }
   }
 
   private def checkExpr(expr: Expr, symbolTable: SymbolTable): Option[SemType] = {
-    println("In CheckExpr")
     expr match {
       // atomic expressions
       case IntExpr(_) => Some(IntSemType)
@@ -146,55 +136,59 @@ class semantic_analyser {
       case StringExpr(_) => Some(StringSemType)
       case BoolExpr(_) => Some(BoolSemType)
       case IdentExpr(ident) => symbolTable.lookupAll(ident)
-      case PairExpr => Some(InternalPairSemType)
+      case PairExpr() => Some(InternalPairSemType)
       case arrayElem: ArrayElem => checkArrayElem(arrayElem, symbolTable)
 
       // unary operator expressions
-      case NotExpr(e: Expr) => {
+      case NotExpr(e: Expr) =>
         val opType: Option[SemType] = checkExpr(e, symbolTable)
-        if (opType.isDefined && matchTypes(opType.get, BoolSemType)) return opType
-        println("NotOpType Issue")
-        None
-      }
-      case NegExpr(e: Expr) => {
+        assert(opType.isDefined, "expression for not should be defined in st")
+        if (matchTypes(opType.get, BoolSemType)) return opType
+        val exprPos = getExprPos(e)
+        errorLog +=  new TypeError(exprPos._1, Set(BoolSemType), opType.get, Some("Expected a bool type for not expression"))(exprPos._2)
+        Some(InternalPairSemType)
+
+      case NegExpr(e: Expr) =>
         val opType: Option[SemType] = checkExpr(e, symbolTable)
-        if (opType.isDefined && matchTypes(opType.get, IntSemType)) return opType
-        println("NegOpType Issue")
-        None
-      }
-      case LenExpr(e: Expr) => {
+        assert(opType.isDefined, "expression for neg should be defined in st")
+        if (matchTypes(opType.get, IntSemType)) {
+          return opType
+        }
+        errorLog += new TypeError(getExprPos(e)._1, Set(IntSemType), opType.get, Some("Expected int type for negate expression"))(getExprPos(e)._2)
+        Some(InternalPairSemType)
+
+      case LenExpr(e: Expr) =>
         val opType: Option[SemType] = checkExpr(e, symbolTable)
-        println(e)
-        if (opType.isDefined) {
-          opType.get match {
-            case ArraySemType(_) => return Some(IntSemType)
-            case t => return None// TypeError(pos, expectedType ArraySemType, foundType t, varName e)
+        assert(opType.isDefined, "expression for len should be defined in st")
+        opType.get match {
+          case ArraySemType(_) => Some(IntSemType)
+          case unexpectedType => {
+            val exprPos = getExprPos(e)
+            errorLog += new TypeError(exprPos._1, Set(ArraySemType(InternalPairSemType)), unexpectedType, Some("Expected array type for len expression"))(exprPos._2)
+            Some(InternalPairSemType)
           }
         }
-        println("LenOpType Issue")
-        None
-      }
-      case ChrExpr(e: Expr) => {
+      case ChrExpr(e: Expr) =>
         val opType: Option[SemType] = checkExpr(e, symbolTable)
-        if (opType.isDefined) {
-          opType.get match {
-            case IntSemType => return Some(CharSemType)
-            case t => return None// TypeError(pos, expectedType IntSemType, foundType t, varName e)
+        assert(opType.isDefined, "expression for chr should be defined in st")
+        opType.get match {
+          case IntSemType => Some(CharSemType)
+          case unexpectedType => {
+            errorLog += new TypeError(getExprPos(e)._1, Set(IntSemType), unexpectedType, Some("Expected int type for chr expression"))(getExprPos(e)._2)
+            Some(InternalPairSemType)
           }
         }
-        println("ChrOpType Issue")
-        None
-      }
-      case OrdExpr(e: Expr) => {
+
+      case OrdExpr(e: Expr) =>
         val opType: Option[SemType] = checkExpr(e, symbolTable)
-        if (opType.isDefined) {
-          opType.get match {
-            case CharSemType => return Some(IntSemType)
-            case t => return None// TypeError(pos, expectedType CharSemType, foundType t, varName e)
+        assert(opType.isDefined, "expression for ord should be defined in st")
+        opType.get match {
+          case CharSemType => Some(IntSemType)
+          case unexpectedType => {
+            errorLog += new TypeError(getExprPos(e)._1, Set(CharSemType), unexpectedType, Some("Expected char type for ord expression"))(getExprPos(e)._2)
+            Some(InternalPairSemType)
           }
         }
-        None
-      }
 
       // Binary operator expressions
       case ModExpr(e1, e2) => checkBinOpWithType(e1, e2, symbolTable, IntSemType)
@@ -205,127 +199,232 @@ class semantic_analyser {
       case AndExpr(e1, e2) => checkBinOpWithType(e1, e2, symbolTable, BoolSemType)
       case OrExpr(e1, e2) => checkBinOpWithType(e1, e2, symbolTable, BoolSemType)
 
-      case GTExpr(e1, e2) => checkComparisonBinop(e1, e2, symbolTable)
-      case GTEQExpr(e1, e2) => checkComparisonBinop(e1, e2, symbolTable)
-      case LTExpr(e1, e2) => checkComparisonBinop(e1, e2, symbolTable)
-      case LTEQExpr(e1, e2) => checkComparisonBinop(e1, e2, symbolTable)
+      case GTExpr(e1, e2) => checkComparisonBinOp(e1, e2, symbolTable)
+      case GTEQExpr(e1, e2) => checkComparisonBinOp(e1, e2, symbolTable)
+      case LTExpr(e1, e2) => checkComparisonBinOp(e1, e2, symbolTable)
+      case LTEQExpr(e1, e2) => checkComparisonBinOp(e1, e2, symbolTable)
 
-      case EQExpr(e1, e2) => checkEqBinOp(e1, e2, symbolTable)
-      case NEQExpr(e1, e2) => checkEqBinOp(e1, e2, symbolTable)
+      case EQExpr(e1, e2) => checkSameType(e1, e2, symbolTable)
+      case NEQExpr(e1, e2) => checkSameType(e1, e2, symbolTable)
 
       case _ => println("Should not reach here")
-        None
+        assert(assertion = false, "Unreachable statement")
+        Some(InternalPairSemType)
     }
   }
 
-  private def checkEqBinOp(e1 : Expr, e2 : Expr, symbolTable: SymbolTable): Option[SemType] = {
+  private def checkSameType(e1 : Expr, e2 : Expr, symbolTable: SymbolTable): Option[SemType] = {
     val e1Type: Option[SemType] = checkExpr(e1, symbolTable)
-    if (e1Type.isDefined) {
-      val e2Type: Option[SemType] = checkExpr(e2, symbolTable)
-      if (e2Type.isDefined) {
-        if (matchTypes(e1Type.get, e2Type.get)) {
-          return Some(BoolSemType)
-        }
-      }
+    assert(e1Type.isDefined, "Check Expr1 should not fail in comparison binOp")
+    val e2Type: Option[SemType] = checkExpr(e2, symbolTable)
+    assert(e2Type.isDefined, "Check Expr2 should not fail in comparison binOp")
+    if (!matchTypes(e1Type.get, e2Type.get)) {
+      val exprPos = getExprPos(e2)
+      errorLog += new TypeError(exprPos._1, Set(e1Type.get), e2Type.get, Some("Expected same type for both expressions"))(exprPos._2)
+      return None
     }
-    None
+    Some(BoolSemType)
   }
 
-  private def checkComparisonBinop(e1 : Expr, e2 : Expr, symbolTable: SymbolTable): Option[SemType] = {
+  private def checkComparisonBinOp(e1 : Expr, e2 : Expr, symbolTable: SymbolTable): Option[SemType] = {
     val e1Type: Option[SemType] = checkExpr(e1, symbolTable)
-    if (e1Type.isDefined) {
-      val e2Type: Option[SemType] = checkExpr(e2, symbolTable)
-      if (e2Type.isDefined) {
-        if ((matchTypes(IntSemType, e1Type.get) && matchTypes(IntSemType, e2Type.get)) ||
-            (matchTypes(CharSemType, e1Type.get) && matchTypes(CharSemType, e2Type.get))) {
-          return Some(BoolSemType)
-        }
+    assert(e1Type.isDefined, "Check Expr1 should not fail in comparison binOp")
+    val e2Type: Option[SemType] = checkExpr(e2, symbolTable)
+    assert(e2Type.isDefined, "Check Expr2 should not fail in comparison binOp")
+
+    val exprPos2 = getExprPos(e2)
+    if (matchTypes(IntSemType, e1Type.get)) {
+      if (matchTypes(IntSemType, e2Type.get)) {
+        return Some(BoolSemType)
+      } else {
+
+        errorLog += new TypeError(exprPos2._1, Set(IntSemType), e2Type.get, Some("Expected int expression for comparison"))(exprPos2._2)
+        return Some(InternalPairSemType)
       }
     }
-    None
+    if (matchTypes(CharSemType, e1Type.get)) {
+      if (matchTypes(CharSemType, e2Type.get)) {
+        return Some(BoolSemType)
+      } else {
+        errorLog += new TypeError(exprPos2._1, Set(CharSemType), e2Type.get, Some("Expected char expression for comparison"))(exprPos2._2)
+        return Some(InternalPairSemType)
+      }
+    }
+    val exprPos1 = getExprPos(e1)
+    errorLog += new TypeError(exprPos1._1, Set(IntSemType, CharSemType), e1Type.get, Some("Can only compare int or char expressions"))(exprPos1._2)
+    Some(InternalPairSemType)
   }
 
   private def checkBinOpWithType(e1 : Expr, e2 : Expr,
                          symbolTable: SymbolTable, matchBaseType : SemType): Option[SemType] = {
     val e1Type: Option[SemType] = checkExpr(e1, symbolTable)
-    if (e1Type.isDefined) {
-      val e2Type: Option[SemType] = checkExpr(e2, symbolTable)
-      if (e2Type.isDefined) {
-        if (matchTypes(matchBaseType, e1Type.get) && matchTypes(matchBaseType, e2Type.get)) {
-          return Some(matchBaseType)
+    assert(e1Type.isDefined, "Check Expr1 should not fail in comparison binOp with type func")
+    val e2Type: Option[SemType] = checkExpr(e2, symbolTable)
+    assert(e2Type.isDefined, "Check Expr2 should not fail in comparison binOp with type func")
+
+    val baseTypes: Set[SemType] = Set(IntSemType, CharSemType, BoolSemType, StringSemType)
+
+    if (!matchTypes(matchBaseType, e1Type.get)) {
+      val exprPos = getExprPos(e1)
+      errorLog += new TypeError(exprPos._1,
+        baseTypes, e1Type.get,
+        Some("Given expr type does not match with a base type"))(exprPos._2)
+      return Some(InternalPairSemType)
+    }
+    if (!matchTypes(matchBaseType, e2Type.get)) {
+      val exprPos =getExprPos(e2)
+      errorLog += new TypeError(exprPos._1,
+        baseTypes, e2Type.get,
+        Some("Given expr type does not match with a base type"))(exprPos._2)
+      return Some(InternalPairSemType)
+    }
+    Some(matchBaseType)
+  }
+
+  // offset represents number of non whitespace characters to the left of the position that
+  // is needed for error printing
+  private def getExprPos(expr: Expr): ((Int, Int), Int) = {
+    expr match {
+      case intLiter : IntExpr => (intLiter.pos, 0)
+      case boolLiter : BoolExpr => (boolLiter.pos, 0)
+      case charLiter : CharExpr => (charLiter.pos, 0)
+      case stringLiter : StringExpr => (stringLiter.pos, 0)
+      case pairLiter : PairExpr => (pairLiter.pos, 0)
+      case ident : IdentExpr => (ident.pos, 0)
+      case arrayElem : ArrayElem => (arrayElem.pos, 0)
+
+      case unOp : UnopExpr => {
+        unOp match {
+          case NotExpr(e) => {
+            val insidePos: ((Int, Int), Int) = getExprPos(e)
+            (insidePos._1, 1 + insidePos._2 + 1)
+          }
+          case NegExpr(e) => {
+            val insidePos: ((Int, Int), Int) = getExprPos(e)
+            (insidePos._1, 1 + insidePos._2 + 1)
+          }
+          case LenExpr(e) => {
+            val insidePos2: ((Int, Int), Int) = getExprPos(e)
+            (insidePos2._1, insidePos2._2 + 3)
+          }
+          case ChrExpr(e) => {
+            val insidePos2: ((Int, Int), Int) = getExprPos(e)
+            (insidePos2._1, insidePos2._2 + 3)
+          }
+          case OrdExpr(e) => {
+            val insidePos2: ((Int, Int), Int) = getExprPos(e)
+            (insidePos2._1, insidePos2._2 + 3)
+          }
         }
       }
+
+      case binOp : BinopExpr => {
+        val expressionOffset0 = binOp match {
+          case MulExpr(e, _) => e
+          case DivExpr(e, _) => e
+          case ModExpr(e, _) => e
+          case AddExpr(e, _) => e
+          case SubExpr(e, _) => e
+          case GTExpr(e, _) => e
+          case GTEQExpr(e, _) => e
+          case LTExpr(e, _) => e
+          case LTEQExpr(e, _) => e
+          case EQExpr(e, _) => e
+          case NEQExpr(e, _) => e
+          case AndExpr(e, _) => e
+          case OrExpr(e, _) => e
+        }
+
+        getExprPos(expressionOffset0)
+      }
+
+      case _ =>
+        System.err.println("Cannot pattern match expr in get expr position function")
+        ((-1, -1), -1)
     }
-    None
   }
+
 
   private def checkRvalue(rvalue: RValue, symbolTable: SymbolTable): Option[SemType] = {
     rvalue match {
-      case expr: Expr => checkExpr(expr, symbolTable)
-      case arrayLiter: ArrayLiter => checkArrayLiteral(arrayLiter, symbolTable)
-      case NewPair(e1: Expr, e2: Expr)=> {
+      case expr: Expr =>
+        val expType = checkExpr(expr, symbolTable)
+        assert(expType.isDefined, "Check Expr should not fail")
+        expType
+
+      case arrayLiter: ArrayLiter =>
+        val arrayType = checkArrayLiteral(arrayLiter, symbolTable)
+        assert(arrayType.isDefined, "Check array literal should not fail ")
+        arrayType
+
+      case NewPair(e1: Expr, e2: Expr)=>
         val e1Type: Option[SemType] = checkExpr(e1, symbolTable)
-        if (e1Type.isDefined) {
-          val e2Type: Option[SemType] = checkExpr(e2, symbolTable)
-          if (e2Type.isDefined) {
-            return Some(PairSemType(e1Type.get, e2Type.get))
-          }
-          //UnknownIdentifierError(pos, e2Type, "variable"?)
-        }
-        None // UnknownIdentifierError(pos, e1Type, "variable"?)
-      }
-      case Call(ident, args) => {
+        assert(e1Type.isDefined, "Check Expr should not fail")
+        val e2Type: Option[SemType] = checkExpr(e2, symbolTable)
+        assert(e2Type.isDefined, "Check Expr should not fail")
+        Some(PairSemType(e1Type.get, e2Type.get))
+
+      case call @ Call(ident, args) =>
         // valid function in symbol table
         val identSemType = symbolTable.lookupAll("$" + ident)
         if (identSemType.isEmpty) {
-          println(ident + " : function not found! 1")
-          return None // UnknownIdentifierError(pos, ident, "function")
+          println(ident + " : function not found!")
+          errorLog += UnknownIdentifierError(call.pos, ident, Some("Unknown function identifier found."))
+          return Some(InternalPairSemType)
         }
-        println("matching + " + ident)
-        println(identSemType.get)
+
         identSemType.get match {
-          case functype: FuncSemType => {
-            println("func case")
+          case funcType: FuncSemType =>
             // parameters length match
-            if (functype.numParams != args.length) {
-              println("argument lengths dont match")
-              return None // ArityMismatch(pos, functype.numParams, args.length, "wrong number of function arguments")
+            if (funcType.numParams != args.length) {
+              println("argument lengths don't match")
+              errorLog += ArityMismatch(call.pos, funcType.numParams, args.length, Some("Wrong number of function arguments"))
+              return Some(InternalPairSemType)
             }
 
             // parameters and arguments type match
             for (i <- args.indices) {
               val expType = checkExpr(args(i), symbolTable)
-              if (expType.isEmpty) {
-                println("1@")
-                return None
-              }
-              if (!matchTypes(expType.get, functype.paramTypes(i))) {
-                println("2@")
-                return None
+              assert(expType.isDefined, "Check arg should not fail")
+              if (!matchTypes(expType.get, funcType.paramTypes(i))) {
+                val argPos = getExprPos(call.args(i))
+                errorLog += new TypeError(argPos._1,
+                  Set(funcType.paramTypes(i)), expType.get,
+                  Some("Argument type does not match with parameter"))(argPos._2)
+                return Some(InternalPairSemType)
               }
             }
             println("returning")
-            Some(functype.retType)
-          }
-          case _ => None // err tried calling variable!
-          //UnknownIdentifierError(pos, identSemType.get, can only call functions)
+            Some(funcType.retType)
+          case unexpectedType =>
+            errorLog += TypeError(call.pos,
+              Set(FuncSemType(InternalPairSemType, List.empty, 0)), unexpectedType,
+              Some("Cannot call a non function identifier"))
+            Some(InternalPairSemType)
         }
-      }
 
       case elem: PairElem => checkPairElem(elem, symbolTable)
-      case _ => println("Should not reach here")
+      case _ => assert(assertion = false, "Should not reach here")
         None
     }
   }
+
+
+
   private def checkLvalue(lvalue: LValue, symbolTable: SymbolTable): Option[SemType] = {
     lvalue match {
-      case IdentValue(name: String) => {
-        symbolTable.lookupAll(name)
-      }
+      case ident @ IdentValue(name: String) =>
+        val identType = symbolTable.lookupAll(name)
+        if (identType.isDefined) {
+          return identType
+        }
+        errorLog += UnknownIdentifierError(ident.pos, ident.s, Some("Unknown variable Identifier found."))
+        Some(InternalPairSemType)
       case arrayElem: ArrayElem => checkArrayElem(arrayElem, symbolTable)
       case elem: PairElem => checkPairElem(elem, symbolTable)
     }
   }
+
   private def checkArrayElem(arrayElem: ArrayElem, symbolTable : SymbolTable): Option[SemType] = {
     val identType: Option[SemType] = symbolTable.lookupAll(arrayElem.ident)
     if (identType.isDefined) {
@@ -333,230 +432,230 @@ class semantic_analyser {
       var i = 0
       while (i < arrayElem.exprs.length) {
         arrayTypeHolder match {
-          case ArraySemType(t) => {
+          case ArraySemType(t) =>
             val indexType: Option[SemType] = checkExpr(arrayElem.exprs(i), symbolTable)
-            if (indexType.isEmpty || !matchTypes(indexType.get, IntSemType)) {
+            assert(indexType.isDefined, "Expr should always be able to unify but should log errors")
+            if (!matchTypes(indexType.get, IntSemType)) {
               println("Index type was not Int")
-              return None // TypeError(pos, indexType.get or null if indexType.isEmpty, IntSemType, arrays must have int indexes)
+              errorLog += TypeError(arrayElem.pos, Set(IntSemType), indexType.get, Some("Arrays must be accessed with only Int indices"))
+              return Some(InternalPairSemType)
             }
             arrayTypeHolder = t
-          }
-          case _ => {
+          case _ =>
+            assert(i > 0, "Array elem must have some dimension")
             println("Array Elem ", arrayElem, " does not have correct depth")
-            return None
-          }
+            errorLog += ArrayError(arrayElem.pos, arrayElem.ident, i, Some("Incorrect dimension depth of array"))
+            return Some(InternalPairSemType)
         }
         i = i + 1
       }
       return Some(arrayTypeHolder)
     }
-    println("array elem identifier " + arrayElem.ident + " not found")
-    None // UnknownIdentifierError(pos, arrayElem.ident, identifier is undefined
-  }
+  errorLog += UnknownIdentifierError(arrayElem.pos, arrayElem.ident, Some("Unknown array identifier found"))
+  Some(InternalPairSemType)
+}
+
   private def checkPairElem(pe : PairElem, symbolTable: SymbolTable) : Option[SemType] = {
     var is_fst: Boolean = false
     val insideLval: LValue = pe match {
-      case Fst(lvalue) => {
+      case Fst(lvalue) =>
         is_fst = true
         lvalue
-      }
       case Snd(lvalue) => lvalue
     }
     insideLval match {
-      case elem: PairElem => {
-        if (checkPairElem(elem, symbolTable).isDefined) {
-          return Some(InternalPairSemType)
-        }
-        None
-      }
-      case arrayElem: ArrayElem => {
-        val opArrayItemType= checkArrayElem(arrayElem, symbolTable)
-        if (opArrayItemType.isDefined) {
-          opArrayItemType.get match {
-            case PairSemType(pt1, pt2) => {
-              if (is_fst) {
-                return Some(pt1)
-              } else {
-                return Some(pt2)
-              }
+      case elem: PairElem =>
+        assert(checkPairElem(elem, symbolTable).isDefined)
+        Some(InternalPairSemType)
+
+      case arrayElem: ArrayElem =>
+        val opArrayItemType = checkArrayElem(arrayElem, symbolTable)
+        assert(opArrayItemType.isDefined)
+        opArrayItemType.get match {
+          case PairSemType(pt1, pt2) =>
+            if (is_fst) {
+              Some(pt1)
+            } else {
+              Some(pt2)
             }
-            case InternalPairSemType => Some(InternalPairSemType)
-            case t => {
-              println("cant do fst/snd of non pair types")
-              return None
-              //TypeError(pos, PairType, t, can only call fst or snd on pairs)
-            }
-          }
+          case InternalPairSemType => Some(InternalPairSemType)
+          case unexpectedType =>
+            println("cant do fst/snd of non pair types")
+            errorLog += TypeError(arrayElem.pos,
+              Set(PairSemType(InternalPairSemType, InternalPairSemType)), unexpectedType,
+              Some("can only call fst or snd on pairs"))
+            Some(InternalPairSemType)
         }
-        None
-      } // cant do fst or snd of ArrayElem
-      case IdentValue(s) => {
-        val identType: Option[SemType] = symbolTable.lookupAll(s)
+
+      case ident @ IdentValue(name) =>
+        val identType: Option[SemType] = symbolTable.lookupAll(name)
         if (identType.isDefined) {
           identType.get match {
-            case PairSemType(pt1, pt2) => {
+            case PairSemType(pt1, pt2) =>
               if (is_fst) {
                 return Some(pt1)
               } else {
                 return Some(pt2)
               }
-            }
-            case _ => None //TypeError(pos, PairType, t, can only call fst or snd on pairs)
+            case unexpectedType =>
+              errorLog += TypeError(ident.pos,
+                Set(PairSemType(InternalPairSemType, InternalPairSemType)), unexpectedType,
+                Some("can only call fst or snd on pairs"))
+              return Some(InternalPairSemType)
           }
         }
-        None //UnknownIdentifierError(pos, identType.get, identType isn't defined)
-      }
+        errorLog += UnknownIdentifierError(ident.pos, ident.s, Some("Unknown variable identifier found"))
+        Some(InternalPairSemType)
     }
   }
-  private def checkFunction(func: Func, symbolTable: SymbolTable): Option[SemType] = {
+
+  private def checkFunction(func: Func, symbolTable: SymbolTable) : Unit = {
     val intermediateTable = new SymbolTable(Some(symbolTable))
-    if (!checkParams(func.params, intermediateTable, mutable.Set.empty[String])) {
-      None
-    } else {
+    if (checkParams(func.params, intermediateTable, mutable.Set.empty[String])) {
       val funcSemType: SemType = convertToSem(func.retType)
       intermediateTable.add(ENCLOSING_FUNC_RETURN_TYPE, funcSemType)
-//        symbolTable.add(func.ident, funcSemType) this will be done in the first pass in checkProgram
       val childSym = new SymbolTable(Some(intermediateTable))
-      if (checkStatement(func.stat, childSym).isDefined) {
+      if (checkStatement(func.stat, childSym).isDefined) { // TODO : do checkStatement from here
         func.st = Some(childSym)
-        return Some(funcSemType)
       }
-      None
     }
   }
 
   private def checkStatement(node: Statement, symbolTable: SymbolTable): Option[SemType] = {
-      node match {
-        case Skip => Option(InternalPairSemType) // not an error here
+    node match {
+      case Skip => Some(InternalPairSemType)
+      case varDec@VarDec(assignType, ident, rvalue) => {
+        if (symbolTable.lookup(ident).isDefined) {
+          println("Cannot have duplicate variable names")
+          errorLog += DuplicateIdentifier(varDec.pos, varDec.ident, Some("Duplicate variable identifier found"))
+          Some(InternalPairSemType)
+        } else {
+          val rvalType: Option[SemType] = checkRvalue(rvalue, symbolTable)
+          assert(rvalType.isDefined, "Rval should be in the st")
 
-        case VarDec(assignType, ident, rvalue) => {
-          println("Start VarDec of ", ident)
-          if (symbolTable.lookup(ident).isDefined) {
-            println("Cannot have duplicate variable names")
-            None //DuplicateIdentifier(pos, ident, variable)
+          val assignSemType = convertToSem(assignType)
+          if (!matchTypes(assignSemType, rvalType.get)) {
+            errorLog += TypeError(varDec.pos, Set(assignSemType), rvalType.get, Some("Assignment and target types don't match"))
+            Some(InternalPairSemType)
           } else {
-            val rvalType: Option[SemType] = checkRvalue(rvalue, symbolTable)
-            if (rvalType.isEmpty) {
-              None
-            } else {
-              val assignSemType = convertToSem(assignType)
-              if (!matchTypes(assignSemType, rvalType.get)) {
-                None
-              } else {
-                symbolTable.add(ident, assignSemType)
-                println("End VarDec of ", ident)
-                Some(assignSemType)
-              }
-            }
+            symbolTable.add(ident, assignSemType)
+            Some(assignSemType)
           }
         }
+      }
 
-        case Assign(lvalue, rvalue) => {
-          val oplvalSemType: Option[SemType] = checkLvalue(lvalue, symbolTable)
-          if (oplvalSemType.isEmpty) {
-            println("lvalue assignment identifier not found", lvalue, rvalue)
-            None // TypeError(pos, oplvalSemType, none, oplvalSemType is empty)
-          } else {
-            oplvalSemType.get match {
-              case FuncSemType(_, _, _) => {
-                println("Can't assign to a function")
-                None
-              } // TypeError(pos, ident/pair-elem/array-elem, function, function cant be lvalue of assignment
-              case lvalSemType: SemType => {
+      case assign@Assign(lvalue, rvalue) => {
+        val opLvalSemType: Option[SemType] = checkLvalue(lvalue, symbolTable)
+        assert(opLvalSemType.isDefined, "lvalue should be in st")
 
-                // there are 5 rvalue cases
-                rvalue match {
-                  case rval@ArrayLiter(_) => {
-                    val arrayType: Option[SemType] = checkArrayLiteral(rval, symbolTable)
-                    if (arrayType.isDefined) {
-                      if (matchTypes(lvalSemType, arrayType.get)) {
-                        return arrayType
-                      }
-                    }
-                    None
-                  }
+        opLvalSemType.get match {
+          case FuncSemType(_, _, _) =>
+            println("Can't assign to a function")
+            errorLog += TypeError(assign.pos, Set.empty, FuncSemType(InternalPairSemType, List.empty, 0), Some("Cannot assign to a function"))
+            Some(InternalPairSemType)
 
-                  case rCall@Call(ident, _) => {
-                    val opFuncRetType: Option[SemType] = checkRvalue(rCall, symbolTable)
-                    if (opFuncRetType.isDefined) {
-                      if (matchTypes(opFuncRetType.get, lvalSemType)) {
-                        return opFuncRetType
-                      }
-                    }
-                    println("Call " + ident, " had issues")
-                    None
-                  }
-
-                  case NewPair(expr1, expr2) => {
-                    val pt: PairSemType = lvalSemType match {
-                      case p@PairSemType(pt1, pt2) => p
-                      case t => return None // TypeError(pos, PairType, t, lhs is not pair type)
-                    }
-                    val expr1Type = checkExpr(expr1, symbolTable)
-                    if (expr1Type.isEmpty) {
-                      return None // TypeError(pos, some expr, none, expr is empty)
-                    }
-                    val expr2Type = checkExpr(expr2, symbolTable)
-                    if (expr2Type.isEmpty) {
-                      return None // TypeError(pos, some expr, none, expr is empty)
-                    }
-
-                    if (!matchTypes(expr1Type.get, pt.pt1) || !matchTypes(expr2Type.get, pt.pt2)) {
-                      None // TypeError(pos, pair-elem-type, pt.pt1 or pt.pt2 (whichever fails), expression type mismatch)
-                    } else Some(pt)
-                  }
-
-                  case Fst(rhsLVal) => checkPairElemAssign(rhsLVal, lvalSemType, symbolTable, is_fst = true)
-                  case Snd(rhsLVal) => checkPairElemAssign(rhsLVal, lvalSemType, symbolTable, is_fst = false)
-
-                  case expr: Expr => {
-                    println("Start Expr assignment", lvalue, expr)
-                    val exprSemType: Option[SemType] = checkExpr(expr, symbolTable)
-                    if (exprSemType.isDefined) {
-                      if (matchTypes(exprSemType.get, lvalSemType)) {
-                        println("End Expr assignment", lvalue, expr)
-                        return Some(lvalSemType)
-                      }
-                    }
-                    None
-                  }
-                  case _ => println("Error while parsing shld not get here")
-                    None
+          case lvalSemType: SemType =>
+            // there are 5 rvalue cases
+            rvalue match {
+              case rval@ArrayLiter(_) => {
+                val arrayType: Option[SemType] = checkArrayLiteral(rval, symbolTable)
+                assert(arrayType.isDefined, "rval should be in st")
+                if (matchTypes(lvalSemType, arrayType.get)) {
+                  return arrayType
                 }
+                errorLog += TypeError(assign.pos, Set(ArraySemType(InternalPairSemType)), lvalSemType, Some("Can't assign array literal to non array type"))
+                Some(InternalPairSemType)
               }
-              case t => None // TypeError(pos, SemType, t, expected rvalue SemType)
-            }
-          }
-        }
 
-        case read: Read => {
-          val readLvalSemType: Option[SemType] = checkLvalue(read.lvalue, symbolTable)
-          if (readLvalSemType.isDefined) {
-            read.symbolTable = Some(symbolTable)
-            readLvalSemType.get match {
-              case IntSemType => return Some(IntSemType)
-              case CharSemType => return Some(CharSemType)
-              case InternalPairSemType => return None // special err due to type erasure
-              case _ => return None // err cant read to pairs/funcs etc
+              case rCall: Call => {
+                val opFuncRetType: Option[SemType] = checkRvalue(rCall, symbolTable)
+                assert(opFuncRetType.isDefined, "rvalue call should be in st")
+                if (matchTypes(opFuncRetType.get, lvalSemType)) {
+                  return opFuncRetType
+                }
+                errorLog += TypeError(assign.pos, Set(opFuncRetType.get), lvalSemType, Some("Function return type does not match target type"))
+                Some(InternalPairSemType)
+              }
+
+              case np@NewPair(expr1, expr2) => {
+                val pt: PairSemType = lvalSemType match {
+                  case p: PairSemType => p
+                  case unexpectedType => {
+                    errorLog += TypeError(np.pos, Set(PairSemType(InternalPairSemType, InternalPairSemType)), unexpectedType, Some("Cannot assign a new pair to a non pair type"))
+                    return None
+                  }
+                }
+                val expr1Type = checkExpr(expr1, symbolTable)
+                assert(expr1Type.isDefined, "first exp could not be evaluated")
+                val expr2Type = checkExpr(expr2, symbolTable)
+                assert(expr2Type.isDefined, "second exp in pair could not be evaluated")
+
+                if (!matchTypes(expr1Type.get, pt.pt1)) {
+                  errorLog += TypeError(assign.pos, Set(pt.pt1), expr1Type.get, Some("First of the pair doesn't match"))
+                  return Some(InternalPairSemType)
+                }
+                if (!matchTypes(expr2Type.get, pt.pt2)) {
+                  errorLog += TypeError(assign.pos, Set(pt.pt2), expr2Type.get, Some("Second of the pair doesn't match"))
+                  return Some(InternalPairSemType)
+                }
+                Some(pt)
+              }
+
+              case Fst(rhsLVal) => checkPairElemAssign(rhsLVal, lvalSemType, symbolTable, is_fst = true)
+              case Snd(rhsLVal) => checkPairElemAssign(rhsLVal, lvalSemType, symbolTable, is_fst = false)
+
+              case expr: Expr => {
+                val exprSemType: Option[SemType] = checkExpr(expr, symbolTable)
+                assert(exprSemType.isDefined, "expr should always be evaluated in expr assign statement")
+                if (matchTypes(exprSemType.get, lvalSemType)) {
+                  return Some(lvalSemType)
+                }
+                errorLog += TypeError(assign.pos, Set(exprSemType.get), lvalSemType, Some("Assignment and target types don't match"))
+                Some(InternalPairSemType)
+              }
+
+              case _ => {
+                assert(assertion = false, "Error while parsing statement should not get here")
+                None
+              }
             }
-          }
-          None
         }
+      }
+
+      case read @ Read(lvalue) => {
+        val readLvalSemType: Option[SemType] = checkLvalue(read.lvalue, symbolTable)
+        assert(readLvalSemType.isDefined, "read statement cannot be evaluated")
+        val lvalPos = getLvalPos(lvalue)
+        read.symbolTable = Some(symbolTable)
+        readLvalSemType.get match {
+          case IntSemType => Some(IntSemType)
+          case CharSemType => Some(CharSemType)
+          case InternalPairSemType => {
+            errorLog += new TypeErasureError(lvalPos._1, Some("Cannot read into internal pair types due to type erasure"))(lvalPos._2)
+            Some(InternalPairSemType)
+          }
+          case unexpectedType => {
+            errorLog += new TypeError(lvalPos._1, Set(IntSemType, CharSemType), unexpectedType, Some("Can only read into int and char types"))(lvalPos._2)
+            Some(InternalPairSemType)
+          }
+        }
+      }
 
         case Free(expr: Expr) => {
-          val exprType = checkExpr(expr, symbolTable)
-          if (exprType.isDefined) {
-            exprType.get match {
-              case _: PairSemType => exprType
-              case _: ArraySemType => exprType
-              case _ => None // err
+          val exprType: Option[SemType] = checkExpr(expr, symbolTable)
+          assert(exprType.isDefined, "Always Defined")
+          exprType.get match {
+            case _: PairSemType => exprType
+            case _: ArraySemType => exprType
+            case unexpectedType => {
+              val exprPos = getExprPos(expr)
+              errorLog += new TypeError(exprPos._1, Set(PairSemType(InternalPairSemType, InternalPairSemType), ArraySemType(InternalPairSemType)), unexpectedType, Some("Can only free objects on heap"))(exprPos._2)
+              Some(InternalPairSemType)
             }
-          } else {
-            None // err
           }
         }
 
-        case Return(expr: Expr) => {
+        case ret @ Return(expr: Expr) => {
           val funcRetType: Option[SemType] = symbolTable.lookupAll(ENCLOSING_FUNC_RETURN_TYPE)
           if (funcRetType.isDefined) {
             val exprType: Option[SemType] = checkExpr(expr, symbolTable)
@@ -567,156 +666,174 @@ class semantic_analyser {
               }
             }
           }
-          println("Main function cannot have return. Return must exist in a function body!")
-          None
+//          println("Main function cannot have return. Return must exist in a function body!")
+          errorLog += InvalidReturnError(ret.pos, Some("Main function cannot have return. Return must exist in a function body!"))
+          Some(InternalPairSemType)
         }
 
         case Exit(expr: Expr) => {
           val exprType: Option[SemType] = checkExpr(expr, symbolTable)
-          if (exprType.isDefined) {
-            exprType.get match {
-              case IntSemType => return exprType
-              case _ => {
-                println("Cannot exit with a non integer exit code")
-                return None
-              }
-            }
+          assert(exprType.isDefined, "Always Defined")
+          exprType.get match {
+            case IntSemType => exprType
+            case _ =>
+              val exprPos = getExprPos(expr)
+              errorLog += new TypeError(exprPos._1, Set(IntSemType), exprType.get, Some("Cannot exit with a non integer exit code"))(exprPos._2)
+              Some(InternalPairSemType)
           }
-          None
         }
 
         case printStat@Print(expr: Expr) => {
           printStat.symbolTable =  Some(symbolTable)
-          checkExpr(expr, symbolTable) // TODO check for none
+          checkExpr(expr, symbolTable)
         }
 
-        case printlnStat@Println(expr: Expr) => {
+        case printlnStat@Println(expr: Expr) =>
           printlnStat.symbolTable =  Some(symbolTable)
-          checkExpr(expr, symbolTable) // TODO check for none
-        }
+          checkExpr(expr, symbolTable)
+
         case If(cond, thenStat, elseStat) => {
           val condType: Option[SemType] = checkExpr(cond, symbolTable)
-          println("hehehe1")
-          if (condType.isDefined) {
-            println("hehehe2")
-            if (matchTypes(condType.get, BoolSemType)) {
-              val thenScope = new SymbolTable(Some(symbolTable))
-              if (checkStatement(thenStat, thenScope).isDefined) {
-                println("then was good")
-                val elseScope = new SymbolTable(Some(symbolTable))
-                return checkStatement(elseStat, elseScope)
-              }
-            }
+          assert(condType.isDefined, "cond should always be evaluated")
+          if (matchTypes(condType.get, BoolSemType)) {
+            val thenScope = new SymbolTable(Some(symbolTable))
+            assert(checkStatement(thenStat, thenScope).isDefined)
+            val elseScope = new SymbolTable(Some(symbolTable))
+            return checkStatement(elseStat, elseScope)
           }
-          None
+          val condPos = getExprPos(cond)
+          errorLog += TypeError(condPos._1, Set(BoolSemType), condType.get, Some("If expects a bool condition type"))
+          Some(InternalPairSemType)
         }
 
         case While(cond, doStat) => {
           val condType = checkExpr(cond, symbolTable)
-          if (condType.isDefined) {
-            if (matchTypes(condType.get, BoolSemType)) {
-              val doScope = new SymbolTable(Some(symbolTable))
-              val statType = checkStatement(doStat, doScope) // TODO check for none
-              if (statType.isDefined) {
-                return statType
-              }
-            }
+          assert(condType.isDefined, "Condition should always be evaluated")
+          if (matchTypes(condType.get, BoolSemType)) {
+            val doScope = new SymbolTable(Some(symbolTable))
+            val statType = checkStatement(doStat, doScope)
+            assert(statType.isDefined, "Stat should always be defined")
+            return statType
           }
-          None
+          val condPos = getExprPos(cond)
+          errorLog += TypeError(condPos._1, Set(BoolSemType), condType.get, Some("While expects a bool condition type"))
+          Some(InternalPairSemType)
         }
 
         case ScopeStat(stat) => {
           val newScope = new SymbolTable(Some(symbolTable))
           val statType = checkStatement(stat, newScope)
-          if (statType.isEmpty) {
-            println("this stat is wrong ", stat)
-            return None
-          }
+          assert(statType.isDefined)
           statType
         }
 
         case ConsecStat(first, next) => {
-          if (checkStatement(first, symbolTable).isDefined) {
-            return checkStatement(next, symbolTable)
-          }
-          println("this stat : is wrong ", first)
-          None
+          val stmt = checkStatement(first, symbolTable)
+          assert(stmt.isDefined, "Statement should always be defined")
+          val statType = checkStatement(next, symbolTable)
+          assert(statType.isDefined, "Stat should always be defined")
+          statType
         }
       }
     }
 
   private def checkParams(params: List[Param], symbolTable: SymbolTable, paramNames: mutable.Set[String]): Boolean = {
-      for (param <- params) {
-        if (paramNames.contains(param.ident)) {
-          return false // duplicate func names
-        } else {
-          paramNames.add(param.ident)
-          symbolTable.add(param.ident, convertToSem(param.paramType))
-        }
+    for (param <- params) {
+      if (paramNames.contains(param.ident)) {
+        errorLog += DuplicateIdentifier(param.pos, param.ident, Some("Duplicate identifier found in function definition."))
+        return false // duplicate func names
+      } else {
+        paramNames.add(param.ident)
+        symbolTable.add(param.ident, convertToSem(param.paramType))
       }
-      true
     }
+    true
+  }
+
   private def isConcrete(pt1: SemType) : Boolean = pt1 != InternalPairSemType
-  private def checkPairElemAssign(rhsLval: LValue, lvalSemType: SemType, symbolTable: SymbolTable, is_fst: Boolean): Option[SemType] = {
-      println("kun faya ")
-      val rhsLvalType: Option[SemType] = checkLvalue(rhsLval, symbolTable)
-      if (rhsLvalType.isEmpty) {
-        println("fst/snd lvalue ", rhsLval , " failed")
-        return None
+
+  def getLvalPos(lval: LValue): ((Int, Int), Int) = {
+    lval match {
+      case ident : IdentValue => (ident.pos, 0)
+      case arrayElem : ArrayElem => (arrayElem.pos, 0)
+      case pairElem : PairElem => {
+        val insideLval = pairElem match {
+          case Fst(lvalue) => lvalue
+          case Snd(lvalue) => lvalue
+        }
+        val insidePos: ((Int, Int), Int) = getLvalPos(insideLval)
+        (insidePos._1, 3 + insidePos._2)
       }
+      case _ =>
+        System.err.println("Cannot pattern match lvalue in get lvalue position function")
+        ((-1, -1), -1)
+    }
+
+  }
+
+  private def checkPairElemAssign(rhsLval: LValue, lvalSemType: SemType, symbolTable: SymbolTable, is_fst: Boolean): Option[SemType] = {
+    val rhsLvalType: Option[SemType] = checkLvalue(rhsLval, symbolTable)
+    assert(rhsLvalType.isDefined, "RhsLval cant be empty")
+    val lvalPos = getLvalPos(rhsLval)
+
       rhsLvalType.get match {
-        case t@PairSemType(pt1, pt2) => {
-          println(rhsLval, "has type ", t)
-          println(lvalSemType, " < ---- lvalsemType")
+        case PairSemType(pt1, pt2) => {
           if (is_fst) {
             if (matchTypes(pt1, lvalSemType)) {
               if (!isConcrete(lvalSemType) && !isConcrete(pt1)) {
                 println("cant have Internal Pair type on both")
-                return None // cant have Internal Pair type on both, TypeError
+                errorLog += new TypeErasureError(lvalPos._1, Some("Both types need to be concrete"))(lvalPos._2)
+                return Some(InternalPairSemType)
               }
               else return Some(lvalSemType)
             }
+            errorLog += new TypeError(lvalPos._1, Set(lvalSemType), pt1, Some("Assignment and target types do not match"))(lvalPos._2)
           } else {
             if (matchTypes(pt2, lvalSemType)) {
               if (!isConcrete(lvalSemType) && !isConcrete(pt2)) {
-                println("cant have Internal Pair type on both")
-                return None // cant have Internal Pair type on both, TypeError
+                println("Cant have Internal Pair type on both")
+                errorLog += new TypeErasureError(lvalPos._1, Some("Both types need to be concrete"))(lvalPos._2)
+                return Some(InternalPairSemType)
               }
-              else return Some(lvalSemType)
+            else return Some(lvalSemType)
             }
+            errorLog += new TypeError(lvalPos._1, Set(lvalSemType), pt2, Some("Assignment and target types do not match"))(lvalPos._2)
           }
-          println("should not reach here")
-          None
+          Some(InternalPairSemType)
         }
-        case _ => {
+        case InternalPairSemType => {
+          if (!isConcrete(lvalSemType)) {
+            println("cant have Internal Pair type on both")
+            errorLog += new TypeErasureError(lvalPos._1, Some("Type needs to be concrete"))(lvalPos._2)
+          }
+          Some(InternalPairSemType)
+        }
+        case unexpectedType => {
           println("err fst applied to non pair type")
-          None
+          errorLog += new TypeError(lvalPos._1,
+            Set(PairSemType(InternalPairSemType, InternalPairSemType)), unexpectedType,
+            Some("err fst applied to non pair type"))(lvalPos._2)
+          Some(InternalPairSemType)
         }
       }
     }
 
-  private def checkArrayLiteral(arraylit: ArrayLiter, symbolTable: SymbolTable): Option[SemType] = {
-      if (arraylit.exprs.nonEmpty) {
-        val expType = checkExpr(arraylit.exprs.head, symbolTable)
-        if (expType.isEmpty) {
-          println("Head expr of ", arraylit, " could not be evaluated")
-          return Some(ArraySemType(InternalPairSemType))
-        } else {
-          for (expr <- arraylit.exprs.tail) {
-            val expTypeRest = checkExpr(expr, symbolTable)
-            if (expTypeRest.isEmpty) {
-              println("Expr ", expr, "of ", arraylit, " could not be evaluated")
-              return Some(ArraySemType(InternalPairSemType))
-            } else {
-              if (!matchTypes(expType.get, expTypeRest.get)) {
-                println(arraylit, " has different types of elements")
-                return None // TypeError(pos, expTypeRest.get, , arraylit elems of different types)
-              }
-            }
+  private def checkArrayLiteral(arrayLit: ArrayLiter, symbolTable: SymbolTable): Option[SemType] = {
+      if (arrayLit.exprs.nonEmpty) {
+        val expType = checkExpr(arrayLit.exprs.head, symbolTable)
+        assert(expType.isDefined, "checkExpr should not fail")
+        for (expr <- arrayLit.exprs.tail) {
+          val expTypeRest = checkExpr(expr, symbolTable)
+          assert(expTypeRest.isDefined, "checkExpr rest should not fail")
+          if (!matchTypes(expType.get, expTypeRest.get)) {
+            val exprPos = getExprPos(expr)
+            errorLog += new TypeError(exprPos._1, Set(expType.get),
+              expTypeRest.get, Some("Arrays must contain elements of the same type"))(exprPos._2)
+            return Some(InternalPairSemType)
           }
-          return Some(ArraySemType(expType.get))
-        }
       }
-      Some(ArraySemType(InternalPairSemType))
+      return Some(ArraySemType(expType.get))
     }
+    Some(ArraySemType(InternalPairSemType))
+  }
 }

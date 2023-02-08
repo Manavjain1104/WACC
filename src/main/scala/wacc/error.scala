@@ -88,9 +88,30 @@ object error {
   // Semantic Error Hierarchy
   sealed trait SemanticError extends WaccError
   case class UnknownIdentifierError(pos : (Int, Int), ident : String, context : Option[String]) extends SemanticError
-  case class TypeError(pos : (Int, Int), expectedType : Set[SemType], foundType : SemType, context : Option[String]) extends SemanticError
-  case class ArityMismatch(pos : (Int, Int), firstArity: SemType, secondArity: SemType, context : Option[String]) extends SemanticError
-  case class ArrayError(pos : (Int, Int), arrName: String, context : Option[String] /*out of bounds or dimension error*/) extends SemanticError
+
+  case class TypeError(pos : (Int, Int), expectedTypes : Set[SemType], foundType : SemType, context : Option[String])(var offset : Int) extends SemanticError
+  object TypeError {
+    def apply(pos: (Int, Int), value: Set[SemTypes.SemType], semType: SemTypes.SemType, context: Option[String])(offset : Int) : TypeError = {
+      new TypeError(pos, value, semType, context)(offset)
+    }
+    def apply(pos : (Int, Int), expectedTypes : Set[SemType], foundType : SemType, context : Option[String]): TypeError = {
+      new TypeError(pos, expectedTypes, foundType, context)(0)
+    }
+  }
+
+  case class TypeErasureError(pos : (Int, Int), context : Option[String])(var offset : Int) extends SemanticError
+  object TypeErasureError {
+    def apply(pos: (Int, Int), context : Option[String])(offset : Int) : TypeErasureError = {
+      new TypeErasureError(pos, context)(offset)
+    }
+    def apply(pos : (Int, Int), context : Option[String]): TypeErasureError = {
+      new TypeErasureError(pos, context)(0)
+    }
+  }
+
+  case class ArityMismatch(pos : (Int, Int), expectedArity: Int, foundArity: Int, context : Option[String]) extends SemanticError
+  case class ArrayError(pos : (Int, Int), arrName: String, maxDimension : Int, context : Option[String] /*out of bounds or dimension error*/) extends SemanticError
   case class DuplicateIdentifier(pos : (Int, Int), ident : String, context : Option[String]) extends SemanticError
+  case class InvalidReturnError(pos : (Int, Int), contex : Option[String]) extends SemanticError
 
 }

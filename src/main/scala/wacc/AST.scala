@@ -137,7 +137,8 @@ object AST {
 
   object StringExpr extends ParserBridgePos1[String, Expr]
 
-  case object PairExpr extends Expr with ParserBridge0[Expr]
+  case class PairExpr()(val pos : (Int, Int)) extends Expr
+  object PairExpr extends ParserBridgePos0[Expr]
 
   case class IdentExpr(ident: String)(val pos : (Int, Int)) extends Expr
   object IdentExpr extends ParserBridgePos1[String, Expr]
