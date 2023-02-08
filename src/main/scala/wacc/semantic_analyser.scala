@@ -135,7 +135,13 @@ class semantic_analyser {
       case CharExpr(_) => Some(CharSemType)
       case StringExpr(_) => Some(StringSemType)
       case BoolExpr(_) => Some(BoolSemType)
-      case IdentExpr(ident) => symbolTable.lookupAll(ident)
+      case id @ IdentExpr(ident) => {
+        val identType = symbolTable.lookupAll(ident)
+        if (identType.isDefined) return identType
+
+        errorLog += UnknownIdentifierError(id.pos, ident, Some("Unknown variable identifier found"))
+        Some(InternalPairSemType)
+      }
       case PairExpr() => Some(InternalPairSemType)
       case arrayElem: ArrayElem => checkArrayElem(arrayElem, symbolTable)
 
@@ -221,7 +227,7 @@ class semantic_analyser {
     if (!matchTypes(e1Type.get, e2Type.get)) {
       val exprPos = getExprPos(e2)
       errorLog += new TypeError(exprPos._1, Set(e1Type.get), e2Type.get, Some("Expected same type for both expressions"))(exprPos._2)
-      return None
+      return Some(InternalPairSemType)
     }
     Some(BoolSemType)
   }
@@ -441,11 +447,17 @@ class semantic_analyser {
               return Some(InternalPairSemType)
             }
             arrayTypeHolder = t
-          case _ =>
-            assert(i > 0, "Array elem must have some dimension")
-            println("Array Elem ", arrayElem, " does not have correct depth")
-            errorLog += ArrayError(arrayElem.pos, arrayElem.ident, i, Some("Incorrect dimension depth of array"))
-            return Some(InternalPairSemType)
+          case unexpectedType =>
+            if (i > 0) {
+              println("Array Elem ", arrayElem, " does not have correct depth")
+              errorLog += ArrayError(arrayElem.pos, arrayElem.ident, i, Some("Incorrect dimension depth of array"))
+              return Some(InternalPairSemType)
+            } else {
+//              println("Array Elem ", arrayElem, " does not have correct depth")
+              errorLog += TypeError(arrayElem.pos, Set(ArraySemType(InternalPairSemType)), unexpectedType, Some("Can't index non array type"))
+              return Some(InternalPairSemType)
+            }
+
         }
         i = i + 1
       }
