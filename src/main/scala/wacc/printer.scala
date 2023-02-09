@@ -255,19 +255,19 @@ object printer {
           }
 
           // printing
-          for (i <- errLines.indices) {
-            if (i == numLinesArd) {
-              sb.append("| " + errLines(i) + "\n")
-              var numCars = token.length
-              if ((pos._2 + token.length) > errLines(i).length) {
-                numCars = errLines(i).length - pos._2 + 1
-              }
-
-              sb.append("| " + (" " * (pos._2 - 1)) + ("^" * numCars) + "\n")
-            } else {
-              sb.append("| " + errLines(i) + "\n")
-            }
-          }
+//          for (i <- errLines.indices) {
+//            if (i == numLinesArd) {
+//              sb.append("| " + errLines(i) + "\n")
+//              var numCars = token.length
+//              if ((pos._2 + token.length) > errLines(i).length) {
+//                numCars = errLines(i).length - pos._2 + 1
+//              }
+//
+//              sb.append("| " + (" " * (pos._2 - 1)) + ("^" * numCars) + "\n")
+//            } else {
+//              sb.append("| " + errLines(i) + "\n")
+//            }
+//          }
 
         }
       }
