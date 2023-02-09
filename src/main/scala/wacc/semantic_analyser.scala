@@ -32,11 +32,13 @@ class semantic_analyser {
     }
     checkStatement(program.stat, topLevelSymbolTable)
 
-    if (errorLog.nonEmpty) {
-      return Some(errorLog)
+    if(errorLog.isEmpty) {
+      None
     }
-    None
-  }
+    else {
+      Some(errorLog)
+    }
+    }
 
   private def convertToSem(ty: Type): SemType = {
     ty match {
@@ -378,7 +380,6 @@ class semantic_analyser {
         }
 
       case elem: PairElem => checkPairElem(elem, symbolTable)
-        None
     }
   }
 

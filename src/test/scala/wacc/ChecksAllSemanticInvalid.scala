@@ -3,11 +3,8 @@ package wacc
 import java.io.File
 import scala.Console.out
 
-import org.scalatest.{Pending, Tag}
+import org.scalatest.{Tag}
 import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest._
-import java.io.File
-import scala.Console.out
 import scala.language.postfixOps
 import sys.process._
 
@@ -62,68 +59,68 @@ class ChecksAllSemanticInvalid extends AnyFlatSpec {
 
   behavior of "invalid semantic array tests"
   it should "fail with exit code 100" taggedAs (ChecksAllSyntaxInvalid) in {
-    applyRecursively("/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/invalid/semanticErr/array", exampleFn)
+    applyRecursively("src/test/scala/wacc/invalid/semanticErr/array", exampleFn)
 
   }
 
   behavior of "invalid semantic exit tests"
   it should "fail with exit code 100" taggedAs (ChecksAllSemanticInvalid) in {
-    applyRecursively("/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/invalid/semanticErr/exit", exampleFn)
+    applyRecursively("src/test/scala/wacc/invalid/semanticErr/exit", exampleFn)
   }
 
   behavior of "invalid semantic expressions tests"
   it should "fail with exit code 100" taggedAs (ChecksAllSemanticInvalid) in {
-    applyRecursively("/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/invalid/semanticErr/expressions", exampleFn)
+    applyRecursively("src/test/scala/wacc/invalid/semanticErr/expressions", exampleFn)
   }
 
   behavior of "invalid semantic functions tests"
   it should "fail with exit code 100" taggedAs (ChecksAllSemanticInvalid) in {
-    applyRecursively("/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/invalid/semanticErr/functions", exampleFn)
+    applyRecursively("src/test/scala/wacc/invalid/semanticErr/function", exampleFn)
   }
 
   behavior of "invalid semantic if tests"
   it should "fail with exit code 100" taggedAs (ChecksAllSemanticInvalid) in {
-    applyRecursively("/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/invalid/semanticErr/if", exampleFn)
+    applyRecursively("src/test/scala/wacc/invalid/semanticErr/if", exampleFn)
   }
 
   behavior of "invalid semantic IO tests"
   it should "fail with exit code 100" taggedAs (ChecksAllSemanticInvalid) in {
-    applyRecursively("/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/invalid/semanticErr/IO", exampleFn)
+    applyRecursively("src/test/scala/wacc/invalid/semanticErr/IO", exampleFn)
   }
 
   behavior of "invalid semantic multiple tests"
   it should "fail with exit code 100" taggedAs (ChecksAllSemanticInvalid) in {
-    applyRecursively("/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/invalid/semanticErr/multiple", exampleFn)
+    applyRecursively("src/test/scala/wacc/invalid/semanticErr/multiple", exampleFn)
   }
 
   behavior of "invalid semantic pairs tests"
   it should "fail with exit code 100" taggedAs (ChecksAllSemanticInvalid) in {
-    applyRecursively("/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/invalid/semanticErr/pairs", exampleFn)
+    applyRecursively("src/test/scala/wacc/invalid/semanticErr/pairs", exampleFn)
   }
 
   behavior of "invalid semantic print tests"
   it should "fail with exit code 100" taggedAs (ChecksAllSemanticInvalid) in {
-    applyRecursively("/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/invalid/semanticErr/print", exampleFn)
+    applyRecursively("src/test/scala/wacc/invalid/semanticErr/print", exampleFn)
   }
 
   behavior of "invalid semantic read tests"
   it should "fail with exit code 100" taggedAs (ChecksAllSemanticInvalid) in {
-    applyRecursively("/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/invalid/semanticErr/read", exampleFn)
+    applyRecursively("src/test/scala/wacc/invalid/semanticErr/read", exampleFn)
   }
 
   behavior of "invalid semantic scope tests"
   it should "fail with exit code 100" taggedAs (ChecksAllSemanticInvalid) in {
-    applyRecursively("/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/invalid/semanticErr/scope", exampleFn)
+    applyRecursively("src/test/scala/wacc/invalid/semanticErr/scope", exampleFn)
   }
 
   behavior of "invalid semantic variables tests"
   it should "fail with exit code 100" taggedAs (ChecksAllSemanticInvalid) in {
-    applyRecursively("/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/invalid/semanticErr/variables", exampleFn)
+    applyRecursively("src/test/scala/wacc/invalid/semanticErr/variables", exampleFn)
   }
 
   behavior of "invalid semantic while tests"
   it should "fail with exit code 100" taggedAs (ChecksAllSemanticInvalid) in {
-    applyRecursively("/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/invalid/semanticErr/while", exampleFn)
+    applyRecursively("src/test/scala/wacc/invalid/semanticErr/while", exampleFn)
   }
 
 }
