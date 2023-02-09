@@ -24,7 +24,6 @@ class semantic_analyser {
         topLevelSymbolTable.add("$" + func.ident, convertToSem(func))
         funcDefinitions.add(func)
       } else {
-        println("Func: " + func.ident + " defined twice")
         errorLog += DuplicateIdentifier(func.pos, func.ident, Some("Duplicate function definition."))
       }
     }
@@ -71,7 +70,6 @@ class semantic_analyser {
       func.params.length)
   }
   private def matchTypes(type1: SemType, type2: SemType): Boolean = {
-//    println("matchTypes got ", type1, type2)
     type1 match {
       case InternalPairSemType =>
         true
@@ -90,7 +88,6 @@ class semantic_analyser {
           case _ => false
         }
       case _ =>
-//        println("t1 was base type")
         matchBaseTypes(type1, type2)
     }
   }
@@ -209,7 +206,7 @@ class semantic_analyser {
       case EQExpr(e1, e2) => checkSameType(e1, e2, symbolTable)
       case NEQExpr(e1, e2) => checkSameType(e1, e2, symbolTable)
 
-      case _ => println("Should not reach here")
+      case _ => System.err.println("Should not reach here")
         assert(assertion = false, "Unreachable statement")
         Some(InternalPairSemType)
     }
@@ -264,20 +261,18 @@ class semantic_analyser {
     val e2Type: Option[SemType] = checkExpr(e2, symbolTable)
     assert(e2Type.isDefined, "Check Expr2 should not fail in comparison binOp with type func")
 
-    val baseTypes: Set[SemType] = Set(IntSemType, CharSemType, BoolSemType, StringSemType)
-
     if (!matchTypes(matchBaseType, e1Type.get)) {
       val exprPos = getExprPos(e1)
       errorLog += new TypeError(exprPos._1,
-        baseTypes, e1Type.get,
-        Some("Given expr type does not match with a base type"))(exprPos._2)
+        Set(matchBaseType), e1Type.get,
+        Some("Given expr type invalid for this operation"))(exprPos._2)
       return Some(InternalPairSemType)
     }
     if (!matchTypes(matchBaseType, e2Type.get)) {
       val exprPos =getExprPos(e2)
       errorLog += new TypeError(exprPos._1,
-        baseTypes, e2Type.get,
-        Some("Given expr type does not match with a base type"))(exprPos._2)
+        Set(matchBaseType), e2Type.get,
+        Some("Given expr type invalid for this operation"))(exprPos._2)
       return Some(InternalPairSemType)
     }
     Some(matchBaseType)
@@ -370,7 +365,6 @@ class semantic_analyser {
         // valid function in symbol table
         val identSemType = symbolTable.lookupAll("$" + ident)
         if (identSemType.isEmpty) {
-          println(ident + " : function not found!")
           errorLog += UnknownIdentifierError(call.pos, ident, Some("Unknown function identifier found "))
           return Some(InternalPairSemType)
         }
@@ -379,8 +373,6 @@ class semantic_analyser {
           case funcType: FuncSemType =>
             // parameters length match
             if (funcType.numParams != args.length) {
-              println("argument lengths don't match")
-              println(call.pos)
               errorLog += ArityMismatch(call.pos, funcType.numParams, args.length, Some("Wrong number of function arguments"))
               return Some(InternalPairSemType)
             }
@@ -438,8 +430,7 @@ class semantic_analyser {
             val indexType: Option[SemType] = checkExpr(arrayElem.exprs(i), symbolTable)
             assert(indexType.isDefined, "Expr should always be able to unify but should log errors")
             if (!matchTypes(indexType.get, IntSemType)) {
-              println("Index type was not Int")
-              errorLog += TypeError(arrayElem.pos, Set(IntSemType), indexType.get, Some("Arrays must be accessed with only Int indices"))
+              errorLog += TypeError(arrayElem.pos, Set(IntSemType), indexType.get, Some("Arrays must be accessed with only int indices"))
               return Some(InternalPairSemType)
             }
             arrayTypeHolder = t
@@ -486,7 +477,6 @@ class semantic_analyser {
             }
           case InternalPairSemType => Some(InternalPairSemType)
           case unexpectedType =>
-            println("cant do fst/snd of non pair types")
             errorLog += TypeError(arrayElem.pos,
               Set(PairSemType(InternalPairSemType, InternalPairSemType)), unexpectedType,
               Some("can only call fst or snd on pairs"))
@@ -533,7 +523,6 @@ class semantic_analyser {
       case varDec@VarDec(assignType, ident, rvalue) => {
 
         if (symbolTable.lookup(ident).isDefined) {
-          println("Cannot have duplicate variable names")
           errorLog += DuplicateIdentifier(varDec.pos, varDec.ident, Some("Duplicate variable identifier found"))
           Some(InternalPairSemType)
         } else {
@@ -556,7 +545,6 @@ class semantic_analyser {
 
         opLvalSemType.get match {
           case FuncSemType(_, _, _) =>
-            println("Can't assign to a function")
             errorLog += TypeError(assign.pos, Set.empty, FuncSemType(InternalPairSemType, List.empty, 0), Some("Cannot assign to a function"))
             Some(InternalPairSemType)
 
@@ -667,13 +655,12 @@ class semantic_analyser {
             val exprType: Option[SemType] = checkExpr(expr, symbolTable)
             if (exprType.isDefined) {
               if (matchTypes(exprType.get, funcRetType.get)) {
-                println("RETURN", exprType.get, funcRetType.get)
                 return exprType
               }
             }
           }
-//          println("Main function cannot have return. Return must exist in a function body!")
-          errorLog += InvalidReturnError(ret.pos, Some("Main function cannot have return. Return must exist in a function body!"))
+
+          errorLog += InvalidReturnError(ret.pos, Some("Main body cannot have return. Return must exist in a function body!"))
           Some(InternalPairSemType)
         }
 
@@ -787,7 +774,6 @@ class semantic_analyser {
           if (is_fst) {
             if (matchTypes(pt1, lvalSemType)) {
               if (!isConcrete(lvalSemType) && !isConcrete(pt1)) {
-                println("cant have Internal Pair type on both")
                 errorLog += TypeErasureError((lvalPos._1._1, 1), Some("Both types need to be concrete"))
                 return Some(InternalPairSemType)
               }
@@ -797,7 +783,6 @@ class semantic_analyser {
           } else {
             if (matchTypes(pt2, lvalSemType)) {
               if (!isConcrete(lvalSemType) && !isConcrete(pt2)) {
-                println("Cant have Internal Pair type on both")
                 errorLog += TypeErasureError((lvalPos._1._1, 1), Some("Both types need to be concrete"))
                 return Some(InternalPairSemType)
               }
@@ -809,13 +794,11 @@ class semantic_analyser {
         }
         case InternalPairSemType => {
           if (!isConcrete(lvalSemType)) {
-            println("cant have Internal Pair type on both")
             errorLog += TypeErasureError((lvalPos._1._1, 1), Some("Type needs to be concrete"))
           }
           Some(InternalPairSemType)
         }
         case unexpectedType => {
-          println("err fst applied to non pair type")
           errorLog += new TypeError(lvalPos._1,
             Set(PairSemType(InternalPairSemType, InternalPairSemType)), unexpectedType,
             Some("err fst applied to non pair type"))(lvalPos._2)

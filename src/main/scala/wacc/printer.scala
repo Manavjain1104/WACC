@@ -3,11 +3,9 @@ package wacc
 import wacc.SemTypes._
 import wacc.error._
 
-import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.io.BufferedSource
 import scala.io.Source._
-import scala.math
 
 object printer {
 
@@ -15,7 +13,7 @@ object printer {
   final val SEMANTIC_ERROR_CODE = 200
   final val OK_EXIT_CODE = 0
 
-  def generateOutputMessages(errorLog : ListBuffer[SemanticError], filename : String, exitCode : Int): String = {
+  def generateOutputMessages(errorLog: ListBuffer[SemanticError], filename: String, exitCode: Int): String = {
     if (exitCode == OK_EXIT_CODE) {
       return "---- Compilation success. Exit code 0 returned ---- \n"
     }
@@ -36,7 +34,7 @@ object printer {
     sb.toString()
   }
 
-  def getLinesAround(lineNum : Int, noOfLines: Int, filename : String, lineFromFile : List[String]): List[String] = {
+  def getLinesAround(lineNum: Int, noOfLines: Int, filename: String, lineFromFile: List[String]): List[String] = {
     val out = collection.mutable.ListBuffer.empty[String]
     for (i <- (math.max(0, lineNum - noOfLines) to math.min(lineFromFile.length - 1, lineNum + noOfLines))) {
       out += lineFromFile(i)
@@ -49,26 +47,12 @@ object printer {
     def print(): String
   }
 
-  case class SemanticPrinter(errorLog : ListBuffer[SemanticError], filename : String) extends Printer {
+  case class SemanticPrinter(errorLog: ListBuffer[SemanticError], filename: String) extends Printer {
 
     // initial constructor code
     val source: BufferedSource = fromFile(filename)
     val fileLines: List[String] = source.getLines().toList
     source.close()
-
-    def getIdentPos(pos: (Int, Int), ident: String): (Int, Int) = {
-      var line = pos._1 - 1
-      var col = pos._2 - 1
-      val len = ident.length
-      while (!fileLines(line).slice(col, col + len).equals(ident)) {
-        col += 1
-        if (col >= fileLines(line).length || fileLines(line).charAt(col) == '\n') {
-          col = 0
-          line += 1
-        }
-      }
-      (line + 1, col + 1)
-    }
 
     def print(): String = {
       val sb = new StringBuilder
@@ -132,7 +116,7 @@ object printer {
     def printForInvalidToken(pos: (Int, Int), token: String, ident: Option[String]): String = {
       val sb = new StringBuilder()
       if (ident.isDefined) {
-        sb.append(ident.get +  ": " + token + "\n")
+        sb.append(ident.get + ": " + token + "\n")
 
       }
       val numLinesArd = 1
@@ -141,13 +125,13 @@ object printer {
 
       for (i <- errLines.indices) {
         if (i == numLinesArd) {
-          sb.append("| " + errLines(i)+"\n")
+          sb.append("| " + errLines(i) + "\n")
           var numCars = token.length
           if ((pos._2 + token.length) > errLines(i).length) {
             numCars = errLines(i).length - pos._2 + 1
           }
 
-          sb.append("| " + (" " * (pos._2-1)) + ("^" * numCars) + "\n")
+          sb.append("| " + (" " * (pos._2 - 1)) + ("^" * numCars) + "\n")
         } else {
           sb.append("| " + errLines(i) + "\n")
         }
@@ -156,20 +140,20 @@ object printer {
       sb.toString()
     }
 
-    def printForTypeError(pos : (Int, Int), expectedTypes : List[SemType], foundType : SemType): String ={
+    def printForTypeError(pos: (Int, Int), expectedTypes: List[SemType], foundType: SemType): String = {
       val sb = new StringBuilder()
       val foundTypeString = typeToString(foundType)
       sb.append("unexpected : " + foundTypeString + "\n")
-      sb.append("expected : ")
+      sb.append("expected   : ")
       if (expectedTypes.nonEmpty) {
         sb.append(typeToString(expectedTypes.head))
-        for (expectedType <- expectedTypes.tail){
-          sb.append(" , " + typeToString(expectedType) )
+        for (expectedType <- expectedTypes.tail) {
+          sb.append(" , " + typeToString(expectedType))
         }
       }
       sb.append("\n")
 
-      sb.append(printForInvalidToken(pos, foundTypeString, None))
+      sb.append(printForInvalidToken(pos, getTillNextToken(pos), None))
       sb.toString()
     }
 
@@ -186,11 +170,11 @@ object printer {
             "pair (" + typeToString(pt1) + ", " + typeToString(pt2) + ")"
           }
         }
-        case ArraySemType(t : SemType) => {
+        case ArraySemType(t: SemType) => {
           if (t == InternalPairSemType) {
             "array type"
           } else {
-            "array [ " + typeToString(t) +" ]"
+            "array [ " + typeToString(t) + " ]"
           }
         }
         case InternalPairSemType => "pair"
@@ -205,5 +189,26 @@ object printer {
         }
       }
     }
+
+    def getIdentPos(pos: (Int, Int), ident: String): (Int, Int) = {
+      var line = pos._1 - 1
+      var col = pos._2 - 1
+      val len = ident.length
+      while (!fileLines(line).slice(col, col + len).equals(ident)) {
+        col += 1
+        if (col >= fileLines(line).length || fileLines(line).charAt(col) == '\n') {
+          col = 0
+          line += 1
+        }
+      }
+      (line + 1, col + 1)
+    }
+
+    def getTillNextToken(pos : (Int, Int)) : String = {
+      val col = pos._2 - 1
+      val str: String = fileLines(pos._1 - 1)
+      str.slice(col, str.length).split("""[ ),;'"=\]]""").head
+    }
+
   }
 }

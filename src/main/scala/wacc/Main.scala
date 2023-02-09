@@ -22,7 +22,7 @@ object Main {
     val sem: semantic_analyser = new semantic_analyser
     val file: File = new File(args.head)
 
-    implicit val eb: error.SyntaxErrorBuilder = new error.SyntaxErrorBuilder
+//    implicit val eb: error.SyntaxErrorBuilder = new error.SyntaxErrorBuilder
     fully(program).parseFromFile(file) match {
       case util.Success(value) => {
         value match {
@@ -38,10 +38,7 @@ object Main {
                   return
                 }
               }
-              //              println("SEMANTIC ERROR(s) FOUND")
-              // TODO : write code to print errLog.get
               println(generateOutputMessages(errLog.get, file.getPath, SEMANTIC_ERROR_CODE))
-              //              println(errLog.get)
               sys.exit(SEMANTIC_ERROR_CODE)
             } else {
               // semantic check passed
@@ -52,6 +49,7 @@ object Main {
                   return
                 }
               }
+              println("Syntactic pass: SUCCESS")
               println("Semantic pass: SUCCESS")
               sys.exit(OK_EXIT_CODE)
             }
