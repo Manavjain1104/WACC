@@ -15,16 +15,19 @@ all-AST-syntactic-test-job:
 all-valid-tests:
   stage: test
   script:
+    - cd ../../../..
     - sbt "testOnly -- -n ChecksAllValid"
 
 all-syntax-invalid-tests:
   stage: test
   script:
+    - cd ../../../..
     - sbt "testOnly -- -n ChecksAllSyntaxInvalid"
 
 all-semantic-invalid-tests:
   stage: test
   script:
+    - cd ../../../..
     - sbt "testOnly -- -n ChecksAllSemanticInvalid"
 
 
