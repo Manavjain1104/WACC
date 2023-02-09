@@ -22,7 +22,7 @@ object Main {
     val sem: semantic_analyser = new semantic_analyser
     val file: File = new File(args.head)
 
-//    implicit val eb: error.SyntaxErrorBuilder = new error.SyntaxErrorBuilder
+    implicit val eb: error.SyntaxErrorBuilder = new error.SyntaxErrorBuilder
     fully(program).parseFromFile(file) match {
       case util.Success(value) => {
         value match {
@@ -38,7 +38,7 @@ object Main {
                   return
                 }
               }
-              println(generateOutputMessages(errLog.get, file.getPath, SEMANTIC_ERROR_CODE))
+              println(generateOutputMessages(errLog.get, None, file.getPath, SEMANTIC_ERROR_CODE))
               sys.exit(SEMANTIC_ERROR_CODE)
             } else {
               // semantic check passed
@@ -49,13 +49,12 @@ object Main {
                   return
                 }
               }
-              println("Syntactic pass: SUCCESS")
-              println("Semantic pass: SUCCESS")
+              println("Compilation Successful!")
               sys.exit(OK_EXIT_CODE)
             }
           }
 
-          case Failure(msg) => {
+          case Failure(syntaxErr) => {
             if (args.length > 1) {
               val test = args(1)
               if (test == "check") {
@@ -64,8 +63,7 @@ object Main {
               }
             }
             println("Syntax error!")
-            println(msg)
-            println("Exit code: 100")
+            generateOutputMessages(ListBuffer.empty[error.SemanticError], Some(syntaxErr), file.getPath, SYNTAX_ERROR_CODE)
             sys.exit(SYNTAX_ERROR_CODE)
           }
         }

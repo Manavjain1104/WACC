@@ -9,7 +9,7 @@ import scala.collection.mutable.ListBuffer
 
 class semantic_analyser {
 
-  // error errorLog for semantic analysis
+  // error semanticErrLogs for semantic analysis
   private final val errorLog = mutable.ListBuffer.empty[SemanticError]
 
   // to store function return type in the intermediate scope
@@ -141,7 +141,7 @@ class semantic_analyser {
       // unary operator expressions
       case NotExpr(e: Expr) =>
         val opType: Option[SemType] = checkExpr(e, symbolTable)
-        assert(opType.isDefined, "expression for not should be defined in st")
+
         if (matchTypes(opType.get, BoolSemType)) return opType
         val exprPos = getExprPos(e)
         errorLog +=  new TypeError(exprPos._1, Set(BoolSemType), opType.get, Some("Expected a bool type for not expression"))(exprPos._2)
@@ -511,7 +511,7 @@ class semantic_analyser {
       val funcSemType: SemType = convertToSem(func.retType)
       intermediateTable.add(ENCLOSING_FUNC_RETURN_TYPE, funcSemType)
       val childSym = new SymbolTable(Some(intermediateTable))
-      if (checkStatement(func.stat, childSym).isDefined) { // TODO : do checkStatement from here
+      if (checkStatement(func.stat, childSym).isDefined) {
         func.st = Some(childSym)
       }
     }
