@@ -1,14 +1,12 @@
 package wacc
 
 import parsley.io.ParseFromIO
-
-import scala.io.Source
 import parsley.{Failure, Success}
-import wacc.lexer.{fully, implicits}
-import wacc.parser.{expr, func, lvalue, program, rvalue, statement, waccType}
+import wacc.lexer.fully
+import wacc.parser.program
+import wacc.printer._
 
 import java.io.File
-import scala.Boolean
 import scala.collection.mutable.ListBuffer
 
 object Main {
@@ -19,8 +17,10 @@ object Main {
 
   def main(args: Array[String]): Unit = {
 
+    println("-- Compiling...")
+
     val sem: semantic_analyser = new semantic_analyser
-    val file : File = new File(args.head)
+    val file: File = new File(args.head)
 
     implicit val eb: error.SyntaxErrorBuilder = new error.SyntaxErrorBuilder
     fully(program).parseFromFile(file) match {
@@ -38,9 +38,10 @@ object Main {
                   return
                 }
               }
-              println("SEMANTIC ERROR(s) FOUND")
+              //              println("SEMANTIC ERROR(s) FOUND")
               // TODO : write code to print errLog.get
-              println(errLog.get)
+              println(generateOutputMessages(errLog.get, file.getPath, SEMANTIC_ERROR_CODE))
+              //              println(errLog.get)
               sys.exit(SEMANTIC_ERROR_CODE)
             } else {
               // semantic check passed
@@ -78,18 +79,18 @@ object Main {
     }
 
 
-//        val fileContents = Source.fromFile("/Users/krishmaha/wacc/new/WACC_25/src/main/scala/wacc/testProg.txt")
-//        val text : String = fileContents.getLines.mkString("\n")
-//        println(text)
-//        fully(program).parse(text) match {
-//          case Success(x) => println(s"$x")
-//          case Failure(msg) => println(msg)
-//        }
-//    ////    fileContents.close()
-//    program.parse(args.head) match {
-//      case Success(x) => println(s"${args.head} = $x")
-//      case Failure(msg) => println(msg)
-//    }
+    //        val fileContents = Source.fromFile("/Users/krishmaha/wacc/new/WACC_25/src/main/scala/wacc/testProg.txt")
+    //        val text : String = fileContents.getLines.mkString("\n")
+    //        println(text)
+    //        fully(program).parse(text) match {
+    //          case Success(x) => println(s"$x")
+    //          case Failure(msg) => println(msg)
+    //        }
+    //    ////    fileContents.close()
+    //    program.parse(args.head) match {
+    //      case Success(x) => println(s"${args.head} = $x")
+    //      case Failure(msg) => println(msg)
+    //    }
     //        lvalue.parse(args.head) match {
     //          case Success(x) => println(s"${args.head} = $x")
     //          case Failure(msg) => println(msg)
@@ -98,14 +99,14 @@ object Main {
     //    //          case Success(x) => println(s"${args.head} = $x")
     //    //          case Failure(msg) => println(msg)
     //    //        }
-//    fully(expr).parse(args.head) match {
-//      case Success(x) => println(s"${args.head} = $x")
-//      case Failure(msg) => println(msg)
-//    }
-//        statement.parse(args.head) match {
-//          case Success(x) => println(s"${args.head} = $x")
-//          case Failure(msg) => println(msg)
-//        }
+    //    fully(expr).parse(args.head) match {
+    //      case Success(x) => println(s"${args.head} = $x")
+    //      case Failure(msg) => println(msg)
+    //    }
+    //        statement.parse(args.head) match {
+    //          case Success(x) => println(s"${args.head} = $x")
+    //          case Failure(msg) => println(msg)
+    //        }
   }
 
 }
