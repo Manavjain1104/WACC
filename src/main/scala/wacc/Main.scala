@@ -49,7 +49,7 @@ object Main {
                   return
                 }
               }
-              generateOutputMessages(errLog.get, None, file.getPath, OK_EXIT_CODE)
+              generateOutputMessages(ListBuffer.empty[error.SemanticError], None, file.getPath, OK_EXIT_CODE)
               sys.exit(OK_EXIT_CODE)
             }
           }
