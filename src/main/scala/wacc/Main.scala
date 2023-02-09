@@ -38,7 +38,7 @@ object Main {
                   return
                 }
               }
-              println(generateOutputMessages(errLog.get, None, file.getPath, SEMANTIC_ERROR_CODE))
+              generateOutputMessages(errLog.get, None, file.getPath, SEMANTIC_ERROR_CODE)
               sys.exit(SEMANTIC_ERROR_CODE)
             } else {
               // semantic check passed
@@ -49,7 +49,7 @@ object Main {
                   return
                 }
               }
-              println("Compilation Successful!")
+              generateOutputMessages(errLog.get, None, file.getPath, OK_EXIT_CODE)
               sys.exit(OK_EXIT_CODE)
             }
           }
@@ -62,7 +62,6 @@ object Main {
                 return
               }
             }
-            println("Syntax error!")
             generateOutputMessages(ListBuffer.empty[error.SemanticError], Some(syntaxErr), file.getPath, SYNTAX_ERROR_CODE)
             sys.exit(SYNTAX_ERROR_CODE)
           }
@@ -73,36 +72,6 @@ object Main {
         System.err.println(exception)
       }
     }
-
-
-    //        val fileContents = Source.fromFile("/Users/krishmaha/wacc/new/WACC_25/src/main/scala/wacc/testProg.txt")
-    //        val text : String = fileContents.getLines.mkString("\n")
-    //        println(text)
-    //        fully(program).parse(text) match {
-    //          case Success(x) => println(s"$x")
-    //          case Failure(msg) => println(msg)
-    //        }
-    //    ////    fileContents.close()
-    //    program.parse(args.head) match {
-    //      case Success(x) => println(s"${args.head} = $x")
-    //      case Failure(msg) => println(msg)
-    //    }
-    //        lvalue.parse(args.head) match {
-    //          case Success(x) => println(s"${args.head} = $x")
-    //          case Failure(msg) => println(msg)
-    //        }
-    //    //   rvalue.parse(args.head) match {
-    //    //          case Success(x) => println(s"${args.head} = $x")
-    //    //          case Failure(msg) => println(msg)
-    //    //        }
-    //    fully(expr).parse(args.head) match {
-    //      case Success(x) => println(s"${args.head} = $x")
-    //      case Failure(msg) => println(msg)
-    //    }
-    //        statement.parse(args.head) match {
-    //          case Success(x) => println(s"${args.head} = $x")
-    //          case Failure(msg) => println(msg)
-    //        }
   }
 
 }

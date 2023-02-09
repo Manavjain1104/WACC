@@ -7,21 +7,27 @@ object error {
 
   sealed trait WaccError
 
-  // Syntax Error for parsley
+  //Syntax Error for parsley
   sealed trait SyntaxErrorLines
+
   case class VanillaError(unexpected: Option[SyntaxErrorItem],
                           expected: Set[SyntaxErrorItem], reasons: List[String],
                           line: LineInfo) extends SyntaxErrorLines
+
   case class SpecialisedError(msgs: List[String], line: LineInfo) extends SyntaxErrorLines
 
   sealed trait SyntaxErrorItem
+
   case class SyntaxRaw(item: String) extends SyntaxErrorItem
+
   case class SyntaxNamed(item: String) extends SyntaxErrorItem
+
   case object SyntaxEndOfInput extends SyntaxErrorItem
 
   case class LineInfo(line: String, linesBefore: Seq[String], linesAfter: Seq[String], errorPointsAt: Int, errorWidth: Int)
 
-  case class SyntaxError(pos : (Int, Int), source : Option[String],lines : SyntaxErrorLines) extends WaccError
+  case class SyntaxError(pos: (Int, Int), source: Option[String], lines: SyntaxErrorLines) extends WaccError
+
   class SyntaxErrorBuilder extends ErrorBuilder[SyntaxError] with tokenextractors.TillNextWhitespace {
     override def format(pos: Position, source: Source, lines: SyntaxErrorLines): SyntaxError = {
       SyntaxError(pos, source, lines)
@@ -69,6 +75,7 @@ object error {
     override def lineInfo(line: String, linesBefore: Seq[String], linesAfter: Seq[String], errorPointsAt: Int, errorWidth: Int): LineInfo = {
       LineInfo(line, linesBefore, linesAfter, errorPointsAt, errorWidth)
     }
+
     override val numLinesBefore: Int = 2
     override val numLinesAfter: Int = 2
     override type Item = SyntaxErrorItem
@@ -87,24 +94,30 @@ object error {
 
   // Semantic Error Hierarchy
   sealed trait SemanticError extends WaccError
-  case class UnknownIdentifierError(pos : (Int, Int), ident : String, context : Option[String]) extends SemanticError
 
-  case class TypeError(pos : (Int, Int), expectedTypes : Set[SemType], foundType : SemType, context : Option[String])(var offset : Int) extends SemanticError
+  case class UnknownIdentifierError(pos: (Int, Int), ident: String, context: Option[String]) extends SemanticError
+
+  case class TypeError(pos: (Int, Int), expectedTypes: Set[SemType], foundType: SemType, context: Option[String])(var offset: Int) extends SemanticError
+
   object TypeError {
-    def apply(pos: (Int, Int), value: Set[SemTypes.SemType], semType: SemTypes.SemType, context: Option[String])(offset : Int) : TypeError = {
+    def apply(pos: (Int, Int), value: Set[SemTypes.SemType], semType: SemTypes.SemType, context: Option[String])(offset: Int): TypeError = {
       new TypeError(pos, value, semType, context)(offset)
     }
-    def apply(pos : (Int, Int), expectedTypes : Set[SemType], foundType : SemType, context : Option[String]): TypeError = {
+
+    def apply(pos: (Int, Int), expectedTypes: Set[SemType], foundType: SemType, context: Option[String]): TypeError = {
       new TypeError(pos, expectedTypes, foundType, context)(0)
     }
   }
 
-  case class TypeErasureError(pos : (Int, Int), context : Option[String])extends SemanticError
+  case class TypeErasureError(pos: (Int, Int), context: Option[String]) extends SemanticError
 
-  case class ArityMismatch(pos : (Int, Int), expectedArity: Int, foundArity: Int, context : Option[String]) extends SemanticError
+  case class ArityMismatch(pos: (Int, Int), expectedArity: Int, foundArity: Int, context: Option[String]) extends SemanticError
+
   /*out of bounds or dimension error*/
-  case class ArrayError(pos : (Int, Int), arrName: String, maxDimension : Int, context : Option[String]) extends SemanticError
-  case class DuplicateIdentifier(pos : (Int, Int), ident : String, context : Option[String]) extends SemanticError
-  case class InvalidReturnError(pos : (Int, Int), context : Option[String]) extends SemanticError
+  case class ArrayError(pos: (Int, Int), arrName: String, maxDimension: Int, context: Option[String]) extends SemanticError
+
+  case class DuplicateIdentifier(pos: (Int, Int), ident: String, context: Option[String]) extends SemanticError
+
+  case class InvalidReturnError(pos: (Int, Int), context: Option[String]) extends SemanticError
 
 }

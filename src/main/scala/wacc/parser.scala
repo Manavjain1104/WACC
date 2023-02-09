@@ -1,7 +1,6 @@
 package wacc
 
-import parsley.Parsley.{attempt, notFollowedBy}
-import parsley.character.{digit, letter}
+import parsley.Parsley.attempt
 import parsley.combinator.{many, sepBy}
 import parsley.errors.combinator.{ErrorMethods, amend, fail}
 import parsley.expr.{Prefix, chain, precedence}
@@ -15,7 +14,6 @@ object parser {
   import parsley.Parsley
   import parsley.combinator.some
   import parsley.expr.{InfixL, Ops}
-
 
   // Expr parsers
   lazy val atomExpr: Parsley[Expr] = (IntExpr(INT) <|>
@@ -93,11 +91,8 @@ object parser {
     ifStat <|> whileStat <|> scopeStat
 
   lazy val statement: Parsley[Statement]
-    = chain.left1[Statement](statAtoms <|> terminalStat, SEMICOLON #> ConsecStat)
-//  lazy val statementWithoutReturn : Parsley[Statement]
-//    = chain.left1[Statement](statAtoms <|> exit <|>
-//    amend(RETURN ~> fail("Main body cannot have return statements")),
-//    SEMICOLON #> ConsecStat)
+  = chain.left1[Statement](statAtoms <|> terminalStat, SEMICOLON #> ConsecStat)
+
 
   // highest level parsers
   lazy val param: Parsley[Param] = Param(waccType, IDENT)

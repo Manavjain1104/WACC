@@ -15,9 +15,10 @@ object printer {
 
   def generateOutputMessages(semanticErrLogs: ListBuffer[SemanticError],
                              syntaxError: Option[SyntaxError],
-                             filename: String, exitCode: Int): String = {
+                             filename: String, exitCode: Int): Unit = {
     if (exitCode == OK_EXIT_CODE) {
-      return "---- Compilation success. Exit code 0 returned ---- \n"
+      println("---- Compilation success. Exit code 0 returned ---- \n")
+      return
     }
 
     val sb = new StringBuilder()
@@ -25,13 +26,13 @@ object printer {
     if (exitCode == SYNTAX_ERROR_CODE) {
       sb.append("---- Syntax Error found. Exit code 100 returned ---- \n")
       sb.append(SyntaxPrinter(syntaxError.get, filename).print())
-      return sb.toString()
+      println(sb.toString())
+      return
     }
 
     // semantic error(s) case
-    assert(exitCode == SEMANTIC_ERROR_CODE)
     sb.append(SemanticPrinter(semanticErrLogs, filename).print())
-    sb.toString()
+    println(sb.toString())
   }
 
   def getLinesAround(lineNum: Int, noOfLines: Int, lineFromFile: List[String]): List[String] = {
@@ -237,9 +238,11 @@ object printer {
         case VanillaError(unexpected, expected, reasons, line) => {
 
           // printing reasons
-          sb.append("Help:-\n")
-          for (reason <- reasons) {
-            sb.append(reason + "\n")
+          if (reasons.nonEmpty) {
+            sb.append("Help:-\n")
+            for (reason <- reasons) {
+              sb.append(reason + "\n")
+            }
           }
 
           if (unexpected.isDefined) {
@@ -247,29 +250,44 @@ object printer {
             sb.append(printItem(unexpected.get))
             sb.append("\n")
           }
+
           if (expected.nonEmpty) {
+            sb.append("Expected   : ")
             sb.append(printItem(expected.head))
             for (item <- expected.tail) {
               sb.append(" , " + printItem(item))
             }
+            sb.append("\n")
           }
 
           // printing
-//          for (i <- errLines.indices) {
-//            if (i == numLinesArd) {
-//              sb.append("| " + errLines(i) + "\n")
-//              var numCars = token.length
-//              if ((pos._2 + token.length) > errLines(i).length) {
-//                numCars = errLines(i).length - pos._2 + 1
-//              }
-//
-//              sb.append("| " + (" " * (pos._2 - 1)) + ("^" * numCars) + "\n")
-//            } else {
-//              sb.append("| " + errLines(i) + "\n")
-//            }
-//          }
-
+          sb.append(printLine(line))
         }
+
+        case SpecialisedError(msgs, line) => {
+
+          // printing error
+          sb.append("Context:- \n")
+          for (msg <- msgs) {
+            sb.append(msg + "\n")
+          }
+          sb.append(printLine(line))
+        }
+      }
+      sb.append("\n\n")
+      //      println(sb)
+      sb.toString()
+    }
+
+    def printLine(line: LineInfo): String = {
+      val sb = new StringBuilder()
+      for (lineBefore <- line.linesBefore) {
+        sb.append("| " + lineBefore + "\n")
+      }
+      sb.append("| " + line.line + "\n")
+      sb.append("| " + (" " * line.errorPointsAt) + "^" * line.errorWidth + "\n")
+      for (lineAfter <- line.linesAfter) {
+        sb.append("| " + lineAfter + "\n")
       }
       sb.toString()
     }
