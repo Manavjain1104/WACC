@@ -1,6 +1,6 @@
 package wacc
 
-import wacc.SemTypes.SemType
+import wacc.SemTypes._
 import wacc.error._
 
 import scala.collection.mutable
@@ -75,12 +75,14 @@ object printer {
       for (error <- errorLog) {
         error match {
           case UnknownIdentifierError(pos, ident, context) => {
-            sb.append("Unknown Identifier error in " + filename + " " + "(line " + pos._1 + ", coloumn " + pos._2 + "):\n")
-            sb.append(printForInvalidToken(pos, ident, context))
+            val newPos = getIdentPos(pos, ident)
+            sb.append("Unknown Identifier error in " + filename + " " + "(line " + newPos._1 + ", coloumn " + newPos._2 + "):\n")
+            sb.append(printForInvalidToken(newPos, ident, context))
           }
           case DuplicateIdentifier(pos, ident, context) => {
-            sb.append("Duplicate Identifier error in " + filename + " " + "(line " + pos._1 + ", coloumn " + pos._2 + "):\n")
-            sb.append(printForInvalidToken(getIdentPos(pos, ident), ident, context))
+            val newPos = getIdentPos(pos, ident)
+            sb.append("Duplicate Identifier error in " + filename + " " + "(line " + newPos._1 + ", coloumn " + newPos._2 + "):\n")
+            sb.append(printForInvalidToken(newPos, ident, context))
           }
           case InvalidReturnError(pos, context) => {
             sb.append("Invalid Return Statement error in " + filename + " " + "(line " + pos._1 + ", coloumn " + pos._2 + "):\n")
@@ -113,14 +115,13 @@ object printer {
             sb.append("Maximum dimension for " + arrName + ": " + maxDimension + "\n")
             sb.append(printForInvalidToken(pos, arrName, None))
           }
+
           case TypeError(pos, expectedTypes, foundType, context) => {
-            sb.append("Type error in " + filename + " " + "(line " + pos._1 + ", coloumn " + pos._2 + "):\n")
+            sb.append("Type error in " + filename + " " + "(line " + pos._1 + ", column " + pos._2 + "):\n")
             if (context.isDefined) {
               sb.append(context.get + "\n")
             }
-//            printType(expectedTypes)
-//            sb.append("Expected number of arguments: " + expectedArity + "\n")
-//            sb.append(printForInvalidToken(pos, arrName, None))
+            sb.append(printForTypeError(pos, expectedTypes.toList, foundType))
           }
 
         }
@@ -132,6 +133,7 @@ object printer {
       val sb = new StringBuilder()
       if (ident.isDefined) {
         sb.append(ident.get +  ": " + token + "\n")
+
       }
       val numLinesArd = 1
 
@@ -140,7 +142,6 @@ object printer {
       for (i <- errLines.indices) {
         if (i == numLinesArd) {
           sb.append("| " + errLines(i)+"\n")
-
           var numCars = token.length
           if ((pos._2 + token.length) > errLines(i).length) {
             numCars = errLines(i).length - pos._2 + 1
@@ -155,5 +156,54 @@ object printer {
       sb.toString()
     }
 
+    def printForTypeError(pos : (Int, Int), expectedTypes : List[SemType], foundType : SemType): String ={
+      val sb = new StringBuilder()
+      val foundTypeString = typeToString(foundType)
+      sb.append("unexpected : " + foundTypeString + "\n")
+      sb.append("expected : ")
+      if (expectedTypes.nonEmpty) {
+        sb.append(typeToString(expectedTypes.head))
+        for (expectedType <- expectedTypes.tail){
+          sb.append(" , " + typeToString(expectedType) )
+        }
+      }
+      sb.append("\n")
+
+      sb.append(printForInvalidToken(pos, foundTypeString, None))
+      sb.toString()
+    }
+
+    def typeToString(foundType: SemType): String = {
+      foundType match {
+        case IntSemType => "int"
+        case BoolSemType => "bool"
+        case CharSemType => "char"
+        case StringSemType => "string"
+        case PairSemType(pt1, pt2) => {
+          if (pt1 == InternalPairSemType && pt2 == InternalPairSemType) {
+            "pair type"
+          } else {
+            "pair (" + typeToString(pt1) + ", " + typeToString(pt2) + ")"
+          }
+        }
+        case ArraySemType(t : SemType) => {
+          if (t == InternalPairSemType) {
+            "array type"
+          } else {
+            "array [ " + typeToString(t) +" ]"
+          }
+        }
+        case InternalPairSemType => "pair"
+        case FuncSemType(retType, paramTypes, _) => {
+          val sb = new StringBuilder()
+          sb.append("Function: ")
+          for (paramType <- paramTypes) {
+            sb.append(typeToString(paramType) + " -> ")
+          }
+          sb.append(typeToString(retType) + "\n")
+          sb.toString()
+        }
+      }
+    }
   }
 }
