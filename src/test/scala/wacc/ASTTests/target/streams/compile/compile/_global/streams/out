@@ -1,0 +1,301 @@
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:4:12: object scalatest is not a member of package org[0m
+[0m[[0m[31merror[0m] [0m[0mimport org.scalatest.Tag[0m
+[0m[[0m[31merror[0m] [0m[0m           ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:5:13: object AST is not a member of package wacc[0m
+[0m[[0m[31merror[0m] [0m[0mimport wacc.AST._[0m
+[0m[[0m[31merror[0m] [0m[0m            ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:6:12: object scalatest is not a member of package org[0m
+[0m[[0m[31merror[0m] [0m[0mimport org.scalatest.funsuite.AnyFunSuite[0m
+[0m[[0m[31merror[0m] [0m[0m           ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:8:13: object parser is not a member of package wacc[0m
+[0m[[0m[31merror[0m] [0m[0mimport wacc.parser.expr[0m
+[0m[[0m[31merror[0m] [0m[0m            ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:10:32: not found: type Tag[0m
+[0m[[0m[31merror[0m] [0m[0mobject ExpressionTests extends Tag("ExpressionTests")[0m
+[0m[[0m[31merror[0m] [0m[0m                               ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:11:31: not found: type AnyFunSuite[0m
+[0m[[0m[31merror[0m] [0m[0mclass ExpressionTests extends AnyFunSuite with SyntacticTests {[0m
+[0m[[0m[31merror[0m] [0m[0m                              ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/SyntacticTests.scala:4:12: object scalatest is not a member of package org[0m
+[0m[[0m[31merror[0m] [0m[0mimport org.scalatest.funsuite.AnyFunSuite[0m
+[0m[[0m[31merror[0m] [0m[0m           ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/SyntacticTests.scala:8:30: not found: type AnyFunSuite[0m
+[0m[[0m[31merror[0m] [0m[0mtrait SyntacticTests extends AnyFunSuite  {[0m
+[0m[[0m[31merror[0m] [0m[0m                             ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:10:36: no arguments allowed for nullary constructor Object: ()Object[0m
+[0m[[0m[31merror[0m] [0m[0mobject ExpressionTests extends Tag("ExpressionTests")[0m
+[0m[[0m[31merror[0m] [0m[0m                                   ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/SyntacticTests.scala:3:12: object scalatest is not a member of package org[0m
+[0m[[0m[31merror[0m] [0m[0mimport org.scalatest.Tag[0m
+[0m[[0m[31merror[0m] [0m[0m           ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/SyntacticTests.scala:7:31: not found: type Tag[0m
+[0m[[0m[31merror[0m] [0m[0mobject SyntacticTests extends Tag("SyntacticTests")[0m
+[0m[[0m[31merror[0m] [0m[0m                              ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:13:3: not found: value test[0m
+[0m[[0m[31merror[0m] [0m[0m  test("Correct expression generated for Int-Liter expression", ExpressionTests, SyntacticTests) {[0m
+[0m[[0m[31merror[0m] [0m[0m  ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:15:21: not found: value IntExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val int_liter = IntExpr(2)[0m
+[0m[[0m[31merror[0m] [0m[0m                    ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:16:16: not found: value expr[0m
+[0m[[0m[31merror[0m] [0m[0m    val repr = expr.parse(exp).get[0m
+[0m[[0m[31merror[0m] [0m[0m               ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:20:3: not found: value test[0m
+[0m[[0m[31merror[0m] [0m[0m  test("Correct expression generated for negative Int-Liter expression",[0m
+[0m[[0m[31merror[0m] [0m[0m  ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:23:21: not found: value NegExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val int_liter = NegExpr(IntExpr(2))[0m
+[0m[[0m[31merror[0m] [0m[0m                    ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:23:29: not found: value IntExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val int_liter = NegExpr(IntExpr(2))[0m
+[0m[[0m[31merror[0m] [0m[0m                            ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:24:16: not found: value expr[0m
+[0m[[0m[31merror[0m] [0m[0m    val repr = expr.parse(exp).get[0m
+[0m[[0m[31merror[0m] [0m[0m               ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:28:3: not found: value test[0m
+[0m[[0m[31merror[0m] [0m[0m  test("Correct expression generated for Bool-Liter expression", ExpressionTests, SyntacticTests) {[0m
+[0m[[0m[31merror[0m] [0m[0m  ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:30:22: not found: value BoolExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val bool_liter = BoolExpr(exp)[0m
+[0m[[0m[31merror[0m] [0m[0m                     ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:31:16: not found: value expr[0m
+[0m[[0m[31merror[0m] [0m[0m    val repr = expr.parse(exp.toString).get[0m
+[0m[[0m[31merror[0m] [0m[0m               ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:44:3: not found: value test[0m
+[0m[[0m[31merror[0m] [0m[0m  test("Correct expression generated for bracketed expressions", ExpressionTests, SyntacticTests) {[0m
+[0m[[0m[31merror[0m] [0m[0m  ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:46:16: not found: value AddExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val brac = AddExpr(IntExpr(3),IntExpr(4))[0m
+[0m[[0m[31merror[0m] [0m[0m               ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:46:24: not found: value IntExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val brac = AddExpr(IntExpr(3),IntExpr(4))[0m
+[0m[[0m[31merror[0m] [0m[0m                       ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:46:35: not found: value IntExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val brac = AddExpr(IntExpr(3),IntExpr(4))[0m
+[0m[[0m[31merror[0m] [0m[0m                                  ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:47:16: not found: value expr[0m
+[0m[[0m[31merror[0m] [0m[0m    val repr = expr.parse(exp).get[0m
+[0m[[0m[31merror[0m] [0m[0m               ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:52:3: not found: value test[0m
+[0m[[0m[31merror[0m] [0m[0m  test("Correct expression generated for nested expressions 1", ExpressionTests, SyntacticTests) {[0m
+[0m[[0m[31merror[0m] [0m[0m  ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:54:18: not found: value SubExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val nested = SubExpr(AddExpr(IntExpr(3), IntExpr(4)), IntExpr(2))[0m
+[0m[[0m[31merror[0m] [0m[0m                 ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:54:26: not found: value AddExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val nested = SubExpr(AddExpr(IntExpr(3), IntExpr(4)), IntExpr(2))[0m
+[0m[[0m[31merror[0m] [0m[0m                         ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:54:34: not found: value IntExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val nested = SubExpr(AddExpr(IntExpr(3), IntExpr(4)), IntExpr(2))[0m
+[0m[[0m[31merror[0m] [0m[0m                                 ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:54:46: not found: value IntExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val nested = SubExpr(AddExpr(IntExpr(3), IntExpr(4)), IntExpr(2))[0m
+[0m[[0m[31merror[0m] [0m[0m                                             ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:54:59: not found: value IntExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val nested = SubExpr(AddExpr(IntExpr(3), IntExpr(4)), IntExpr(2))[0m
+[0m[[0m[31merror[0m] [0m[0m                                                          ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:55:16: not found: value expr[0m
+[0m[[0m[31merror[0m] [0m[0m    val repr = expr.parse(exp).get[0m
+[0m[[0m[31merror[0m] [0m[0m               ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:59:3: not found: value test[0m
+[0m[[0m[31merror[0m] [0m[0m  test("Correct expression generated for nested expressions 2", ExpressionTests, SyntacticTests) {[0m
+[0m[[0m[31merror[0m] [0m[0m  ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:61:18: not found: value ModExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val nested = ModExpr(MulExpr(IntExpr(3),IntExpr(4)),DivExpr(IntExpr(4),IntExpr(2)))[0m
+[0m[[0m[31merror[0m] [0m[0m                 ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:61:26: not found: value MulExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val nested = ModExpr(MulExpr(IntExpr(3),IntExpr(4)),DivExpr(IntExpr(4),IntExpr(2)))[0m
+[0m[[0m[31merror[0m] [0m[0m                         ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:61:34: not found: value IntExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val nested = ModExpr(MulExpr(IntExpr(3),IntExpr(4)),DivExpr(IntExpr(4),IntExpr(2)))[0m
+[0m[[0m[31merror[0m] [0m[0m                                 ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:61:45: not found: value IntExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val nested = ModExpr(MulExpr(IntExpr(3),IntExpr(4)),DivExpr(IntExpr(4),IntExpr(2)))[0m
+[0m[[0m[31merror[0m] [0m[0m                                            ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:61:57: not found: value DivExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val nested = ModExpr(MulExpr(IntExpr(3),IntExpr(4)),DivExpr(IntExpr(4),IntExpr(2)))[0m
+[0m[[0m[31merror[0m] [0m[0m                                                        ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:61:65: not found: value IntExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val nested = ModExpr(MulExpr(IntExpr(3),IntExpr(4)),DivExpr(IntExpr(4),IntExpr(2)))[0m
+[0m[[0m[31merror[0m] [0m[0m                                                                ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:61:76: not found: value IntExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val nested = ModExpr(MulExpr(IntExpr(3),IntExpr(4)),DivExpr(IntExpr(4),IntExpr(2)))[0m
+[0m[[0m[31merror[0m] [0m[0m                                                                           ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:62:16: not found: value expr[0m
+[0m[[0m[31merror[0m] [0m[0m    val repr = expr.parse(exp).get[0m
+[0m[[0m[31merror[0m] [0m[0m               ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:67:3: not found: value test[0m
+[0m[[0m[31merror[0m] [0m[0m  test("Correct expression generated for Char-Liter expression", ExpressionTests, SyntacticTests) {[0m
+[0m[[0m[31merror[0m] [0m[0m  ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:69:14: not found: value CharExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val lt = CharExpr(exp)[0m
+[0m[[0m[31merror[0m] [0m[0m             ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:70:16: not found: value expr[0m
+[0m[[0m[31merror[0m] [0m[0m    val repr = expr.parse("'b'").get[0m
+[0m[[0m[31merror[0m] [0m[0m               ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:74:3: not found: value test[0m
+[0m[[0m[31merror[0m] [0m[0m  test("Correct expression generated for Pair-literal expression", ExpressionTests, SyntacticTests) {[0m
+[0m[[0m[31merror[0m] [0m[0m  ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:76:22: not found: value PairExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val pair_liter = PairExpr[0m
+[0m[[0m[31merror[0m] [0m[0m                     ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:77:16: not found: value expr[0m
+[0m[[0m[31merror[0m] [0m[0m    val repr = expr.parse(exp).get[0m
+[0m[[0m[31merror[0m] [0m[0m               ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:81:3: not found: value test[0m
+[0m[[0m[31merror[0m] [0m[0m  test("Correct expression generated for add binop expression", ExpressionTests, SyntacticTests) {[0m
+[0m[[0m[31merror[0m] [0m[0m  ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:83:15: not found: value AddExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val add = AddExpr(IntExpr(2), IntExpr(3))[0m
+[0m[[0m[31merror[0m] [0m[0m              ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:83:23: not found: value IntExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val add = AddExpr(IntExpr(2), IntExpr(3))[0m
+[0m[[0m[31merror[0m] [0m[0m                      ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:83:35: not found: value IntExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val add = AddExpr(IntExpr(2), IntExpr(3))[0m
+[0m[[0m[31merror[0m] [0m[0m                                  ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:84:16: not found: value expr[0m
+[0m[[0m[31merror[0m] [0m[0m    val repr = expr.parse(exp).get[0m
+[0m[[0m[31merror[0m] [0m[0m               ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:88:3: not found: value test[0m
+[0m[[0m[31merror[0m] [0m[0m  test("Correct expression generated for subtract binop expression", ExpressionTests, SyntacticTests) {[0m
+[0m[[0m[31merror[0m] [0m[0m  ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:90:15: not found: value SubExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val sub = SubExpr(IntExpr(3), IntExpr(2))[0m
+[0m[[0m[31merror[0m] [0m[0m              ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:90:23: not found: value IntExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val sub = SubExpr(IntExpr(3), IntExpr(2))[0m
+[0m[[0m[31merror[0m] [0m[0m                      ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:90:35: not found: value IntExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val sub = SubExpr(IntExpr(3), IntExpr(2))[0m
+[0m[[0m[31merror[0m] [0m[0m                                  ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:91:16: not found: value expr[0m
+[0m[[0m[31merror[0m] [0m[0m    val repr = expr.parse(exp).get[0m
+[0m[[0m[31merror[0m] [0m[0m               ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:95:3: not found: value test[0m
+[0m[[0m[31merror[0m] [0m[0m  test("Correct expression generated for multiply binop expression", ExpressionTests, SyntacticTests) {[0m
+[0m[[0m[31merror[0m] [0m[0m  ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:97:15: not found: value MulExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val mul = MulExpr(IntExpr(2), IntExpr(3))[0m
+[0m[[0m[31merror[0m] [0m[0m              ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:97:23: not found: value IntExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val mul = MulExpr(IntExpr(2), IntExpr(3))[0m
+[0m[[0m[31merror[0m] [0m[0m                      ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:97:35: not found: value IntExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val mul = MulExpr(IntExpr(2), IntExpr(3))[0m
+[0m[[0m[31merror[0m] [0m[0m                                  ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:98:16: not found: value expr[0m
+[0m[[0m[31merror[0m] [0m[0m    val repr = expr.parse(exp).get[0m
+[0m[[0m[31merror[0m] [0m[0m               ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:102:3: not found: value test[0m
+[0m[[0m[31merror[0m] [0m[0m  test("Correct expression generated for divide binop expression", ExpressionTests, SyntacticTests) {[0m
+[0m[[0m[31merror[0m] [0m[0m  ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:104:15: not found: value DivExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val div = DivExpr(IntExpr(2), IntExpr(3))[0m
+[0m[[0m[31merror[0m] [0m[0m              ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:104:23: not found: value IntExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val div = DivExpr(IntExpr(2), IntExpr(3))[0m
+[0m[[0m[31merror[0m] [0m[0m                      ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:104:35: not found: value IntExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val div = DivExpr(IntExpr(2), IntExpr(3))[0m
+[0m[[0m[31merror[0m] [0m[0m                                  ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:105:16: not found: value expr[0m
+[0m[[0m[31merror[0m] [0m[0m    val repr = expr.parse(exp).get[0m
+[0m[[0m[31merror[0m] [0m[0m               ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:109:3: not found: value test[0m
+[0m[[0m[31merror[0m] [0m[0m  test("Correct expression generated for mod binop expression", ExpressionTests, SyntacticTests) {[0m
+[0m[[0m[31merror[0m] [0m[0m  ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:111:15: not found: value ModExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val mod = ModExpr(IntExpr(2), IntExpr(3))[0m
+[0m[[0m[31merror[0m] [0m[0m              ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:111:23: not found: value IntExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val mod = ModExpr(IntExpr(2), IntExpr(3))[0m
+[0m[[0m[31merror[0m] [0m[0m                      ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:111:35: not found: value IntExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val mod = ModExpr(IntExpr(2), IntExpr(3))[0m
+[0m[[0m[31merror[0m] [0m[0m                                  ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:112:16: not found: value expr[0m
+[0m[[0m[31merror[0m] [0m[0m    val repr = expr.parse(exp).get[0m
+[0m[[0m[31merror[0m] [0m[0m               ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:116:3: not found: value test[0m
+[0m[[0m[31merror[0m] [0m[0m  test("Correct expression generated for gt binop expression", ExpressionTests, SyntacticTests) {[0m
+[0m[[0m[31merror[0m] [0m[0m  ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:118:14: not found: value GTExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val gt = GTExpr(IntExpr(3), IntExpr(2))[0m
+[0m[[0m[31merror[0m] [0m[0m             ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:118:21: not found: value IntExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val gt = GTExpr(IntExpr(3), IntExpr(2))[0m
+[0m[[0m[31merror[0m] [0m[0m                    ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:118:33: not found: value IntExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val gt = GTExpr(IntExpr(3), IntExpr(2))[0m
+[0m[[0m[31merror[0m] [0m[0m                                ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:119:16: not found: value expr[0m
+[0m[[0m[31merror[0m] [0m[0m    val repr = expr.parse(exp).get[0m
+[0m[[0m[31merror[0m] [0m[0m               ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:123:3: not found: value test[0m
+[0m[[0m[31merror[0m] [0m[0m  test("Correct expression generated for gteq binop expression", ExpressionTests, SyntacticTests) {[0m
+[0m[[0m[31merror[0m] [0m[0m  ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:125:16: not found: value GTEQExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val gteq = GTEQExpr(IntExpr(3), IntExpr(2))[0m
+[0m[[0m[31merror[0m] [0m[0m               ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:125:25: not found: value IntExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val gteq = GTEQExpr(IntExpr(3), IntExpr(2))[0m
+[0m[[0m[31merror[0m] [0m[0m                        ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:125:37: not found: value IntExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val gteq = GTEQExpr(IntExpr(3), IntExpr(2))[0m
+[0m[[0m[31merror[0m] [0m[0m                                    ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:126:16: not found: value expr[0m
+[0m[[0m[31merror[0m] [0m[0m    val repr = expr.parse(exp).get[0m
+[0m[[0m[31merror[0m] [0m[0m               ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:130:3: not found: value test[0m
+[0m[[0m[31merror[0m] [0m[0m  test("Correct expression generated for lt binop expression", ExpressionTests, SyntacticTests) {[0m
+[0m[[0m[31merror[0m] [0m[0m  ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:132:14: not found: value LTExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val lt = LTExpr(IntExpr(2), IntExpr(3))[0m
+[0m[[0m[31merror[0m] [0m[0m             ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:132:21: not found: value IntExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val lt = LTExpr(IntExpr(2), IntExpr(3))[0m
+[0m[[0m[31merror[0m] [0m[0m                    ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:132:33: not found: value IntExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val lt = LTExpr(IntExpr(2), IntExpr(3))[0m
+[0m[[0m[31merror[0m] [0m[0m                                ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:133:16: not found: value expr[0m
+[0m[[0m[31merror[0m] [0m[0m    val repr = expr.parse(exp).get[0m
+[0m[[0m[31merror[0m] [0m[0m               ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:137:3: not found: value test[0m
+[0m[[0m[31merror[0m] [0m[0m  test("Correct expression generated for lteq binop expression", ExpressionTests, SyntacticTests) {[0m
+[0m[[0m[31merror[0m] [0m[0m  ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:139:16: not found: value LTEQExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val lteq = LTEQExpr(IntExpr(2), IntExpr(3))[0m
+[0m[[0m[31merror[0m] [0m[0m               ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:139:25: not found: value IntExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val lteq = LTEQExpr(IntExpr(2), IntExpr(3))[0m
+[0m[[0m[31merror[0m] [0m[0m                        ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:139:37: not found: value IntExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val lteq = LTEQExpr(IntExpr(2), IntExpr(3))[0m
+[0m[[0m[31merror[0m] [0m[0m                                    ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:140:16: not found: value expr[0m
+[0m[[0m[31merror[0m] [0m[0m    val repr = expr.parse(exp).get[0m
+[0m[[0m[31merror[0m] [0m[0m               ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:144:3: not found: value test[0m
+[0m[[0m[31merror[0m] [0m[0m  test("Correct expression generated for equals binop expression", ExpressionTests, SyntacticTests) {[0m
+[0m[[0m[31merror[0m] [0m[0m  ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:146:14: not found: value EQExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val eq = EQExpr(IntExpr(2), IntExpr(2))[0m
+[0m[[0m[31merror[0m] [0m[0m             ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:146:21: not found: value IntExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val eq = EQExpr(IntExpr(2), IntExpr(2))[0m
+[0m[[0m[31merror[0m] [0m[0m                    ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:146:33: not found: value IntExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val eq = EQExpr(IntExpr(2), IntExpr(2))[0m
+[0m[[0m[31merror[0m] [0m[0m                                ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:147:16: not found: value expr[0m
+[0m[[0m[31merror[0m] [0m[0m    val repr = expr.parse(exp).get[0m
+[0m[[0m[31merror[0m] [0m[0m               ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:151:3: not found: value test[0m
+[0m[[0m[31merror[0m] [0m[0m  test("Correct expression generated for not equals binop expression", ExpressionTests, SyntacticTests) {[0m
+[0m[[0m[31merror[0m] [0m[0m  ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/krishmaha/wacc/new/WACC_25/src/test/scala/wacc/ASTTests/ExpressionTests.scala:153:15: not found: value NEQExpr[0m
+[0m[[0m[31merror[0m] [0m[0m    val neq = NEQExpr(IntExpr(2), IntExpr(3))[0m
+[0m[[0m[31merror[0m] [0m[0m              ^[0m
+[0m[[0m[31merror[0m] [0m[0m100 errors found[0m

@@ -213,7 +213,7 @@ object printer {
       var line = pos._1 - 1
       var regex = """ ;="""
       val sb = new StringBuilder()
-      while (line < fileLines.length && !regex.contains(fileLines(line).charAt(col))) {
+      while (line < fileLines.length && fileLines(line).nonEmpty && !regex.contains(fileLines(line).charAt(col))) {
         val c = fileLines(line).charAt(col)
         sb.append(c)
         if ("[(\'\"".contains(c)) {

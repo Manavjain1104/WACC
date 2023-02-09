@@ -331,13 +331,9 @@ class semantic_analyser {
 
   private def checkRvalue(rvalue: RValue, symbolTable: SymbolTable): Option[SemType] = {
     rvalue match {
-      case expr: Expr =>
-        val expType = checkExpr(expr, symbolTable)
-        expType
+      case expr: Expr => checkExpr(expr, symbolTable)
 
-      case arrayLiter: ArrayLiter =>
-        val arrayType = checkArrayLiteral(arrayLiter, symbolTable)
-        arrayType
+      case arrayLiter: ArrayLiter => checkArrayLiteral(arrayLiter, symbolTable)
 
       case NewPair(e1: Expr, e2: Expr) =>
         val e1Type: Option[SemType] = checkExpr(e1, symbolTable)
@@ -624,16 +620,21 @@ class semantic_analyser {
       }
 
       case ret@Return(expr: Expr) => {
+        println(ret)
         val funcRetType: Option[SemType] = symbolTable.lookupAll(ENCLOSING_FUNC_RETURN_TYPE)
         if (funcRetType.isDefined) {
           val exprType: Option[SemType] = checkExpr(expr, symbolTable)
-          if (exprType.isDefined) {
-            if (matchTypes(exprType.get, funcRetType.get)) {
-              return exprType
-            }
+          assert(exprType.isDefined)
+          if (matchTypes(exprType.get, funcRetType.get)) {
+            println(exprType.get, funcRetType.get)
+            return exprType
+          } else {
+
+            val exprPos = getExprPos(expr)
+            errorLog += new TypeError(exprPos._1, Set(funcRetType.get), exprType.get, Some("Return type does not match with function definition"))(exprPos._2)
+            return Some(InternalPairSemType)
           }
         }
-
         errorLog += InvalidReturnError(ret.pos, Some("Main body cannot have return. Return must exist in a function body!"))
         Some(InternalPairSemType)
       }
@@ -660,10 +661,12 @@ class semantic_analyser {
 
       case If(cond, thenStat, elseStat) => {
         val condType: Option[SemType] = checkExpr(cond, symbolTable)
+        println(condType.get)
         if (matchTypes(condType.get, BoolSemType)) {
           val thenScope = new SymbolTable(Some(symbolTable))
           val elseScope = new SymbolTable(Some(symbolTable))
-          return checkStatement(elseStat, elseScope)
+          checkStatement(elseStat, elseScope)
+          return checkStatement(thenStat, thenScope)
         }
         val condPos = getExprPos(cond)
         errorLog += TypeError(condPos._1, Set(BoolSemType), condType.get, Some("If expects a bool condition type"))
