@@ -11,17 +11,21 @@ object AST {
 
   // * Symbol Table and Position Aware Bridges * //
 
-  trait ParserBridgeSymPos1[-A, +B] {
+  trait ParserBridgeSymPos1[-A, +B] extends ParserSingletonPosBridge[A => B]{
     def apply(x: A)(symbolTable: Option[SymbolTable], pos: (Int, Int)): B
 
     def apply(x: Parsley[A]): Parsley[B] = pos <**> x.map(x => (p: (Int, Int)) => this.apply(x)(None, p))
+
+    override final def con(pos: (Int, Int)): A => B = this.apply(_)(None, pos)
   }
 
-  trait ParserBridgeSymPos2[-A, -B, +C] {
+  trait ParserBridgeSymPos2[-A, -B, +C] extends ParserSingletonPosBridge[(A,B) => C]{
     def apply(x: A, y: B)(st: Option[SymbolTable], pos: (Int, Int)): C
 
     def apply(x: Parsley[A], y: Parsley[B]): Parsley[C]
     = pos <**> (x, y).zipped((a: A, b: B) => (p: (Int, Int)) => this.apply(a, b)(None, p))
+
+    override final def con(pos: (Int, Int)): (A, B) => C = this.apply(_, _)(None, pos)
   }
 
   trait ParserBridgeSymPos3[-A, -B, -C, +D] {
