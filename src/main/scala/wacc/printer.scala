@@ -55,7 +55,7 @@ object printer {
 
     // initial constructor code
     val source: BufferedSource = fromFile(filename)
-    val fileLines: List[String] = source.getLines().toList
+    val fileLines: List[String] = source.getLines().map(_.replace("\t", "    ")).toList
     source.close()
 
     override def print(): String = {
@@ -128,20 +128,15 @@ object printer {
       val errLines: Seq[String] = getLinesAround(pos._1 - 1, numLinesArd, fileLines)
 
       for (i <- errLines.indices) {
+        println()
         if (i == numLinesArd) {
           sb.append("| " + errLines(i) + "\n")
           var numCars = token.length
-          var numSpaces = pos._2 - 1
           if ((pos._2 + token.length) > errLines(i).length) {
             numCars = errLines(i).length - pos._2 + 1
           }
 
-          if (numCars < 0 || numSpaces > errLines(i).length) {
-            numSpaces = errLines(i).length - 1
-            numCars = 3
-          }
-
-          sb.append("| " + (" " * numSpaces) + ("^" * numCars) + "\n")
+          sb.append("| " + (" " * (pos._2 - 1)) + ("^" * numCars) + "\n")
         } else {
           sb.append("| " + errLines(i) + "\n")
         }
@@ -220,9 +215,9 @@ object printer {
       var regex = """ ;="""
       val sb = new StringBuilder()
       while (line < fileLines.length &&
-            col < fileLines(line).length &&
-            fileLines(line).nonEmpty &&
-            !regex.contains(fileLines(line).charAt(col))) {
+        col < fileLines(line).length &&
+        fileLines(line).nonEmpty &&
+        !regex.contains(fileLines(line).charAt(col))) {
         val c = fileLines(line).charAt(col)
         sb.append(c)
         if ("[(\'\"".contains(c)) {
@@ -300,7 +295,7 @@ object printer {
         sb.append("| " + lineBefore + "\n")
       }
       sb.append("| " + line.line + "\n")
-      sb.append("| " + (" " * line.errorPointsAt) + "^" * math.min(line.errorWidth, line.line.length) + "\n")
+      sb.append("| " + (" " * line.errorPointsAt) + "^" * math.min(line.errorWidth, (line.line.length - line.errorPointsAt)) + "\n")
       for (lineAfter <- line.linesAfter) {
         sb.append("| " + lineAfter + "\n")
       }

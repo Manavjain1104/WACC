@@ -19,7 +19,7 @@ object Main {
 
     println("-- Compiling...")
 
-    val sem: semantic_analyser = new semantic_analyser
+    val sem: semanticAnalyser = new semanticAnalyser
     val file: File = new File(args.head)
 
     implicit val eb: error.SyntaxErrorBuilder = new error.SyntaxErrorBuilder
