@@ -320,18 +320,23 @@ class semanticAnalyser {
     val e1Type: Option[SemType] = checkExpr(e1, symbolTable)
     val e2Type: Option[SemType] = checkExpr(e2, symbolTable)
 
+    var err = false
+
     if (!matchTypes(matchBaseType, e1Type.get)) {
       val exprPos = getExprPos(e1)
       errorLog += new TypeError(exprPos._1,
         Set(matchBaseType), e1Type.get,
         Some("Given expr type invalid for this operation"))(exprPos._2)
-      return Some(InternalPairSemType)
+      err = true
     }
     if (!matchTypes(matchBaseType, e2Type.get)) {
       val exprPos = getExprPos(e2)
       errorLog += new TypeError(exprPos._1,
         Set(matchBaseType), e2Type.get,
         Some("Given expr type invalid for this operation"))(exprPos._2)
+      err = true
+    }
+    if (err) {
       return Some(InternalPairSemType)
     }
     Some(matchBaseType)
