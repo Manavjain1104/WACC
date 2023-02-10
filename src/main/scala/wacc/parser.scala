@@ -1,6 +1,6 @@
 package wacc
 
-import parsley.Parsley.attempt
+import parsley.Parsley.{attempt, lookAhead}
 import parsley.combinator.{many, sepBy}
 import parsley.errors.combinator.{ErrorMethods, amend, fail}
 import parsley.expr.{Prefix, chain, precedence}
@@ -102,17 +102,12 @@ object parser {
   = Func(waccType,
     IDENT,
     OPENPAREN ~> paramList <~ CLOSEDPAREN,
-    (IS ~> statement.filter(isValidFuncStatement) <~ END))
+    (IS ~> statement.filter(isValidFuncStatement).explain("Function body starting here must" +
+      " have a return/exit statement on all paths and must end with one") <~ END))
 
-  val main_body: Parsley[Statement]
-  = amend {
-    attempt(waccType ~> IDENT ~> OPENPAREN
-      ~> fail("Function starting here must have a return/exit statement on all paths " +
-      "and also end with one"))
-  } <|>
-    statement
-
-  val program: Parsley[Program] = Program(BEGIN ~> many(attempt(func)), (main_body <~ END))
+  val program: Parsley[Program]
+    = Program(BEGIN ~> many(attempt(lookAhead(waccType ~> IDENT ~> OPENPAREN)) *> func),
+              (statement <~ END))
 
   private def isValidFuncStatement(stat: Statement): Boolean = {
     stat match {

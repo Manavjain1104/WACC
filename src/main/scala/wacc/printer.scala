@@ -158,7 +158,7 @@ object printer {
       if (expectedTypes.nonEmpty) {
         sb.append(typeToString(expectedTypes.head))
         for (expectedType <- expectedTypes.tail) {
-          sb.append(" , " + typeToString(expectedType))
+          sb.append("  " + typeToString(expectedType))
         }
       }
       sb.append("\n")
@@ -270,7 +270,7 @@ object printer {
             sb.append("Expected   : ")
             sb.append(printItem(expected.head))
             for (item <- expected.tail) {
-              sb.append(" , " + printItem(item))
+              sb.append("  " + printItem(item))
             }
             sb.append("\n")
           }
@@ -300,7 +300,7 @@ object printer {
         sb.append("| " + lineBefore + "\n")
       }
       sb.append("| " + line.line + "\n")
-      sb.append("| " + (" " * line.errorPointsAt) + "^" * line.errorWidth + "\n")
+      sb.append("| " + (" " * line.errorPointsAt) + "^" * math.min(line.errorWidth, line.line.length) + "\n")
       for (lineAfter <- line.linesAfter) {
         sb.append("| " + lineAfter + "\n")
       }
