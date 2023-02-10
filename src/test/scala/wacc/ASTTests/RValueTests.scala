@@ -13,7 +13,7 @@ class RValueTests extends AnyFlatSpec {
   behavior of "ident RValue"
   it should "generate the correct RValue expression" taggedAs(RValueTests, SyntacticTests) in {
     val exp = "abcde"
-    val rvalue_ident = IdentExpr(exp)(0,0)
+    val rvalue_ident = IdentExpr(exp)(None,(0,0))
     val repr = rvalue.parse(exp).get
     assert(repr === rvalue_ident)
   }
@@ -45,7 +45,7 @@ class RValueTests extends AnyFlatSpec {
   behavior of "array-elem pair-elem RValue"
   it should "generate the correct array-elem pair-elem RValue expression" taggedAs(RValueTests, SyntacticTests) in {
     val exp = "snd arr[1][2]"
-    val pair_elem_array_elem = Snd(ArrayElem("arr", List(IntExpr(1)(0,0), IntExpr(2)(0,0)))(0,0))(0,0)
+    val pair_elem_array_elem = Snd(ArrayElem("arr", List(IntExpr(1)(0,0), IntExpr(2)(0,0)))(None,(0,0)))(0,0)
     val repr = rvalue.parse(exp).get
     assert(repr === pair_elem_array_elem)
   }
