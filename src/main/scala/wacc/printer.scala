@@ -17,11 +17,8 @@ object printer {
                              syntaxError: Option[SyntaxError],
                              filename: String, exitCode: Int): Unit = {
     if (exitCode == OK_EXIT_CODE) {
-
       println("---- Compilation success. Exit code 0 returned ---- \n")
       return
-
-
     }
 
     val sb = new StringBuilder()
@@ -128,7 +125,6 @@ object printer {
       val errLines: Seq[String] = getLinesAround(pos._1 - 1, numLinesArd, fileLines)
 
       for (i <- errLines.indices) {
-        println()
         if (i == numLinesArd) {
           sb.append("| " + errLines(i) + "\n")
           var numCars = token.length
