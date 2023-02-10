@@ -659,7 +659,6 @@ class semantic_analyser {
 
       case If(cond, thenStat, elseStat) => {
         val condType: Option[SemType] = checkExpr(cond, symbolTable)
-        println(condType.get)
         if (matchTypes(condType.get, BoolSemType)) {
           val thenScope = new SymbolTable(Some(symbolTable))
           val elseScope = new SymbolTable(Some(symbolTable))
