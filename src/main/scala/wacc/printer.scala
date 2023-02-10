@@ -281,7 +281,6 @@ object printer {
         }
       }
       sb.append("\n\n")
-      //      println(sb)
       sb.toString()
     }
 
@@ -300,7 +299,9 @@ object printer {
 
     def printItem(item: SyntaxErrorItem): String = {
       item match {
-        case SyntaxRaw(item) => item
+        case SyntaxRaw(item) => {
+          if (item.equals("()")) item + " <-- (possibly incomplete function definition/call)" else item
+        }
         case SyntaxNamed(item) => item
         case error.SyntaxEndOfInput => "End of input"
       }

@@ -38,6 +38,24 @@ class semanticAnalyser {
     None
   }
 
+  def getLvalPos(lval: LValue): ((Int, Int), Int) = {
+    lval match {
+      case ident: IdentValue => (ident.pos, 0)
+      case arrayElem: ArrayElem => (arrayElem.pos, 0)
+      case pairElem: PairElem =>
+        val insideLval = pairElem match {
+          case Fst(lvalue) => lvalue
+          case Snd(lvalue) => lvalue
+        }
+        val insidePos: ((Int, Int), Int) = getLvalPos(insideLval)
+        (insidePos._1, 3 + insidePos._2)
+      case _ =>
+        System.err.println("Cannot pattern match lvalue in get lvalue position function")
+        ((-1, -1), -1)
+    }
+
+  }
+
   private def convertToSem(func: Func): SemType = {
     FuncSemType(convertToSem(func.retType),
       func.params.map(param => convertToSem(param.paramType)),
@@ -180,83 +198,68 @@ class semanticAnalyser {
         val opType: Option[SemType] = checkExpr(e, symbolTable)
         opType.get match {
           case IntSemType => Some(CharSemType)
-          case unexpectedType => {
+          case unexpectedType =>
             errorLog += new TypeError(getExprPos(e)._1,
               Set(IntSemType),
               unexpectedType,
               Some("Expected int type for chr expression"))(getExprPos(e)._2)
             Some(InternalPairSemType)
-          }
         }
 
       case OrdExpr(e: Expr) =>
         val opType: Option[SemType] = checkExpr(e, symbolTable)
         opType.get match {
           case CharSemType => Some(IntSemType)
-          case unexpectedType => {
+          case unexpectedType =>
             errorLog += new TypeError(getExprPos(e)._1,
               Set(CharSemType),
               unexpectedType,
               Some("Expected char type for ord expression"))(getExprPos(e)._2)
             Some(InternalPairSemType)
-          }
         }
 
       // Binary operator expressions
-      case node@ModExpr(e1, e2) => {
+      case node@ModExpr(e1, e2) =>
         node.st = Some(symbolTable)
         checkBinOpWithType(e1, e2, symbolTable, IntSemType)
-      }
-      case node@MulExpr(e1, e2) => {
+      case node@MulExpr(e1, e2) =>
         node.st = Some(symbolTable)
         checkBinOpWithType(e1, e2, symbolTable, IntSemType)
-      }
-      case node@DivExpr(e1, e2) => {
+      case node@DivExpr(e1, e2) =>
         node.st = Some(symbolTable)
         checkBinOpWithType(e1, e2, symbolTable, IntSemType)
-      }
-      case node@AddExpr(e1, e2) => {
+      case node@AddExpr(e1, e2) =>
         node.st = Some(symbolTable)
         checkBinOpWithType(e1, e2, symbolTable, IntSemType)
-      }
-      case node@SubExpr(e1, e2) => {
+      case node@SubExpr(e1, e2) =>
         node.st = Some(symbolTable)
         checkBinOpWithType(e1, e2, symbolTable, IntSemType)
-      }
-      case node@AndExpr(e1, e2) => {
+      case node@AndExpr(e1, e2) =>
         node.st = Some(symbolTable)
         checkBinOpWithType(e1, e2, symbolTable, BoolSemType)
-      }
-      case node@OrExpr(e1, e2) => {
+      case node@OrExpr(e1, e2) =>
         node.st = Some(symbolTable)
         checkBinOpWithType(e1, e2, symbolTable, BoolSemType)
-      }
 
-      case node@GTExpr(e1, e2) => {
+      case node@GTExpr(e1, e2) =>
         node.st = Some(symbolTable)
         checkComparisonBinOp(e1, e2, symbolTable)
-      }
-      case node@GTEQExpr(e1, e2) => {
+      case node@GTEQExpr(e1, e2) =>
         node.st = Some(symbolTable)
         checkComparisonBinOp(e1, e2, symbolTable)
-      }
-      case node@LTExpr(e1, e2) => {
+      case node@LTExpr(e1, e2) =>
         node.st = Some(symbolTable)
         checkComparisonBinOp(e1, e2, symbolTable)
-      }
-      case node@LTEQExpr(e1, e2) => {
+      case node@LTEQExpr(e1, e2) =>
         node.st = Some(symbolTable)
         checkComparisonBinOp(e1, e2, symbolTable)
-      }
 
-      case node@EQExpr(e1, e2) => {
+      case node@EQExpr(e1, e2) =>
         node.st = Some(symbolTable)
         checkSameType(e1, e2, symbolTable)
-      }
-      case node@NEQExpr(e1, e2) => {
+      case node@NEQExpr(e1, e2) =>
         node.st = Some(symbolTable)
         checkSameType(e1, e2, symbolTable)
-      }
 
       case _ => System.err.println("Should not reach here")
         Some(InternalPairSemType)
@@ -346,32 +349,26 @@ class semanticAnalyser {
       case ident: IdentExpr => (ident.pos, 0)
       case arrayElem: ArrayElem => (arrayElem.pos, 0)
 
-      case unOp: UnopExpr => {
+      case unOp: UnopExpr =>
         unOp match {
-          case NotExpr(e) => {
+          case NotExpr(e) =>
             val insidePos: ((Int, Int), Int) = getExprPos(e)
             (insidePos._1, 1 + insidePos._2 + 1)
-          }
-          case NegExpr(e) => {
+          case NegExpr(e) =>
             val insidePos: ((Int, Int), Int) = getExprPos(e)
             (insidePos._1, 1 + insidePos._2 + 1)
-          }
-          case LenExpr(e) => {
+          case LenExpr(e) =>
             val insidePos2: ((Int, Int), Int) = getExprPos(e)
             (insidePos2._1, insidePos2._2 + 3)
-          }
-          case ChrExpr(e) => {
+          case ChrExpr(e) =>
             val insidePos2: ((Int, Int), Int) = getExprPos(e)
             (insidePos2._1, insidePos2._2 + 3)
-          }
-          case OrdExpr(e) => {
+          case OrdExpr(e) =>
             val insidePos2: ((Int, Int), Int) = getExprPos(e)
             (insidePos2._1, insidePos2._2 + 3)
-          }
         }
-      }
 
-      case binOp: BinopExpr => {
+      case binOp: BinopExpr =>
         val expressionOffset0 = binOp match {
           case MulExpr(e, _) => e
           case DivExpr(e, _) => e
@@ -388,13 +385,11 @@ class semanticAnalyser {
           case OrExpr(e, _) => e
         }
         getExprPos(expressionOffset0)
-      }
       case _ =>
         System.err.println("Cannot pattern match expr in get expr position function")
         ((-1, -1), -1)
     }
   }
-
 
   private def checkRvalue(rvalue: RValue, symbolTable: SymbolTable): Option[SemType] = {
     rvalue match {
@@ -448,7 +443,6 @@ class semanticAnalyser {
       case elem: PairElem => checkPairElem(elem, symbolTable)
     }
   }
-
 
   private def checkLvalue(lvalue: LValue, symbolTable: SymbolTable): Option[SemType] = {
     lvalue match {
@@ -567,7 +561,7 @@ class semanticAnalyser {
   private def checkStatement(node: Statement, symbolTable: SymbolTable): Option[SemType] = {
     node match {
       case Skip => Some(InternalPairSemType)
-      case varDec@VarDec(assignType, ident, rvalue) => {
+      case varDec@VarDec(assignType, ident, rvalue) =>
 
         if (symbolTable.lookup(ident).isDefined) {
           errorLog += DuplicateIdentifier(varDec.pos, varDec.ident, Some("Duplicate variable identifier found"))
@@ -586,9 +580,8 @@ class semanticAnalyser {
             Some(assignSemType)
           }
         }
-      }
 
-      case assign@Assign(lvalue, rvalue) => {
+      case assign@Assign(lvalue, rvalue) =>
         val opLvalSemType: Option[SemType] = checkLvalue(lvalue, symbolTable)
 
         opLvalSemType.get match {
@@ -602,7 +595,7 @@ class semanticAnalyser {
           case lvalSemType: SemType =>
             // there are 5 rvalue cases
             rvalue match {
-              case rval@ArrayLiter(_) => {
+              case rval@ArrayLiter(_) =>
                 val arrayType: Option[SemType] = checkArrayLiteral(rval, symbolTable)
                 if (matchTypes(lvalSemType, arrayType.get)) {
                   return arrayType
@@ -612,9 +605,8 @@ class semanticAnalyser {
                   lvalSemType,
                   Some("Can't assign array literal to non array type"))
                 Some(InternalPairSemType)
-              }
 
-              case rCall: Call => {
+              case rCall: Call =>
                 val opFuncRetType: Option[SemType] = checkRvalue(rCall, symbolTable)
                 if (matchTypes(opFuncRetType.get, lvalSemType)) {
                   return opFuncRetType
@@ -624,18 +616,16 @@ class semanticAnalyser {
                   lvalSemType,
                   Some("Function return type does not match target type"))
                 Some(InternalPairSemType)
-              }
 
-              case np@NewPair(expr1, expr2) => {
+              case np@NewPair(expr1, expr2) =>
                 val pt: PairSemType = lvalSemType match {
                   case p: PairSemType => p
-                  case unexpectedType => {
+                  case unexpectedType =>
                     errorLog += TypeError(np.pos,
                       Set(PairSemType(InternalPairSemType, InternalPairSemType)),
                       unexpectedType,
                       Some("Cannot assign a new pair to a non pair type"))
                     return None
-                  }
                 }
                 val expr1Type = checkExpr(expr1, symbolTable)
                 val expr2Type = checkExpr(expr2, symbolTable)
@@ -655,12 +645,11 @@ class semanticAnalyser {
                   return Some(InternalPairSemType)
                 }
                 Some(pt)
-              }
 
               case Fst(rhsLVal) => checkPairElemAssign(rhsLVal, lvalSemType, symbolTable, is_fst = true)
               case Snd(rhsLVal) => checkPairElemAssign(rhsLVal, lvalSemType, symbolTable, is_fst = false)
 
-              case expr: Expr => {
+              case expr: Expr =>
                 val exprSemType: Option[SemType] = checkExpr(expr, symbolTable)
                 if (matchTypes(exprSemType.get, lvalSemType)) {
                   return Some(lvalSemType)
@@ -670,43 +659,37 @@ class semanticAnalyser {
                   lvalSemType,
                   Some("Assignment and target types don't match"))
                 Some(InternalPairSemType)
-              }
 
-              case _ => {
+              case _ =>
                 None
-              }
             }
         }
-      }
 
-      case read@Read(lvalue) => {
+      case read@Read(lvalue) =>
         val readLvalSemType: Option[SemType] = checkLvalue(read.lvalue, symbolTable)
         val lvalPos = getLvalPos(lvalue)
         read.symbolTable = Some(symbolTable)
         readLvalSemType.get match {
           case IntSemType => Some(IntSemType)
           case CharSemType => Some(CharSemType)
-          case InternalPairSemType => {
+          case InternalPairSemType =>
             errorLog += TypeErasureError((lvalPos._1._1, 1),
               Some("Cannot read into internal pair types due to type erasure"))
             Some(InternalPairSemType)
-          }
-          case unexpectedType => {
+          case unexpectedType =>
             errorLog += new TypeError(lvalPos._1,
               Set(IntSemType, CharSemType),
               unexpectedType,
               Some("Can only read into int and char types"))(lvalPos._2)
             Some(InternalPairSemType)
-          }
         }
-      }
 
-      case Free(expr: Expr) => {
+      case Free(expr: Expr) =>
         val exprType: Option[SemType] = checkExpr(expr, symbolTable)
         exprType.get match {
           case _: PairSemType => exprType
           case _: ArraySemType => exprType
-          case unexpectedType => {
+          case unexpectedType =>
             val exprPos = getExprPos(expr)
             errorLog += new TypeError(exprPos._1,
               Set(PairSemType(InternalPairSemType, InternalPairSemType),
@@ -714,11 +697,9 @@ class semanticAnalyser {
               unexpectedType,
               Some("Can only free objects on heap"))(exprPos._2)
             Some(InternalPairSemType)
-          }
         }
-      }
 
-      case ret@Return(expr: Expr) => {
+      case ret@Return(expr: Expr) =>
         val funcRetType: Option[SemType] = symbolTable.lookupAll(ENCLOSING_FUNC_RETURN_TYPE)
         if (funcRetType.isDefined) {
           val exprType: Option[SemType] = checkExpr(expr, symbolTable)
@@ -738,9 +719,8 @@ class semanticAnalyser {
         errorLog += InvalidReturnError(ret.pos,
           Some("Main body cannot have return. Return must exist in a function body!"))
         Some(InternalPairSemType)
-      }
 
-      case Exit(expr: Expr) => {
+      case Exit(expr: Expr) =>
         val exprType: Option[SemType] = checkExpr(expr, symbolTable)
         exprType.get match {
           case IntSemType => exprType
@@ -752,18 +732,16 @@ class semanticAnalyser {
               Some("Cannot exit with a non integer exit code"))(exprPos._2)
             Some(InternalPairSemType)
         }
-      }
 
-      case printStat@Print(expr: Expr) => {
+      case printStat@Print(expr: Expr) =>
         printStat.symbolTable = Some(symbolTable)
         checkExpr(expr, symbolTable)
-      }
 
       case printlnStat@Println(expr: Expr) =>
         printlnStat.symbolTable = Some(symbolTable)
         checkExpr(expr, symbolTable)
 
-      case If(cond, thenStat, elseStat) => {
+      case If(cond, thenStat, elseStat) =>
         val condType: Option[SemType] = checkExpr(cond, symbolTable)
         if (matchTypes(condType.get, BoolSemType)) {
           val thenScope = new SymbolTable(Some(symbolTable))
@@ -774,9 +752,8 @@ class semanticAnalyser {
         val condPos = getExprPos(cond)
         errorLog += TypeError(condPos._1, Set(BoolSemType), condType.get, Some("If expects a bool condition type"))
         Some(InternalPairSemType)
-      }
 
-      case While(cond, doStat) => {
+      case While(cond, doStat) =>
         val condType = checkExpr(cond, symbolTable)
         if (matchTypes(condType.get, BoolSemType)) {
           val doScope = new SymbolTable(Some(symbolTable))
@@ -786,19 +763,16 @@ class semanticAnalyser {
         val condPos = getExprPos(cond)
         errorLog += TypeError(condPos._1, Set(BoolSemType), condType.get, Some("While expects a bool condition type"))
         Some(InternalPairSemType)
-      }
 
-      case ScopeStat(stat) => {
+      case ScopeStat(stat) =>
         val newScope = new SymbolTable(Some(symbolTable))
         val statType = checkStatement(stat, newScope)
         statType
-      }
 
-      case ConsecStat(first, next) => {
-        val stmt = checkStatement(first, symbolTable)
+      case ConsecStat(first, next) =>
+        checkStatement(first, symbolTable)
         val statType = checkStatement(next, symbolTable)
         statType
-      }
     }
   }
 
@@ -819,40 +793,21 @@ class semanticAnalyser {
 
   private def isConcrete(pt1: SemType): Boolean = pt1 != InternalPairSemType
 
-  def getLvalPos(lval: LValue): ((Int, Int), Int) = {
-    lval match {
-      case ident: IdentValue => (ident.pos, 0)
-      case arrayElem: ArrayElem => (arrayElem.pos, 0)
-      case pairElem: PairElem => {
-        val insideLval = pairElem match {
-          case Fst(lvalue) => lvalue
-          case Snd(lvalue) => lvalue
-        }
-        val insidePos: ((Int, Int), Int) = getLvalPos(insideLval)
-        (insidePos._1, 3 + insidePos._2)
+  private def matchInternalTypesAndConcreteCheck(rhsLval: LValue, pt : SemType, lvalSemType : SemType): Option[SemType] = {
+    val lvalPos = getLvalPos(rhsLval)
+    if (matchTypes(pt, lvalSemType)) {
+      if (!isConcrete(lvalSemType) && !isConcrete(pt)) {
+        errorLog += TypeErasureError((lvalPos._1._1, 1), Some("Both types need to be concrete"))
+        return Some(InternalPairSemType)
       }
-      case _ =>
-        System.err.println("Cannot pattern match lvalue in get lvalue position function")
-        ((-1, -1), -1)
+      else return Some(lvalSemType)
     }
-
+    errorLog += new TypeError(lvalPos._1,
+      Set(lvalSemType),
+      pt,
+      Some("Assignment and target types do not match"))(lvalPos._2)
+    Some(InternalPairSemType)
   }
-
-  //
-  //  private def matchInternalTypesAndConcreteCheck(pt : PairSemType, lvalSemType : SemType): Unit = {
-  //    if (matchTypes(pt, lvalSemType)) {
-  //      if (!isConcrete(lvalSemType) && !isConcrete(pt)) {
-  //        errorLog += TypeErasureError((lvalPos._1._1, 1), Some("Both types need to be concrete"))
-  //        return Some(InternalPairSemType)
-  //      }
-  //      else return Some(lvalSemType)
-  //    }
-  //    errorLog += new TypeError(lvalPos._1,
-  //      Set(lvalSemType),
-  //      pt,
-  //      Some("Assignment and target types do not match"))(lvalPos._2)
-  //  }
-
 
   private def checkPairElemAssign(rhsLval: LValue,
                                   lvalSemType: SemType,
@@ -862,46 +817,22 @@ class semanticAnalyser {
     val lvalPos = getLvalPos(rhsLval)
 
     rhsLvalType.get match {
-      case PairSemType(pt1, pt2) => {
+      case PairSemType(pt1, pt2) =>
         if (is_fst) {
-          if (matchTypes(pt1, lvalSemType)) {
-            if (!isConcrete(lvalSemType) && !isConcrete(pt1)) {
-              errorLog += TypeErasureError((lvalPos._1._1, 1), Some("Both types need to be concrete"))
-              return Some(InternalPairSemType)
-            }
-            else return Some(lvalSemType)
-          }
-          errorLog += new TypeError(lvalPos._1,
-            Set(lvalSemType),
-            pt1,
-            Some("Assignment and target types do not match"))(lvalPos._2)
+          matchInternalTypesAndConcreteCheck(rhsLval,pt1, lvalSemType)
         } else {
-          if (matchTypes(pt2, lvalSemType)) {
-            if (!isConcrete(lvalSemType) && !isConcrete(pt2)) {
-              errorLog += TypeErasureError((lvalPos._1._1, 1), Some("Both types need to be concrete"))
-              return Some(InternalPairSemType)
-            }
-            else return Some(lvalSemType)
-          }
-          errorLog += new TypeError(lvalPos._1,
-            Set(lvalSemType),
-            pt2,
-            Some("Assignment and target types do not match"))(lvalPos._2)
+          matchInternalTypesAndConcreteCheck(rhsLval,pt2, lvalSemType)
         }
-        Some(InternalPairSemType)
-      }
-      case InternalPairSemType => {
+      case InternalPairSemType =>
         if (!isConcrete(lvalSemType)) {
           errorLog += TypeErasureError((lvalPos._1._1, 1), Some("Type needs to be concrete"))
         }
         Some(InternalPairSemType)
-      }
-      case unexpectedType => {
+      case unexpectedType =>
         errorLog += new TypeError(lvalPos._1,
           Set(PairSemType(InternalPairSemType, InternalPairSemType)), unexpectedType,
           Some("err fst applied to non pair type"))(lvalPos._2)
         Some(InternalPairSemType)
-      }
     }
   }
 
