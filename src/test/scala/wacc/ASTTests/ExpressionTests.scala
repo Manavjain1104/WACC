@@ -32,15 +32,6 @@ class ExpressionTests extends AnyFunSuite with SyntacticTests {
     assert(repr === bool_liter)
   }
 
-  //TODO: how can we represent StringExpr? Any string "abcde" is an IdentExpr.
-
-//  test("Correct expression generated for Str-Liter expression", ExpressionTests) {
-//    val exp = "string x = hello"
-//    val str_liter = StringExpr("hello")(0,0)
-//    val stmt : Assign = Assign()
-//    val repr = expr.parse(exp).get
-//    assert(repr === str_liter)
-//  }
 
   test("Correct expression generated for bracketed expressions", ExpressionTests, SyntacticTests) {
     val exp = "(((3+4)))"

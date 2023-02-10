@@ -22,35 +22,20 @@ class ChecksAllSemanticInvalid extends AnyFlatSpec {
         })
       }
     }
-
     listAndProcess(new File(dir))
   }
 
 
   def exampleFn(file: File) {
-    //println(s"processing $file")
-    //println("pwd" !!)
-    //println(s"./compile $file" !!)
-
-    //s"./compile $file"
-    //println(s"./")
     file.toString.endsWith(".wacc") match {
       case true => {
         println(s"processing $file")
-
-
         val o = s"./compile $file check" !!
 
         println(o.takeRight(4))
         if (o.contains("100") || o.contains(" 0")) {
           fail("Wrong exit code")
         }
-
-        //println("echo $?" !!)
-        //        fully(program).parse(scala.io.Source.fromFile(file).mkString) match {
-        //          case Failure(_) => ("failed")//sys.exit(100)
-        //        } //sys.exit(100) }
-
       }
       case false => Nil
     }

@@ -5,7 +5,6 @@ import org.scalatest.Tag
 import org.scalatest.flatspec.AnyFlatSpec
 import scala.language.postfixOps
 import sys.process._
-import java.nio.file.{FileSystems}
 
 object ChecksAllSyntaxInvalid extends Tag("ChecksAllSyntaxInvalid")
 
@@ -23,39 +22,22 @@ class ChecksAllSyntaxInvalid extends AnyFlatSpec {
         })
       }
     }
-
     listAndProcess(new File(dir))
   }
 
   def exampleFn(file: File) {
-    //println(s"processing $file")
-    //println("pwd" !!)
-    //println(s"./compile $file" !!)
-
-    //s"./compile $file"
-    //println(s"./")
-
-
     file.toString.endsWith(".wacc") match {
       case true => {
         println(s"processing $file")
         val o = s"./compile $file check" !!
 
-//        if (o.contains(" 0") || o.contains("200")) {
-//          false
-//        }
-        println(s"o: $o")
+        println(s"file: $o")
         if (o.contains(" 0") || o.contains("200")) {
           fail("Wrong exit code")
         }
-        //println("echo $?" !!)
-        //        fully(program).parse(scala.io.Source.fromFile(file).mkString) match {
-        //          case Failure(_) => ("failed")//sys.exit(100)
-        //        } //sys.exit(100) }
       }
       case false => Nil
     }
-
   }
 
   def getListOfFiles(dir: String): List[String] = {

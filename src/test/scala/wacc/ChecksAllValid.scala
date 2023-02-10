@@ -27,12 +27,6 @@ class ChecksAllValid extends AnyFlatSpec {
 
 
   def exampleFn(file: File) {
-    //println(s"processing $file")
-    //println("pwd" !!)
-    //println(s"./compile $file" !!)
-
-    //s"./compile $file"
-    //println(s"./")
     file.toString.endsWith(".wacc") match {
       case true => {
         println(s"processing $file")
@@ -41,39 +35,10 @@ class ChecksAllValid extends AnyFlatSpec {
         if (o.contains("returning 100") || o.contains("returning 200")) {
           fail("Wrong exit code")
         }
-
-        //println("echo $?" !!)
-//        fully(program).parse(scala.io.Source.fromFile(file).mkString) match {
-//          case Failure(_) => ("failed")//sys.exit(100)
-//        } //sys.exit(100) }
-
       }
       case false => Nil
     }
-
   }
-
-//  behavior of "invalid syntax"
-//  it should "print exit code 100" in {
-//    val fileContents = Source.fromFile()
-//    val text: String = fileContents.getLines().mkString("\n")
-//    //println(text)
-//    fully(program).parse(text) match {
-//      case Success(x) => {
-//        //println(s"$x")
-//        println("Exit code: 0")
-//        //println(x)
-//        sys.exit(0)
-//      }
-//      case Failure(msg) => {
-//        println("Syntax error!")
-//        //println(msg)
-//        println("Exit code: 100")
-//        //sys.exit(100)
-//      }
-//    }
-//  }
-
 
   behavior of "valid advanced tests"
   it should "succeed with exit code 0" taggedAs(ChecksAllValid) in {
@@ -139,6 +104,5 @@ class ChecksAllValid extends AnyFlatSpec {
   it should "succeed with exit code 0" taggedAs(ChecksAllValid) in {
     applyRecursively("src/test/scala/wacc/valid/while", exampleFn)
   }
-
 
 }

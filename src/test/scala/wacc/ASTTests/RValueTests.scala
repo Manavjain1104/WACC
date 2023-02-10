@@ -4,7 +4,7 @@ import org.scalatest.Tag
 import org.scalatest.flatspec.AnyFlatSpec
 import wacc.AST._
 import wacc.ASTTests.SyntacticTests
-import wacc.parser.{expr, rvalue}
+import wacc.parser.{rvalue}
 
 object RValueTests extends Tag("RValueTests")
 
