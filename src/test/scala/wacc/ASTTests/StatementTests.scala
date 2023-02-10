@@ -83,7 +83,7 @@ class StatementTests extends AnyFlatSpec {
   behavior of "if statement"
   it should "generate the correct statement" taggedAs(StatementTests, SyntacticTests) in {
     val exp = "if x then return y else skip fi"
-    val if_stmt = If(IdentExpr("x")(0,0),Return(IdentExpr("y")(0,0))(0,0),Skip)(0,0)
+    val if_stmt = If(IdentExpr("x")(None,(0,0)),Return(IdentExpr("y")(None,(0,0)))(0,0),Skip)(0,0)
     val repr = statement.parse(exp).get
     assert(repr === if_stmt)
   }
@@ -91,7 +91,7 @@ class StatementTests extends AnyFlatSpec {
   behavior of "while statement"
   it should "generate the correct statement" taggedAs(StatementTests, SyntacticTests) in {
     val exp =  "while x do if y then skip else return z fi done"
-    val while_stmt = While(IdentExpr("x")(0,0),If(IdentExpr("y")(0,0),Skip,Return(IdentExpr("z")(0,0))(0,0))(0,0))(0,0)
+    val while_stmt = While(IdentExpr("x")(None,(0,0)),If(IdentExpr("y")(None,(0,0)),Skip,Return(IdentExpr("z")(None,(0,0)))(0,0))(0,0))(0,0)
     val repr = statement.parse(exp).get
     assert(repr === while_stmt)
   }
@@ -99,8 +99,8 @@ class StatementTests extends AnyFlatSpec {
   behavior of "scope statement"
   it should "generate the correct statement" taggedAs(StatementTests, SyntacticTests) in {
     val exp = "begin while x do if y then skip else return z fi done end"
-    val scope_stmt = ScopeStat(While(IdentExpr("x")(0,0),If(IdentExpr("y")(0,0),Skip,
-      Return(IdentExpr("z")(0,0))(0,0))(0,0))(0,0))(0,0)
+    val scope_stmt = ScopeStat(While(IdentExpr("x")(None,(0,0)),If(IdentExpr("y")(None, (0,0)),Skip,
+      Return(IdentExpr("z")(None, (0,0)))(0,0))(0,0))(0,0))(0,0)
     val repr = statement.parse(exp).get
     assert(repr === scope_stmt)
   }

@@ -26,9 +26,9 @@ class ProgFuncTests extends AnyFlatSpec {
 
     val ptest = Program(List(Func(CharType()(0,0),"x",List(Param(CharType()(0,0),"y")(0,0),
       Param(CharType()(0,0),"z")(0,0), Param(StringType()(0,0),"abc")(0,0)),
-      Return(ModExpr(MulExpr(IntExpr(3)(0,0),IntExpr(4)(0,0))(0,0),
-        DivExpr(IntExpr(4)(0,0),IntExpr(2)(0,0))(0,0))(0,0))(0,0))(None, (0,0))),
-      Println(AndExpr(BoolExpr(true)(0,0), BoolExpr(false)(0,0))(0,0))(None,(0,0)))(0,0)
+      Return(ModExpr(MulExpr(IntExpr(3)(0,0),IntExpr(4)(0,0))(None,(0,0)),
+        DivExpr(IntExpr(4)(0,0),IntExpr(2)(0,0))(None,(0,0)))(None,(0,0)))(0,0))(None, (0,0))),
+      Println(AndExpr(BoolExpr(true)(0,0), BoolExpr(false)(0,0))(None,(0,0)))(None,(0,0)))(0,0)
 
     val repr = program.parse(prog).get
     assert(repr === ptest)
