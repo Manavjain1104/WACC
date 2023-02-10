@@ -32,13 +32,17 @@ class semantic_analyser {
     }
     checkStatement(program.stat, topLevelSymbolTable)
 
-    if(errorLog.isEmpty) {
-      None
+    if(errorLog.nonEmpty) {
+      return Some(errorLog)
     }
-    else {
-      Some(errorLog)
+    None
     }
-    }
+
+  private def convertToSem(func: Func): SemType = {
+    FuncSemType(convertToSem(func.retType),
+      func.params.map(param => convertToSem(param.paramType)),
+      func.params.length)
+  }
 
   private def convertToSem(ty: Type): SemType = {
     ty match {
@@ -62,12 +66,6 @@ class semantic_analyser {
       case DummyPair => PairSemType(InternalPairSemType, InternalPairSemType)
       case _ => throw new RuntimeException("Should not reach here")
     }
-  }
-
-  private def convertToSem(func: Func): SemType = {
-    FuncSemType(convertToSem(func.retType),
-      func.params.map(param => convertToSem(param.paramType)),
-      func.params.length)
   }
 
   private def matchBaseTypes(t1: SemType, t2: SemType): Boolean = {
@@ -101,10 +99,8 @@ class semantic_analyser {
 
   private def matchTypes(type1: SemType, type2: SemType): Boolean = {
     type1 match {
-      case InternalPairSemType =>
-        true
-      case FuncSemType(_, _, _) =>
-        false
+      case InternalPairSemType => true
+      case FuncSemType(_, _, _) => false
       case ArraySemType(t1) =>
         type2 match {
           case ArraySemType(t2) => matchTypes(t1, t2)
@@ -117,8 +113,7 @@ class semantic_analyser {
           case InternalPairSemType => true
           case _ => false
         }
-      case _ =>
-        matchBaseTypes(type1, type2)
+      case _ => matchBaseTypes(type1, type2)
     }
   }
 
@@ -135,7 +130,6 @@ class semantic_analyser {
           id.st = Some(symbolTable)
           return identType
         }
-
         errorLog += UnknownIdentifierError(id.pos, ident, Some("Unknown variable identifier found"))
         Some(InternalPairSemType)
       }
@@ -486,7 +480,7 @@ class semantic_analyser {
       case Snd(lvalue) => lvalue
     }
     insideLval match {
-      case elem: PairElem =>
+      case _ : PairElem =>
         Some(InternalPairSemType)
 
       case arrayElem: ArrayElem =>
@@ -553,8 +547,8 @@ class semantic_analyser {
           val assignSemType = convertToSem(assignType)
           if (!matchTypes(assignSemType, rvalType.get)) {
             errorLog += TypeError(varDec.pos,
-              Set(assignSemType),
-              rvalType.get,
+              Set(rvalType.get),
+              assignSemType,
               Some("Assignment and target types don't match"))
             Some(InternalPairSemType)
           } else {
@@ -569,7 +563,10 @@ class semantic_analyser {
 
         opLvalSemType.get match {
           case FuncSemType(_, _, _) =>
-            errorLog += TypeError(assign.pos, Set.empty, FuncSemType(InternalPairSemType, List.empty, 0), Some("Cannot assign to a function"))
+            errorLog += TypeError(assign.pos,
+                        Set.empty,
+                        FuncSemType(InternalPairSemType, List.empty, 0),
+                        Some("Cannot assign to a function"))
             Some(InternalPairSemType)
 
           case lvalSemType: SemType =>
@@ -580,7 +577,10 @@ class semantic_analyser {
                 if (matchTypes(lvalSemType, arrayType.get)) {
                   return arrayType
                 }
-                errorLog += TypeError(assign.pos, Set(ArraySemType(InternalPairSemType)), lvalSemType, Some("Can't assign array literal to non array type"))
+                errorLog += TypeError(assign.pos,
+                            Set(ArraySemType(InternalPairSemType)),
+                            lvalSemType,
+                            Some("Can't assign array literal to non array type"))
                 Some(InternalPairSemType)
               }
 
@@ -611,11 +611,17 @@ class semantic_analyser {
                 val expr2Type = checkExpr(expr2, symbolTable)
 
                 if (!matchTypes(expr1Type.get, pt.pt1)) {
-                  errorLog += TypeError(assign.pos, Set(pt.pt1), expr1Type.get, Some("First of the pair doesn't match"))
+                  errorLog += TypeError(assign.pos,
+                              Set(pt.pt1),
+                              expr1Type.get,
+                              Some("First of the pair doesn't match"))
                   return Some(InternalPairSemType)
                 }
                 if (!matchTypes(expr2Type.get, pt.pt2)) {
-                  errorLog += TypeError(assign.pos, Set(pt.pt2), expr2Type.get, Some("Second of the pair doesn't match"))
+                  errorLog += TypeError(assign.pos,
+                              Set(pt.pt2),
+                              expr2Type.get,
+                              Some("Second of the pair doesn't match"))
                   return Some(InternalPairSemType)
                 }
                 Some(pt)
@@ -629,7 +635,10 @@ class semantic_analyser {
                 if (matchTypes(exprSemType.get, lvalSemType)) {
                   return Some(lvalSemType)
                 }
-                errorLog += TypeError(assign.pos, Set(exprSemType.get), lvalSemType, Some("Assignment and target types don't match"))
+                errorLog += TypeError(assign.pos,
+                            Set(exprSemType.get),
+                            lvalSemType,
+                            Some("Assignment and target types don't match"))
                 Some(InternalPairSemType)
               }
 
@@ -648,11 +657,15 @@ class semantic_analyser {
           case IntSemType => Some(IntSemType)
           case CharSemType => Some(CharSemType)
           case InternalPairSemType => {
-            errorLog += TypeErasureError((lvalPos._1._1, 1), Some("Cannot read into internal pair types due to type erasure"))
+            errorLog += TypeErasureError((lvalPos._1._1, 1),
+                        Some("Cannot read into internal pair types due to type erasure"))
             Some(InternalPairSemType)
           }
           case unexpectedType => {
-            errorLog += new TypeError(lvalPos._1, Set(IntSemType, CharSemType), unexpectedType, Some("Can only read into int and char types"))(lvalPos._2)
+            errorLog += new TypeError(lvalPos._1,
+                        Set(IntSemType, CharSemType),
+                        unexpectedType,
+                        Some("Can only read into int and char types"))(lvalPos._2)
             Some(InternalPairSemType)
           }
         }
@@ -665,7 +678,11 @@ class semantic_analyser {
           case _: ArraySemType => exprType
           case unexpectedType => {
             val exprPos = getExprPos(expr)
-            errorLog += new TypeError(exprPos._1, Set(PairSemType(InternalPairSemType, InternalPairSemType), ArraySemType(InternalPairSemType)), unexpectedType, Some("Can only free objects on heap"))(exprPos._2)
+            errorLog += new TypeError(exprPos._1,
+                        Set(PairSemType(InternalPairSemType, InternalPairSemType),
+                          ArraySemType(InternalPairSemType)),
+                        unexpectedType,
+                        Some("Can only free objects on heap"))(exprPos._2)
             Some(InternalPairSemType)
           }
         }
@@ -681,11 +698,15 @@ class semantic_analyser {
           } else {
 
             val exprPos = getExprPos(expr)
-            errorLog += new TypeError(exprPos._1, Set(funcRetType.get), exprType.get, Some("Return type does not match with function definition"))(exprPos._2)
+            errorLog += new TypeError(exprPos._1,
+                        Set(funcRetType.get),
+                        exprType.get,
+                        Some("Return type does not match with function definition"))(exprPos._2)
             return Some(InternalPairSemType)
           }
         }
-        errorLog += InvalidReturnError(ret.pos, Some("Main body cannot have return. Return must exist in a function body!"))
+        errorLog += InvalidReturnError(ret.pos,
+                    Some("Main body cannot have return. Return must exist in a function body!"))
         Some(InternalPairSemType)
       }
 
@@ -695,7 +716,10 @@ class semantic_analyser {
           case IntSemType => exprType
           case _ =>
             val exprPos = getExprPos(expr)
-            errorLog += new TypeError(exprPos._1, Set(IntSemType), exprType.get, Some("Cannot exit with a non integer exit code"))(exprPos._2)
+            errorLog += new TypeError(exprPos._1,
+                        Set(IntSemType),
+                        exprType.get,
+                        Some("Cannot exit with a non integer exit code"))(exprPos._2)
             Some(InternalPairSemType)
         }
       }
@@ -751,7 +775,9 @@ class semantic_analyser {
   private def checkParams(params: List[Param], symbolTable: SymbolTable, paramNames: mutable.Set[String]): Boolean = {
     for (param <- params) {
       if (paramNames.contains(param.ident)) {
-        errorLog += DuplicateIdentifier(param.pos, param.ident, Some("Duplicate identifier found in function definition."))
+        errorLog += DuplicateIdentifier(param.pos,
+                    param.ident,
+                    Some("Duplicate identifier found in function definition."))
         return false // duplicate func names
       } else {
         paramNames.add(param.ident)
@@ -798,7 +824,10 @@ class semantic_analyser {
   //  }
 
 
-  private def checkPairElemAssign(rhsLval: LValue, lvalSemType: SemType, symbolTable: SymbolTable, is_fst: Boolean): Option[SemType] = {
+  private def checkPairElemAssign(rhsLval: LValue,
+                                  lvalSemType: SemType,
+                                  symbolTable: SymbolTable,
+                                  is_fst: Boolean): Option[SemType] = {
     val rhsLvalType: Option[SemType] = checkLvalue(rhsLval, symbolTable)
     val lvalPos = getLvalPos(rhsLval)
 
@@ -812,7 +841,10 @@ class semantic_analyser {
             }
             else return Some(lvalSemType)
           }
-          errorLog += new TypeError(lvalPos._1, Set(lvalSemType), pt1, Some("Assignment and target types do not match"))(lvalPos._2)
+          errorLog += new TypeError(lvalPos._1,
+                      Set(lvalSemType),
+                      pt1,
+                      Some("Assignment and target types do not match"))(lvalPos._2)
         } else {
           if (matchTypes(pt2, lvalSemType)) {
             if (!isConcrete(lvalSemType) && !isConcrete(pt2)) {

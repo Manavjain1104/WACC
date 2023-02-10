@@ -103,7 +103,11 @@ object AST {
   Func(retType: Type, ident: String, params: List[Param], stat: Statement)(var st: Option[SymbolTable], val pos: (Int, Int))
     extends AST
 
-  object Func extends ParserBridgeSymPos4[Type, String, List[Param], Statement, Func]
+  object Func extends ParserBridgeSymPos3[(Type, String) , List[Param], Statement, Func] {
+    override def apply(x: (Type, String), y: List[Param], z: Statement)(st: Option[SymbolTable], pos: (Int, Int)): Func = {
+      Func(x._1, x._2, y, z)(st, pos)
+    }
+  }
 
   case class Param(paramType: Type, ident: String)(val pos: (Int, Int)) extends AST
 
