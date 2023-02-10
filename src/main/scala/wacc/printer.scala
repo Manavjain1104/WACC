@@ -131,11 +131,17 @@ object printer {
         if (i == numLinesArd) {
           sb.append("| " + errLines(i) + "\n")
           var numCars = token.length
+          var numSpaces = pos._2 - 1
           if ((pos._2 + token.length) > errLines(i).length) {
             numCars = errLines(i).length - pos._2 + 1
           }
 
-          sb.append("| " + (" " * (pos._2 - 1)) + ("^" * numCars) + "\n")
+          if (numCars < 0 || numSpaces > errLines(i).length) {
+            numSpaces = errLines(i).length - 1
+            numCars = 3
+          }
+
+          sb.append("| " + (" " * numSpaces) + ("^" * numCars) + "\n")
         } else {
           sb.append("| " + errLines(i) + "\n")
         }
@@ -213,7 +219,10 @@ object printer {
       var line = pos._1 - 1
       var regex = """ ;="""
       val sb = new StringBuilder()
-      while (line < fileLines.length && fileLines(line).nonEmpty && !regex.contains(fileLines(line).charAt(col))) {
+      while ( col < fileLines(line).length &&
+            line < fileLines.length &&
+            fileLines(line).nonEmpty &&
+            !regex.contains(fileLines(line).charAt(col))) {
         val c = fileLines(line).charAt(col)
         sb.append(c)
         if ("[(\'\"".contains(c)) {
@@ -225,6 +234,9 @@ object printer {
           col = 0
           line += 1
         }
+      }
+      if (sb.isEmpty) {
+        return ""
       }
       sb.toString()
     }
