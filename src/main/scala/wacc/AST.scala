@@ -160,23 +160,23 @@ object AST {
 
   object PairExpr extends ParserBridgePos0[Expr]
 
-  case class IdentExpr(ident: String)(val pos: (Int, Int)) extends Expr
+  case class IdentExpr(ident: String)(var st : Option[SymbolTable], val pos: (Int, Int)) extends Expr
 
-  object IdentExpr extends ParserBridgePos1[String, Expr]
+  object IdentExpr extends ParserBridgeSymPos1[String, Expr]
 
   sealed trait UnopExpr extends Expr
 
-  case class NotExpr(e: Expr)(val pos: (Int, Int)) extends UnopExpr
+  case class NotExpr(e: Expr)(var st : Option[SymbolTable], val pos: (Int, Int)) extends UnopExpr
 
-  object NotExpr extends ParserBridgePos1[Expr, UnopExpr]
+  object NotExpr extends ParserBridgeSymPos1[Expr, UnopExpr]
 
-  case class NegExpr(e: Expr)(val pos: (Int, Int)) extends UnopExpr
+  case class NegExpr(e: Expr)(var st : Option[SymbolTable], val pos: (Int, Int)) extends UnopExpr
 
-  object NegExpr extends ParserBridgePos1[Expr, UnopExpr]
+  object NegExpr extends ParserBridgeSymPos1[Expr, UnopExpr]
 
-  case class LenExpr(e: Expr)(val pos: (Int, Int)) extends UnopExpr
+  case class LenExpr(e: Expr)(var st : Option[SymbolTable], val pos: (Int, Int)) extends UnopExpr
 
-  object LenExpr extends ParserBridgePos1[Expr, UnopExpr]
+  object LenExpr extends ParserBridgeSymPos1[Expr, UnopExpr]
 
   case class OrdExpr(e: Expr)(val pos: (Int, Int)) extends UnopExpr
 
@@ -188,57 +188,57 @@ object AST {
 
   sealed trait BinopExpr extends Expr
 
-  case class MulExpr(e1: Expr, e2: Expr)(val pos: (Int, Int)) extends BinopExpr
+  case class MulExpr(e1: Expr, e2: Expr)(var st : Option[SymbolTable], val pos: (Int, Int)) extends BinopExpr
 
-  object MulExpr extends ParserBridgePos2[Expr, Expr, BinopExpr]
+  object MulExpr extends ParserBridgeSymPos2[Expr, Expr, BinopExpr]
 
-  case class DivExpr(e1: Expr, e2: Expr)(val pos: (Int, Int)) extends BinopExpr
+  case class DivExpr(e1: Expr, e2: Expr)(var st : Option[SymbolTable], val pos: (Int, Int)) extends BinopExpr
 
-  object DivExpr extends ParserBridgePos2[Expr, Expr, BinopExpr]
+  object DivExpr extends ParserBridgeSymPos2[Expr, Expr, BinopExpr]
 
-  case class ModExpr(e1: Expr, e2: Expr)(val pos: (Int, Int)) extends BinopExpr
+  case class ModExpr(e1: Expr, e2: Expr)(var st : Option[SymbolTable], val pos: (Int, Int)) extends BinopExpr
 
-  object ModExpr extends ParserBridgePos2[Expr, Expr, BinopExpr]
+  object ModExpr extends ParserBridgeSymPos2[Expr, Expr, BinopExpr]
 
-  case class AddExpr(e1: Expr, e2: Expr)(val pos: (Int, Int)) extends BinopExpr
+  case class AddExpr(e1: Expr, e2: Expr)(var st : Option[SymbolTable], val pos: (Int, Int)) extends BinopExpr
 
-  object AddExpr extends ParserBridgePos2[Expr, Expr, BinopExpr]
+  object AddExpr extends ParserBridgeSymPos2[Expr, Expr, BinopExpr]
 
-  case class SubExpr(e1: Expr, e2: Expr)(val pos: (Int, Int)) extends BinopExpr
+  case class SubExpr(e1: Expr, e2: Expr)(var st : Option[SymbolTable], val pos: (Int, Int)) extends BinopExpr
 
-  object SubExpr extends ParserBridgePos2[Expr, Expr, BinopExpr]
+  object SubExpr extends ParserBridgeSymPos2[Expr, Expr, BinopExpr]
 
-  case class GTExpr(e1: Expr, e2: Expr)(val pos: (Int, Int)) extends BinopExpr
+  case class GTExpr(e1: Expr, e2: Expr)(var st : Option[SymbolTable], val pos: (Int, Int)) extends BinopExpr
 
-  object GTExpr extends ParserBridgePos2[Expr, Expr, BinopExpr]
+  object GTExpr extends ParserBridgeSymPos2[Expr, Expr, BinopExpr]
 
-  case class GTEQExpr(e1: Expr, e2: Expr)(val pos: (Int, Int)) extends BinopExpr
+  case class GTEQExpr(e1: Expr, e2: Expr)(var st : Option[SymbolTable], val pos: (Int, Int)) extends BinopExpr
 
-  object GTEQExpr extends ParserBridgePos2[Expr, Expr, BinopExpr]
+  object GTEQExpr extends ParserBridgeSymPos2[Expr, Expr, BinopExpr]
 
-  case class LTExpr(e1: Expr, e2: Expr)(val pos: (Int, Int)) extends BinopExpr
+  case class LTExpr(e1: Expr, e2: Expr)(var st : Option[SymbolTable], val pos: (Int, Int)) extends BinopExpr
 
-  object LTExpr extends ParserBridgePos2[Expr, Expr, BinopExpr]
+  object LTExpr extends ParserBridgeSymPos2[Expr, Expr, BinopExpr]
 
-  case class LTEQExpr(e1: Expr, e2: Expr)(val pos: (Int, Int)) extends BinopExpr
+  case class LTEQExpr(e1: Expr, e2: Expr)(var st : Option[SymbolTable], val pos: (Int, Int)) extends BinopExpr
 
-  object LTEQExpr extends ParserBridgePos2[Expr, Expr, BinopExpr]
+  object LTEQExpr extends ParserBridgeSymPos2[Expr, Expr, BinopExpr]
 
-  case class EQExpr(e1: Expr, e2: Expr)(val pos: (Int, Int)) extends BinopExpr
+  case class EQExpr(e1: Expr, e2: Expr)(var st : Option[SymbolTable], val pos: (Int, Int)) extends BinopExpr
 
-  object EQExpr extends ParserBridgePos2[Expr, Expr, BinopExpr]
+  object EQExpr extends ParserBridgeSymPos2[Expr, Expr, BinopExpr]
 
-  case class NEQExpr(e1: Expr, e2: Expr)(val pos: (Int, Int)) extends BinopExpr
+  case class NEQExpr(e1: Expr, e2: Expr)(var st : Option[SymbolTable], val pos: (Int, Int)) extends BinopExpr
 
-  object NEQExpr extends ParserBridgePos2[Expr, Expr, BinopExpr]
+  object NEQExpr extends ParserBridgeSymPos2[Expr, Expr, BinopExpr]
 
-  case class AndExpr(e1: Expr, e2: Expr)(val pos: (Int, Int)) extends BinopExpr
+  case class AndExpr(e1: Expr, e2: Expr)(var st : Option[SymbolTable], val pos: (Int, Int)) extends BinopExpr
 
-  object AndExpr extends ParserBridgePos2[Expr, Expr, BinopExpr]
+  object AndExpr extends ParserBridgeSymPos2[Expr, Expr, BinopExpr]
 
-  case class OrExpr(e1: Expr, e2: Expr)(val pos: (Int, Int)) extends BinopExpr
+  case class OrExpr(e1: Expr, e2: Expr)(var st : Option[SymbolTable], val pos: (Int, Int)) extends BinopExpr
 
-  object OrExpr extends ParserBridgePos2[Expr, Expr, BinopExpr]
+  object OrExpr extends ParserBridgeSymPos2[Expr, Expr, BinopExpr]
 
 
   sealed trait PairElem extends LValue with RValue
@@ -310,9 +310,9 @@ object AST {
 
   object IdentValue extends ParserBridgePos1[String, LValue]
 
-  case class ArrayElem(ident: String, exprs: List[Expr])(val pos: (Int, Int)) extends LValue with Expr
+  case class ArrayElem(ident: String, exprs: List[Expr])(var st : Option[SymbolTable], val pos: (Int, Int)) extends LValue with Expr
 
-  object ArrayElem extends ParserBridgePos2[String, List[Expr], ArrayElem]
+  object ArrayElem extends ParserBridgeSymPos2[String, List[Expr], ArrayElem]
 
   // RValue branch of AST
   sealed trait RValue extends AST

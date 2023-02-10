@@ -131,35 +131,48 @@ class semantic_analyser {
       case BoolExpr(_) => Some(BoolSemType)
       case id@IdentExpr(ident) => {
         val identType = symbolTable.lookupAll(ident)
-        if (identType.isDefined) return identType
+        if (identType.isDefined) {
+          id.st = Some(symbolTable)
+          return identType
+        }
 
         errorLog += UnknownIdentifierError(id.pos, ident, Some("Unknown variable identifier found"))
         Some(InternalPairSemType)
       }
       case PairExpr() => Some(InternalPairSemType)
-      case arrayElem: ArrayElem => checkArrayElem(arrayElem, symbolTable)
+      case arrayElem: ArrayElem => {
+        arrayElem.st = Some(symbolTable)
+        checkArrayElem(arrayElem, symbolTable)
+      }
 
       // unary operator expressions
-      case NotExpr(e: Expr) =>
+      case node @ NotExpr(e: Expr) =>
         val opType: Option[SemType] = checkExpr(e, symbolTable)
 
-        if (matchTypes(opType.get, BoolSemType)) return opType
+        if (matchTypes(opType.get, BoolSemType)) {
+          node.st = Some(symbolTable)
+          return opType
+        }
         val exprPos = getExprPos(e)
         errorLog += new TypeError(exprPos._1, Set(BoolSemType), opType.get, Some("Expected a bool type for not expression"))(exprPos._2)
         Some(InternalPairSemType)
 
-      case NegExpr(e: Expr) =>
+      case node @ NegExpr(e: Expr) =>
         val opType: Option[SemType] = checkExpr(e, symbolTable)
         if (matchTypes(opType.get, IntSemType)) {
+          node.st = Some(symbolTable)
           return opType
         }
         errorLog += new TypeError(getExprPos(e)._1, Set(IntSemType), opType.get, Some("Expected int type for negate expression"))(getExprPos(e)._2)
         Some(InternalPairSemType)
 
-      case LenExpr(e: Expr) =>
+      case node @ LenExpr(e: Expr) =>
         val opType: Option[SemType] = checkExpr(e, symbolTable)
         opType.get match {
-          case ArraySemType(_) => Some(IntSemType)
+          case ArraySemType(_) => {
+            node.st = Some(symbolTable)
+            Some(IntSemType)
+          }
           case unexpectedType => {
             val exprPos = getExprPos(e)
             errorLog += new TypeError(exprPos._1, Set(ArraySemType(InternalPairSemType)), unexpectedType, Some("Expected array type for len expression"))(exprPos._2)
@@ -187,21 +200,60 @@ class semantic_analyser {
         }
 
       // Binary operator expressions
-      case ModExpr(e1, e2) => checkBinOpWithType(e1, e2, symbolTable, IntSemType)
-      case MulExpr(e1, e2) => checkBinOpWithType(e1, e2, symbolTable, IntSemType)
-      case DivExpr(e1, e2) => checkBinOpWithType(e1, e2, symbolTable, IntSemType)
-      case AddExpr(e1, e2) => checkBinOpWithType(e1, e2, symbolTable, IntSemType)
-      case SubExpr(e1, e2) => checkBinOpWithType(e1, e2, symbolTable, IntSemType)
-      case AndExpr(e1, e2) => checkBinOpWithType(e1, e2, symbolTable, BoolSemType)
-      case OrExpr(e1, e2) => checkBinOpWithType(e1, e2, symbolTable, BoolSemType)
+      case node @ ModExpr(e1, e2) => {
+        node.st = Some(symbolTable)
+        checkBinOpWithType(e1, e2, symbolTable, IntSemType)
+      }
+      case node @ MulExpr(e1, e2) => {
+        node.st = Some(symbolTable)
+        checkBinOpWithType(e1, e2, symbolTable, IntSemType)
+      }
+      case node @ DivExpr(e1, e2) => {
+        node.st = Some(symbolTable)
+        checkBinOpWithType(e1, e2, symbolTable, IntSemType)
+      }
+      case node @ AddExpr(e1, e2) => {
+        node.st = Some(symbolTable)
+        checkBinOpWithType(e1, e2, symbolTable, IntSemType)
+      }
+      case node @ SubExpr(e1, e2) => {
+        node.st = Some(symbolTable)
+        checkBinOpWithType(e1, e2, symbolTable, IntSemType)
+      }
+      case node @ AndExpr(e1, e2) => {
+        node.st = Some(symbolTable)
+        checkBinOpWithType(e1, e2, symbolTable, BoolSemType)
+      }
+      case node @ OrExpr(e1, e2) => {
+        node.st = Some(symbolTable)
+        checkBinOpWithType(e1, e2, symbolTable, BoolSemType)
+      }
 
-      case GTExpr(e1, e2) => checkComparisonBinOp(e1, e2, symbolTable)
-      case GTEQExpr(e1, e2) => checkComparisonBinOp(e1, e2, symbolTable)
-      case LTExpr(e1, e2) => checkComparisonBinOp(e1, e2, symbolTable)
-      case LTEQExpr(e1, e2) => checkComparisonBinOp(e1, e2, symbolTable)
+      case node @ GTExpr(e1, e2) => {
+        node.st = Some(symbolTable)
+        checkComparisonBinOp(e1, e2, symbolTable)
+      }
+      case node @ GTEQExpr(e1, e2) => {
+        node.st = Some(symbolTable)
+        checkComparisonBinOp(e1, e2, symbolTable)
+      }
+      case node @ LTExpr(e1, e2) => {
+        node.st = Some(symbolTable)
+        checkComparisonBinOp(e1, e2, symbolTable)
+      }
+      case node @ LTEQExpr(e1, e2) => {
+        node.st = Some(symbolTable)
+        checkComparisonBinOp(e1, e2, symbolTable)
+      }
 
-      case EQExpr(e1, e2) => checkSameType(e1, e2, symbolTable)
-      case NEQExpr(e1, e2) => checkSameType(e1, e2, symbolTable)
+      case node @ EQExpr(e1, e2) => {
+        node.st = Some(symbolTable)
+        checkSameType(e1, e2, symbolTable)
+      }
+      case node @ NEQExpr(e1, e2) => {
+        node.st = Some(symbolTable)
+        checkSameType(e1, e2, symbolTable)
+      }
 
       case _ => System.err.println("Should not reach here")
         Some(InternalPairSemType)
