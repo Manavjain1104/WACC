@@ -620,13 +620,11 @@ class semantic_analyser {
       }
 
       case ret@Return(expr: Expr) => {
-        println(ret)
         val funcRetType: Option[SemType] = symbolTable.lookupAll(ENCLOSING_FUNC_RETURN_TYPE)
         if (funcRetType.isDefined) {
           val exprType: Option[SemType] = checkExpr(expr, symbolTable)
           assert(exprType.isDefined)
           if (matchTypes(exprType.get, funcRetType.get)) {
-            println(exprType.get, funcRetType.get)
             return exprType
           } else {
 
