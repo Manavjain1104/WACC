@@ -4,9 +4,9 @@ import parsley.io.ParseFromIO
 import parsley.{Failure, Success}
 import wacc.lexer.fully
 import wacc.parser.program
-import wacc.printer._
+import wacc.errorPrinter._
 
-import java.io.File
+import java.io.{File, PrintWriter}
 import scala.collection.mutable.ListBuffer
 
 object Main {
@@ -14,6 +14,8 @@ object Main {
   final val SYNTAX_ERROR_CODE = 100
   final val SEMANTIC_ERROR_CODE = 200
   final val OK_EXIT_CODE = 0
+
+  final val EXT_LENGTH = 5
 
   def main(args: Array[String]): Unit = {
 
@@ -50,6 +52,17 @@ object Main {
                 }
               }
               generateOutputMessages(ListBuffer.empty[error.SemanticError], None, file.getPath, OK_EXIT_CODE)
+              println(value)
+
+              // TODO : Code Generation
+              val output = armPrinter.print(new codeGenerator().generateProgIR(prog))
+              println(output)
+
+              // Write assembly to .s file
+              val writerToFile = new PrintWriter(new File(file.getName.dropRight(EXT_LENGTH) + ".s"))
+              writerToFile.write(output)
+              writerToFile.close()
+
               sys.exit(OK_EXIT_CODE)
             }
           }

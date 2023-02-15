@@ -7,7 +7,7 @@ import scala.collection.mutable.ListBuffer
 import scala.io.BufferedSource
 import scala.io.Source._
 
-object printer {
+object errorPrinter {
 
   final val SYNTAX_ERROR_CODE = 100
   final val SEMANTIC_ERROR_CODE = 200
