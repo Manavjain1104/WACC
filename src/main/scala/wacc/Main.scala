@@ -55,8 +55,9 @@ object Main {
               println(value)
 
               // TODO : Code Generation
-              val output = armPrinter.print(new codeGenerator().generateProgIR(prog))
-              println(output)
+              val output = armPrinter.print(new codeGenerator(prog))
+              new codeGenerator(prog).generateProgIR().foreach(ir => println(ir))
+//              println(output)
 
               // Write assembly to .s file
               val writerToFile = new PrintWriter(new File(file.getName.dropRight(EXT_LENGTH) + ".s"))

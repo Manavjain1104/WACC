@@ -17,9 +17,9 @@ class SymbolTable(val encSymTable: Option[SymbolTable],
     var table: Option[SymbolTable] = Option(this)
 
     while (table.isDefined) {
-      val optype = table.get.lookup(name)
-      if (optype.isDefined) {
-        return optype
+      val opType = table.get.lookup(name)
+      if (opType.isDefined) {
+        return opType
       }
       table = table.get.encSymTable
     }
