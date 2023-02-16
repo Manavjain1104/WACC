@@ -42,7 +42,7 @@ class codeGenerator(program: Program) {
     irs.append(MOV(FP, SP))
     val numLocalsInMain = findNumLocals(program.stat)
     if (numLocalsInMain > NUMLOCALREGS) {
-      irs.append(SUB(SP, SP, (numLocalsInMain - NUMLOCALREGS) * 4)))
+      irs.append(SUB(SP, SP, (numLocalsInMain - NUMLOCALREGS) * 4))
     }
     irs.appendAll(generateStatIR(program.stat))
 
