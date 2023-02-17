@@ -4,14 +4,11 @@ import wacc.AST._
 import wacc.IR._
 import wacc.Registers._
 
-import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
 class codeGenerator(program: Program) {
 
-  private val liveMap = mutable.Map.empty[String, Location]
-
-  private val localRegs: List[Reg] = List(R4, R5, R6, R7, R0, R1, R2, R3, R11, R12, R13, R14, R15) // TODO : ask Jamie why he does 8 and is that related to the r4 r8.. push at the start of main
+  private val localRegs: List[Reg] = List(R4, R5, R6, R7, R0, R1, R2, R3)
   private val NUMLOCALREGS = localRegs.length
   private var localCount = 0
   private var labelOrder = 0
@@ -20,12 +17,14 @@ class codeGenerator(program: Program) {
   var stringNum: Int = 0
 
   /*
-  TODO
+  TODO - Back End
   1) Function assembly
   2) function calls
-  3) Heaps - Arrays and pair --> len exprs
-  4) Stat - WHile, IF
-  5) Rvalue - just has expr right now
+  3) Print, Println statements etc
+  4) Return and frees
+  5) Heaps - Arrays and pair --> len exprs
+  6) Rvalue - just has expr right now
+  7) checking for overflow, div by 0
    */
 
   def generateProgIR(): List[IR] = {
@@ -44,43 +43,43 @@ class codeGenerator(program: Program) {
     if (numLocalsInMain > NUMLOCALREGS) {
       irs.append(SUB(SP, SP, (numLocalsInMain - NUMLOCALREGS) * 4))
     }
-    irs.appendAll(generateStatIR(program.stat))
+    val liveMap = new SymbolTable[Location](None)
+    irs.appendAll(generateStatIR(program.stat, liveMap))
 
     irs += MOVImm(R0, 0, "Default")
     irs += POPMul(List(FP, PC))
-    //    println(irs.toList)
     irs.toList
   }
 
   // this function writes instructions that calculate the value of the expression
   // and leave them on top of the stack, only use R8 and R9 as temporaries
-  def generateExprIR(expr: Expr): List[IR] = {
+  def generateExprIR(expr: Expr, liveMap : SymbolTable[Location]): List[IR] = {
     expr match {
-      case IntExpr(x) => List(MOVImm(R8, x, "Default"), PUSH(R8)) // TODO if we have a PUSH R8 followed by POP R8 remove that during printing
+      case IntExpr(x) => List(MOVImm(scratchReg1, x, "Default"), PUSH(scratchReg1))
       case BoolExpr(b) => {
         var value = 0
         if (b) value = 1
-        List(MOVImm(R8, value, "Default"), PUSH(R8))
+        List(MOVImm(scratchReg1, value, "Default"), PUSH(scratchReg1))
       }
       case CharExpr(c) => {
-        List(MOVImm(R8, c.toInt, "Default"), PUSH(R8))
+        List(MOVImm(scratchReg1, c.toInt, "Default"), PUSH(scratchReg1))
       }
       case StringExpr(s) => {
         stringNum += 1
         strings += s
-        List(StringInit(R8, stringNum - 1), PUSH(R8))
+        List(StringInit(scratchReg1, stringNum - 1), PUSH(scratchReg1))
       }
       case IdentExpr(ident) => {
         // transfer identifier expr to the first available register
-        getIntoTarget(ident, R8).appended(PUSH(R8))
+        getIntoTarget(ident, scratchReg1, liveMap).appended(PUSH(scratchReg1))
       }
 
       case expr: UnopExpr => {
         expr match {
-          case ChrExpr(e) => generateExprIR(e)
-          case OrdExpr(e) => generateExprIR(e)
-          case NegExpr(e) => generateExprIR(e) ++ List(POP(R8), NEG(R8, R8), PUSH(R8))
-          case NotExpr(e) => generateExprIR(e) ++ List(POP(R8), NOT(R8, R8), PUSH(R8))
+          case ChrExpr(e) => generateExprIR(e, liveMap)
+          case OrdExpr(e) => generateExprIR(e, liveMap)
+          case NegExpr(e) => generateExprIR(e, liveMap) ++ List(POP(scratchReg1), NEG(scratchReg1, scratchReg1), PUSH(scratchReg1))
+          case NotExpr(e) => generateExprIR(e, liveMap) ++ List(POP(scratchReg1), NOT(scratchReg1, scratchReg1), PUSH(scratchReg1))
           case LenExpr(e) => null // TODO
         }
       }
@@ -88,41 +87,41 @@ class codeGenerator(program: Program) {
       case expr: BinopExpr => {
         expr match {
           case AddExpr(e1, e2) =>
-            generateExprIR(e1) ++ generateExprIR(e2) ++ List(POP(R8), POP(R9), ADD(R8, R9, 0), PUSH(R8))  // TODO : check for overflow
+            generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POP(scratchReg1), POP(scratchReg2), ADD(scratchReg1, scratchReg2, 0), PUSH(scratchReg1))  // TODO : check for overflow
           case SubExpr(e1, e2) =>
-            generateExprIR(e1) ++ generateExprIR(e2) ++ List(POP(R8), POP(R9), SUB(R8, R9, 0), PUSH(R8))  // TODO : check for overflow
+            generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POP(scratchReg1), POP(scratchReg2), SUB(scratchReg1, scratchReg2, 0), PUSH(scratchReg1))  // TODO : check for overflow
           case MulExpr(e1, e2) =>
-            generateExprIR(e1) ++ generateExprIR(e2) ++ List(POP(R8), POP(R9), MUL(R8, R9), PUSH(R8)) // TODO : check for overflow
+            generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POP(scratchReg1), POP(scratchReg2), MUL(scratchReg1, scratchReg2), PUSH(scratchReg1)) // TODO : check for overflow
           case DivExpr(e1, e2) =>
-            generateExprIR(e1) ++ generateExprIR(e2) ++ List(POP(R8), POP(R9), DIV(R8, R9), PUSH(R8)) // TODO : check for division by zero
+            generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POP(scratchReg2), POP(scratchReg1), DIV(scratchReg1, scratchReg2)) // TODO : check for division by zero
           // MOV(R0, R8), MOV(R1, R9), BL("__aeabi_idivmod")
           case ModExpr(e1, e2) =>
-            generateExprIR(e1) ++ generateExprIR(e2) ++ List(POP(R8), POP(R9), MOD(R8, R9), PUSH(R8))
-            // MOV(R0, R8), MOV(R1, R9), BL("__aeabi_idivmod")
+            generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POP(scratchReg1), POP(scratchReg2), MOD(scratchReg1, scratchReg2))
+          // MOV(R0, R8), MOV(R1, R9), BL("__aeabi_idivmod")
           case GTExpr(e1, e2) =>
-              generateExprIR(e1) ++ generateExprIR(e2) ++ List(POP(R8), POP(R9), CMP(R8, R9), MOVImm(R8, 1, "GT"), MOVImm(R8,0, "LE"), PUSH(R8))
+            generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POP(scratchReg1), POP(scratchReg2), CMP(scratchReg1, scratchReg2), MOVImm(scratchReg1, 1, "GT"), MOVImm(scratchReg1,0, "LE"), PUSH(scratchReg1))
           case LTExpr(e1, e2) =>
-            generateExprIR(e1) ++ generateExprIR(e2) ++ List(POP(R8), POP(R9), CMP(R8, R9), MOVImm(R8, 1, "LT"), MOVImm(R8,0, "GE"), PUSH(R8))
+            generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POP(scratchReg1), POP(scratchReg2), CMP(scratchReg1, scratchReg2), MOVImm(scratchReg1, 1, "LT"), MOVImm(scratchReg1,0, "GE"), PUSH(scratchReg1))
           case GTEQExpr(e1, e2) =>
-            generateExprIR(e1) ++ generateExprIR(e2) ++ List(POP(R8), POP(R9), CMP(R8, R9), MOVImm(R8, 1, "GE"), MOVImm(R8,0, "LT"), PUSH(R8))
+            generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POP(scratchReg1), POP(scratchReg2), CMP(scratchReg1, scratchReg2), MOVImm(scratchReg1, 1, "GE"), MOVImm(scratchReg1,0, "LT"), PUSH(scratchReg1))
           case LTEQExpr(e1, e2) =>
-            generateExprIR(e1) ++ generateExprIR(e2) ++ List(POP(R8), POP(R9), CMP(R8, R9), MOVImm(R8, 1, "LE"), MOVImm(R8,0, "GE"), PUSH(R8))
+            generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POP(scratchReg1), POP(scratchReg2), CMP(scratchReg1, scratchReg2), MOVImm(scratchReg1, 1, "LE"), MOVImm(scratchReg1,0, "GE"), PUSH(scratchReg1))
           case AndExpr(e1, e2) => {
-            val L1 : List[IR] = generateExprIR(e1)
-            val L2 : List[IR] = generateExprIR(e2)
+            val L1 : List[IR] = generateExprIR(e1, liveMap)
+            val L2 : List[IR] = generateExprIR(e2, liveMap)
             val label : String = getNewLabel()
-            val L3 : List[IR] = List(POP(R8), POP(R9), AND(R8, R9, label), PUSH(R8))
+            val L3 : List[IR] = List(POP(scratchReg1), POP(scratchReg2), AND(scratchReg1, scratchReg2, label), PUSH(scratchReg1))
             L1 ++ L2 ++ L3
           }
           case OrExpr(e1, e2) =>
-            val L1 : List[IR] = generateExprIR(e1)
-            val L2 : List[IR] = generateExprIR(e2)
+            val L1 : List[IR] = generateExprIR(e1, liveMap)
+            val L2 : List[IR] = generateExprIR(e2, liveMap)
             val label : String = getNewLabel()
-            val L3 : List[IR] = List(POP(R8), POP(R9), OR(R8, R9, label), PUSH(R8))
+            val L3 : List[IR] = List(POP(scratchReg1), POP(scratchReg2), OR(scratchReg1, scratchReg2, label), PUSH(scratchReg1))
             L1 ++ L2 ++ L3
 
-          case EQExpr(e1, e2) =>  generateExprIR(e1) ++ generateExprIR(e2) ++ List(POP(R8), POP(R9), CMP(R8, R9), MOVImm(R8, 1, "EQ"), MOVImm(R8,0, "NE"), PUSH(R8))
-          case NEQExpr(e1, e2) => generateExprIR(e1) ++ generateExprIR(e2) ++ List(POP(R8), POP(R9), CMP(R8, R9), MOVImm(R8, 1, "NE"), MOVImm(R8,0, "EQ"), PUSH(R8))
+          case EQExpr(e1, e2) =>  generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POP(scratchReg1), POP(scratchReg2), CMP(scratchReg1, scratchReg2), MOVImm(scratchReg1, 1, "EQ"), MOVImm(scratchReg1,0, "NE"), PUSH(scratchReg1))
+          case NEQExpr(e1, e2) => generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POP(scratchReg1), POP(scratchReg2), CMP(scratchReg1, scratchReg2), MOVImm(scratchReg1, 1, "NE"), MOVImm(scratchReg1,0, "EQ"), PUSH(scratchReg1))
         }
       }
     }
@@ -141,45 +140,41 @@ class codeGenerator(program: Program) {
   }
 
   // writes instructions that calculate the value and place it on top of the stack
-  def generateRvalue(rvalue: RValue): List[IR] = {
+  def generateRvalue(rvalue: RValue, liveMap: SymbolTable[Location]) : List[IR] = {
     rvalue match {
-      case expr: Expr => generateExprIR(expr)
+      case expr: Expr => generateExprIR(expr, liveMap)
       //      case NewPair(expr1, expr2) => [] TODO
       //      case Call(ident, lArgs) => TODO
     }
   }
 
-  def generateStatIR(stat: Statement): List[IR] = stat match {
+  def generateStatIR(stat: Statement, liveMap : SymbolTable[Location]): List[IR] = stat match {
     case Exit(e) => {
-      generateExprIR(e) ++ List(POP(R0), BL("exit"))
+      generateExprIR(e, liveMap) ++ List(POP(R0), BL("exit"))
     }
     case Skip => List.empty[IR]
 
-    case ScopeStat(stat) => generateStatIR(stat)
-    case VarDec(_, ident, rvalue) => generateRvalue(rvalue) ++ assignLocal(ident)
-    case ConsecStat(first, next) => generateStatIR(first) ++ generateStatIR(next)
+    case ScopeStat(stat) => generateStatIR(stat, liveMap)
+    case VarDec(_, ident, rvalue) => generateRvalue(rvalue, liveMap) ++ assignLocal(ident, liveMap)
+    case ConsecStat(first, next) => generateStatIR(first, liveMap) ++ generateStatIR(next, liveMap)
     case ScopeStat(stat) => {
-        val numSaved = localCount
-        PUSHMul(localRegs.slice(0, numSaved)) :: generateStatIR(stat).appended(POPMul(localRegs.slice(0, numSaved)))
+      generateStatIR(stat, new SymbolTable[Location](Some(liveMap)))
     }
 
     case While(cond, doStat) => {
       val label1 : String = getNewLabel()
       val label2 : String = getNewLabel()
 
-      val numSaved = localCount
-
       val whileIr = ListBuffer.empty[IR]
-      whileIr.append(PUSHMul(localRegs.slice(0, numSaved)))
       whileIr.append(BUC(label2))
       whileIr.append(Label(label1))
-      whileIr.appendAll(generateStatIR(doStat))
+      val doLiveMap = new SymbolTable[Location](Some(liveMap))
+      whileIr.appendAll(generateStatIR(doStat, doLiveMap))
       whileIr.append(Label(label2))
-      whileIr.appendAll(generateExprIR(cond))
-      whileIr.append(POP(R8))
-      whileIr.append(CMPImm(R8, 0))
+      whileIr.appendAll(generateExprIR(cond, liveMap))
+      whileIr.append(POP(scratchReg1))
+      whileIr.append(CMPImm(scratchReg1, 0))
       whileIr.append(BNE(label1))
-      whileIr.append(POPMul(localRegs.slice(0, numSaved)))
 
       whileIr.toList
     }
@@ -188,43 +183,43 @@ class codeGenerator(program: Program) {
       val label0 : String = getNewLabel()
       val label1 : String = getNewLabel()
 
-      val numSaved = localCount
-
       val ifIr = ListBuffer.empty[IR]
-      ifIr.append(PUSHMul(localRegs.slice(0, numSaved)))
-      ifIr.appendAll(generateExprIR(cond))
-      ifIr.append(POP(R8))
-      ifIr.append(CMPImm(R8, 0))
+      ifIr.appendAll(generateExprIR(cond, liveMap))
+      ifIr.append(POP(scratchReg1))
+      ifIr.append(CMPImm(scratchReg1, 0))
       ifIr.append(BEQ(label1))
-      ifIr.appendAll(generateStatIR(thenStat))
+      val thenLiveMap = new SymbolTable[Location](Some(liveMap))
+      ifIr.appendAll(generateStatIR(thenStat, thenLiveMap))
       ifIr.append(BUC(label0))
       ifIr.append(Label(label1))
-      ifIr.appendAll(generateStatIR(elseStat))
+      val elseLiveMap = new SymbolTable[Location](Some(liveMap))
+      ifIr.appendAll(generateStatIR(elseStat, elseLiveMap))
       ifIr.append(Label(label0))
-      ifIr.append(POPMul(localRegs.slice(0, numSaved)))
 
       ifIr.toList
     }
     case _ => null // TODO
   }
 
-  def getIntoTarget(name: String, target : Reg): List[IR] = {
-    assert(liveMap.contains(name), name + " must be defined in live map for getting its val")
-    liveMap.get(name).get match {
+  def getIntoTarget(name: String, target : Reg, liveMap : SymbolTable[Location]): List[IR] = {
+    val location = liveMap.lookupAll(name)
+    assert(location.isDefined, name + " must be defined in live map for getting its val")
+    location.get match {
       case src: Reg => List(MOV(target, src))
-      case Stack(offset) => List(LDR(R8, FP, offset), MOV(target, R8))
+      case Stack(offset) => List(LDR(scratchReg1, FP, offset), MOV(target, scratchReg1))
     }
   }
 
-  def assignLocal(ident: String): List[IR] = {
+  def assignLocal(ident: String, liveMap: SymbolTable[Location]): List[IR] = {
     localCount += 1
+    assert(liveMap.lookup(ident).isEmpty, "First assignment of " + ident + " in child scope")
     if (localCount <= NUMLOCALREGS) {
-      liveMap(ident) = localRegs(localCount - 1)
+      liveMap.add(ident, localRegs(localCount - 1))
       List(POP(localRegs(localCount - 1)))
     } else {
       val offset = (localCount - NUMLOCALREGS)*(-4)
-      liveMap(ident) = Stack(offset)
-      List(POP(R8), STR(R8, FP, offset))
+      liveMap.add(ident, Stack(offset))
+      List(POP(scratchReg1), STR(scratchReg1, FP, offset))
     }
   }
 
@@ -234,7 +229,9 @@ class codeGenerator(program: Program) {
     label
   }
 
-  def clearLiveMap() = liveMap.clear()
+  def numLocals() : Int = localCount
+
+  def clearLiveMap(liveMap: SymbolTable[Location]) : Unit = liveMap.map.clear()
 
   def getStringsData(): List[String] = strings.toList
 

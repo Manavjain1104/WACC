@@ -15,7 +15,7 @@ class semanticAnalyser {
   // to store function return type in the intermediate scope
   private final val ENCLOSING_FUNC_RETURN_TYPE = "?_returnType"
 
-  def checkProgram(program: Program, topLevelSymbolTable: SymbolTable): Option[ListBuffer[SemanticError]] = {
+  def checkProgram(program: Program, topLevelSymbolTable: SymbolTable[SemType]): Option[ListBuffer[SemanticError]] = {
 
     // first pass to develop function names on the top level symbol table
     val funcDefinitions = mutable.Set.empty[Func]
@@ -135,7 +135,7 @@ class semanticAnalyser {
     }
   }
 
-  private def checkExpr(expr: Expr, symbolTable: SymbolTable): Option[SemType] = {
+  private def checkExpr(expr: Expr, symbolTable: SymbolTable[SemType]): Option[SemType] = {
     expr match {
       // atomic expressions
       case IntExpr(_) => Some(IntSemType)
@@ -266,7 +266,7 @@ class semanticAnalyser {
     }
   }
 
-  private def checkSameType(e1: Expr, e2: Expr, symbolTable: SymbolTable): Option[SemType] = {
+  private def checkSameType(e1: Expr, e2: Expr, symbolTable: SymbolTable[SemType]): Option[SemType] = {
     val e1Type: Option[SemType] = checkExpr(e1, symbolTable)
     val e2Type: Option[SemType] = checkExpr(e2, symbolTable)
     if (!matchTypes(e1Type.get, e2Type.get)) {
@@ -280,7 +280,7 @@ class semanticAnalyser {
     Some(BoolSemType)
   }
 
-  private def checkComparisonBinOp(e1: Expr, e2: Expr, symbolTable: SymbolTable): Option[SemType] = {
+  private def checkComparisonBinOp(e1: Expr, e2: Expr, symbolTable: SymbolTable[SemType]): Option[SemType] = {
     val e1Type: Option[SemType] = checkExpr(e1, symbolTable)
     val e2Type: Option[SemType] = checkExpr(e2, symbolTable)
 
@@ -316,7 +316,7 @@ class semanticAnalyser {
   }
 
   private def checkBinOpWithType(e1: Expr, e2: Expr,
-                                 symbolTable: SymbolTable, matchBaseType: SemType): Option[SemType] = {
+                                 symbolTable: SymbolTable[SemType], matchBaseType: SemType): Option[SemType] = {
     val e1Type: Option[SemType] = checkExpr(e1, symbolTable)
     val e2Type: Option[SemType] = checkExpr(e2, symbolTable)
 
@@ -396,7 +396,7 @@ class semanticAnalyser {
     }
   }
 
-  private def checkRvalue(rvalue: RValue, symbolTable: SymbolTable): Option[SemType] = {
+  private def checkRvalue(rvalue: RValue, symbolTable: SymbolTable[SemType]): Option[SemType] = {
     rvalue match {
       case expr: Expr => checkExpr(expr, symbolTable)
 
@@ -449,7 +449,7 @@ class semanticAnalyser {
     }
   }
 
-  private def checkLvalue(lvalue: LValue, symbolTable: SymbolTable): Option[SemType] = {
+  private def checkLvalue(lvalue: LValue, symbolTable: SymbolTable[SemType]): Option[SemType] = {
     lvalue match {
       case ident@IdentValue(name: String) =>
         val identType = symbolTable.lookupAll(name)
@@ -463,7 +463,7 @@ class semanticAnalyser {
     }
   }
 
-  private def checkArrayElem(arrayElem: ArrayElem, symbolTable: SymbolTable): Option[SemType] = {
+  private def checkArrayElem(arrayElem: ArrayElem, symbolTable: SymbolTable[SemType]): Option[SemType] = {
     val identType: Option[SemType] = symbolTable.lookupAll(arrayElem.ident)
     if (identType.isDefined) {
       var arrayTypeHolder: SemType = identType.get
@@ -500,7 +500,7 @@ class semanticAnalyser {
     Some(InternalPairSemType)
   }
 
-  private def checkPairElem(pe: PairElem, symbolTable: SymbolTable): Option[SemType] = {
+  private def checkPairElem(pe: PairElem, symbolTable: SymbolTable[SemType]): Option[SemType] = {
     var is_fst: Boolean = false
     val insideLval: LValue = pe match {
       case Fst(lvalue) =>
@@ -551,7 +551,7 @@ class semanticAnalyser {
     }
   }
 
-  private def checkFunction(func: Func, symbolTable: SymbolTable): Unit = {
+  private def checkFunction(func: Func, symbolTable: SymbolTable[SemType]): Unit = {
     val intermediateTable = new SymbolTable(Some(symbolTable))
     if (checkParams(func.params, intermediateTable, mutable.Set.empty[String])) {
       val funcSemType: SemType = convertToSem(func.retType)
@@ -563,7 +563,7 @@ class semanticAnalyser {
     }
   }
 
-  private def checkStatement(node: Statement, symbolTable: SymbolTable): Option[SemType] = {
+  private def checkStatement(node: Statement, symbolTable: SymbolTable[SemType]): Option[SemType] = {
     node match {
       case Skip => Some(InternalPairSemType)
       case varDec@VarDec(assignType, ident, rvalue) =>
@@ -781,7 +781,7 @@ class semanticAnalyser {
     }
   }
 
-  private def checkParams(params: List[Param], symbolTable: SymbolTable, paramNames: mutable.Set[String]): Boolean = {
+  private def checkParams(params: List[Param], symbolTable: SymbolTable[SemType], paramNames: mutable.Set[String]): Boolean = {
     for (param <- params) {
       if (paramNames.contains(param.ident)) {
         errorLog += DuplicateIdentifier(param.pos,
@@ -816,7 +816,7 @@ class semanticAnalyser {
 
   private def checkPairElemAssign(rhsLval: LValue,
                                   lvalSemType: SemType,
-                                  symbolTable: SymbolTable,
+                                  symbolTable: SymbolTable[SemType],
                                   is_fst: Boolean): Option[SemType] = {
     val rhsLvalType: Option[SemType] = checkLvalue(rhsLval, symbolTable)
     val lvalPos = getLvalPos(rhsLval)
@@ -841,7 +841,7 @@ class semanticAnalyser {
     }
   }
 
-  private def checkArrayLiteral(arrayLit: ArrayLiter, symbolTable: SymbolTable): Option[SemType] = {
+  private def checkArrayLiteral(arrayLit: ArrayLiter, symbolTable: SymbolTable[SemType]): Option[SemType] = {
     if (arrayLit.exprs.nonEmpty) {
       val expType = checkExpr(arrayLit.exprs.head, symbolTable)
       for (expr <- arrayLit.exprs.tail) {

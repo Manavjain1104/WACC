@@ -2,6 +2,7 @@ package wacc
 
 import parsley.io.ParseFromIO
 import parsley.{Failure, Success}
+import wacc.SemTypes.SemType
 import wacc.lexer.fully
 import wacc.parser.program
 import wacc.errorPrinter._
@@ -29,7 +30,7 @@ object Main {
       case util.Success(value) => {
         value match {
           case Success(prog) => {
-            val topST = new SymbolTable(None)
+            val topST = new SymbolTable[SemType](None)
             val errLog: Option[ListBuffer[error.SemanticError]] = sem.checkProgram(prog, topST)
 
             if (errLog.isDefined) {
