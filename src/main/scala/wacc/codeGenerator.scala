@@ -20,11 +20,10 @@ class codeGenerator(program: Program) {
 
   /*
   TODO - Back End
-  1) Print, Println statements etc
-  2) Return and frees
-  3) Heaps - Arrays and pair --> len expressions
-  4) Rvalue - just has expr right now
-  5) checking for overflow, div by 0
+  1) Return and frees
+  2) Heaps - Arrays and pair --> len expressions
+  3) Rvalue - just has expr right now
+  4) checking for overflow, div by 0
    */
 
   def generateProgIR(): List[IR] = {
@@ -60,11 +59,10 @@ class codeGenerator(program: Program) {
       if (widgets.contains("print")) {
         widgets("print").foreach(flag => irs.appendAll(printAll(flag)))
       }
-      if (widgets.contains("println")) irs.appendAll(println())
+      if (widgets.contains("printNewLine")) irs.appendAll(printNewLine())
 
-
-
-    irs.toList
+    optimisePushPop(irs.toList)
+//    irs.toList
   }
 
   // this function writes instructions that calculate the value of the expression
@@ -351,7 +349,7 @@ class codeGenerator(program: Program) {
 
     if (ln) {
       irs.append(BL("_println"))
-      widgets("println") = collection.mutable.Set.empty
+      widgets("printNewLine") = collection.mutable.Set.empty
     }
 
     if (clobber) {
@@ -437,7 +435,7 @@ class codeGenerator(program: Program) {
     ir.toList
   }
 
-  def println() : List[IR] = {
+  def printNewLine() : List[IR] = {
     val ir = ListBuffer.empty[IR]
     ir.append(Data(List(""), stringNum))
     ir.append(Label("_println"))
@@ -477,6 +475,40 @@ class codeGenerator(program: Program) {
     val label : String = ".L" + labelOrder.toString
     labelOrder += 1
     label
+  }
+
+  def optimisePushPop(irs : List[IR]) : List[IR] = {
+    val newIRs = ListBuffer.empty[IR]
+    var i = 0
+    while (i < irs.length) {
+      val ir = irs(i)
+      if (i < (irs.length - 1)) {
+        ir match {
+          case PUSH(reg1) =>
+            val irNext = irs(i + 1)
+            irNext match {
+              case POP(reg2) =>
+                if (reg1 == reg2) {
+                  i += 2
+                }
+                else {
+                  newIRs.append(MOV(reg2, reg1))
+                  i += 2
+                }
+              case _ =>
+                newIRs.append(ir)
+                i += 1
+            }
+          case _ =>
+            newIRs.append(ir)
+            i += 1
+        }
+      } else {
+        newIRs.append(ir)
+        i += 1
+      }
+    }
+    newIRs.toList
   }
 
   def clearLiveMap(liveMap: SymbolTable[Location]) : Unit = liveMap.map.clear()
