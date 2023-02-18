@@ -56,10 +56,13 @@ class codeGenerator(program: Program) {
     }
     irs.prepend(Data(strings.toList, 0))
 
-    // checking widgets
-    if (widgets.contains("print")) {
-      widgets("print").foreach(flag => irs.appendAll(printAll(flag)))
-    }
+    // checking widget
+      if (widgets.contains("print")) {
+        widgets("print").foreach(flag => irs.appendAll(printAll(flag)))
+      }
+      if (widgets.contains("println")) irs.appendAll(println())
+
+
 
     irs.toList
   }
@@ -290,57 +293,72 @@ class codeGenerator(program: Program) {
     }
 
       case Print(e, opType) => {
-        val irs = ListBuffer.empty[IR]
+        assert(opType.isDefined, "Expr must have a type")
+        getPrintIR(e, opType.get, liveMap, ln = false)
+      }
 
-        val clobber = liveMap.getNestedEntries() > 4
-        if (clobber) {
-          if (opType.get == BoolSemType || opType.get == StringSemType || opType.get == ArraySemType(CharSemType)) {
-            irs.append(PUSHMul(List(R0, R1, R2)))
-          } else {
-            irs.append(PUSHMul(List(R0, R1)))
-          }
-        }
-
-        irs.appendAll(generateExprIR(e, liveMap))
-        irs.append(POP(R0))
-        val flag = opType.get match {
-          case CharSemType => "c"
-          case IntSemType => "i"
-          case StringSemType => "s"
-          case PairSemType(_, _) => "p"
-          case BoolSemType => "b"
-          case ArraySemType(t) =>{
-            if (t == CharSemType) "s"
-            else "p"
-          }
-          case _ => { // TODO ask possible
-            assert(assertion = false, "not possible to print internal pair type")
-            "n,;'/ot possible"
-          }
-
-        }
-
-        irs.append(BL("_print" + flag))
-        if (widgets.contains("print")) {
-          widgets("print").add(flag)
-        } else {
-          widgets("print") = collection.mutable.Set(flag)
-        }
-
-        if (clobber) {
-          if (opType.get == BoolSemType || opType.get == StringSemType || opType.get == ArraySemType(CharSemType)) {
-            irs.append(POPMul(List(R0, R1, R2)))
-          } else {
-            irs.append(POPMul(List(R0, R1)))
-          }
-        }
-        irs.toList
+      case Println(e, opType) => {
+        assert(opType.isDefined, "Expr must have a type")
+        getPrintIR(e, opType.get, liveMap, ln = true)
       }
 
       case Return(e) => generateExprIR(e, liveMap).appended(POP(R0))
 
       case _ => null // TODO
     }
+  }
+
+  def getPrintIR(e : Expr, expType : SemType, liveMap : SymbolTable[Location], ln : Boolean) = {
+    val irs = ListBuffer.empty[IR]
+
+    val clobber = liveMap.getNestedEntries() > 4
+    if (clobber) {
+      if (expType == BoolSemType || expType == StringSemType || expType == ArraySemType(CharSemType)) {
+        irs.append(PUSHMul(List(R0, R1, R2)))
+      } else {
+        irs.append(PUSHMul(List(R0, R1)))
+      }
+    }
+
+    irs.appendAll(generateExprIR(e, liveMap))
+    irs.append(POP(R0))
+    val flag = expType match {
+      case CharSemType => "c"
+      case IntSemType => "i"
+      case StringSemType => "s"
+      case PairSemType(_, _) => "p"
+      case BoolSemType => "b"
+      case ArraySemType(t) =>{
+        if (t == CharSemType) "s"
+        else "p"
+      }
+      case _ => { // TODO ask possible
+        assert(assertion = false, "not possible to print internal pair type")
+        "n,;'/ot possible"
+      }
+
+    }
+
+    irs.append(BL("_print" + flag))
+    if (widgets.contains("print")) {
+      widgets("print").add(flag)
+    } else {
+      widgets("print") = collection.mutable.Set(flag)
+    }
+
+    if (ln) {
+      irs.append(BL("_println"))
+      widgets("println") = collection.mutable.Set.empty
+    }
+
+    if (clobber) {
+      if (expType == BoolSemType || expType == StringSemType || expType == ArraySemType(CharSemType)) {
+        irs.append(POPMul(List(R0, R1, R2)))
+      } else {
+        irs.append(POPMul(List(R0, R1)))
+      }
+    }
+    irs.toList
   }
 
   def printAll(flag : String) : List[IR] = {
@@ -413,6 +431,20 @@ class codeGenerator(program: Program) {
     ir.append(MOVImm(R0, 0, "Default"))
     ir.append(BL("fflush"))
     ir.append(POP(PC))
+    ir.toList
+  }
+
+  def println() : List[IR] = {
+    val ir = ListBuffer.empty[IR]
+    ir.append(Data(List(""), stringNum))
+    ir.append(Label("_println"))
+    ir.append(PUSH(LR))
+    ir.append(StringInit(R0, stringNum))
+    ir.append(BL("puts"))
+    ir.append(MOVImm(R0, 0, "Default"))
+    ir.append(BL("fflush"))
+    ir.append(POP(PC))
+    stringNum += 1
     ir.toList
   }
 

@@ -19,7 +19,7 @@ object armPrinter {
         for (i <- strings.indices) {
           s ++= "   .word " + strings(i).length.toString + "\n"
           val count = i + startIndex
-          s ++= s".L.str$count\n"
+          s ++= s".L.str$count:\n"
           s ++= "   .asciz \"" + strings(i) + "\"\n"
         }
         s ++= ".text"
@@ -30,7 +30,7 @@ object armPrinter {
 
 
       // Label and Branch Statements
-      case Label(label) => "\n" + label + ":"
+      case Label(label) => label + ":"
       case BNE(label) => "bne " + label
       case BEQ(label) => "beq " + label
       case BUC(label) => "buc " + label
