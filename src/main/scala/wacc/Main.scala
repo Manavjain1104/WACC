@@ -16,7 +16,7 @@ object Main {
   final val SEMANTIC_ERROR_CODE = 200
   final val OK_EXIT_CODE = 0
 
-  final val EXT_LENGTH = 5
+  final val EXT_LENGTH = 6
 
   def main(args: Array[String]): Unit = {
 
@@ -61,6 +61,9 @@ object Main {
 //              println(output)
 
               // Write assembly to .s file
+              if (!file.getName.endsWith(".wacc")) {
+                println("Check that you are targeting a WACC program.")
+              }
               val writerToFile = new PrintWriter(new File(file.getName.dropRight(EXT_LENGTH - 1) + ".s"))
               writerToFile.write(output)
               writerToFile.close()
