@@ -15,9 +15,8 @@ object armPrinter {
   def printIR(ir: IR): String = {
     ir match {
       case Data(strings: List[String], startIndex : Int) => {
-        val s = new StringBuilder(".data")
+        val s = new StringBuilder(".data\n")
         for (i <- strings.indices) {
-          s ++= s"\n@ length of .L.str$i\n"
           s ++= "   .word " + strings(i).length.toString + "\n"
           val count = i + startIndex
           s ++= s".L.str$count\n"
@@ -27,7 +26,7 @@ object armPrinter {
         s.toString()
       }
       case Global(globals) => ".global" + globals.foldLeft("")((x, y) => x + " " + y)
-      case LTORG => "   .ltorg"
+      case LTORG => "   .ltorg\n"
 
 
       // Label and Branch Statements

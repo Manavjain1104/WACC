@@ -16,7 +16,7 @@ class codeGenerator(program: Program) {
   private val strings: ListBuffer[String] = ListBuffer.empty[String]
   private var stringNum = 0
 
-  private val widgets = collection.mutable.Map.empty[String, ListBuffer[String]]
+  private val widgets = collection.mutable.Map.empty[String, collection.mutable.Set[String]]
 
   /*
   TODO - Back End
@@ -49,7 +49,6 @@ class codeGenerator(program: Program) {
 
     irs += MOVImm(R0, 0, "Default")
     irs += POPMul(List(FP, PC))
-
 
     // generate assembly for program functions
     for (func <- program.funcs) {
@@ -226,7 +225,7 @@ class codeGenerator(program: Program) {
       irs.append(SUB(SP, SP, (numLocalsInBody - numLocalRegs) * 4))
     }
     val childLiveMap = new SymbolTable[Location](Some(liveMap))
-    irs.appendAll(generateStatIR(program.stat, childLiveMap, localRegs))
+    irs.appendAll(generateStatIR(func.stat, childLiveMap, localRegs))
 
     irs += POPMul(List(FP, PC))
 
@@ -323,9 +322,9 @@ class codeGenerator(program: Program) {
 
         irs.append(BL("_print" + flag))
         if (widgets.contains("print")) {
-          widgets("print").append(flag)
+          widgets("print").add(flag)
         } else {
-          widgets("print") = ListBuffer(flag)
+          widgets("print") = collection.mutable.Set(flag)
         }
 
         if (clobber) {
@@ -447,6 +446,6 @@ class codeGenerator(program: Program) {
 
   def clearLiveMap(liveMap: SymbolTable[Location]) : Unit = liveMap.map.clear()
 
-  def getStringsData(): List[String] = strings.toList
+//  def getStringsData(): List[String] = strings.toList
 
 }
