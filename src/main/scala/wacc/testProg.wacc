@@ -1,0 +1,10 @@
+begin
+  int f() is
+    string lol = "lol";
+    return 1
+  end
+
+  string s = "hi";
+  char x = 'c';
+  print x
+end

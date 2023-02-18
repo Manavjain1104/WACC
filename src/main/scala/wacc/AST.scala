@@ -288,13 +288,21 @@ object AST {
 
   object Exit extends ParserBridgePos1[Expr, Statement]
 
-  case class Print(e: Expr)(var symbolTable: Option[SymbolTable[SemTypes.SemType]], val pos: (Int, Int)) extends Statement
+  case class Print(e: Expr, var expType : Option[SemTypes.SemType] = None)(var symbolTable: Option[SymbolTable[SemTypes.SemType]], val pos: (Int, Int)) extends Statement
 
-  object Print extends ParserBridgeSymPos1[Expr, Statement]
+  object Print extends ParserBridgeSymPos1[Expr, Statement] {
+    override def apply(x: Expr)(symbolTable: Option[SymbolTable[SemTypes.SemType]], pos: (Int, Int)): Statement = {
+      Print(x, None)(symbolTable, pos)
+    }
+  }
 
-  case class Println(e: Expr)(var symbolTable: Option[SymbolTable[SemTypes.SemType]], val pos: (Int, Int)) extends Statement
+  case class Println(e: Expr, var expType : Option[SemTypes.SemType] = None)(var symbolTable: Option[SymbolTable[SemTypes.SemType]], val pos: (Int, Int)) extends Statement
 
-  object Println extends ParserBridgeSymPos1[Expr, Statement]
+  object Println extends ParserBridgeSymPos1[Expr, Statement] {
+    override def apply(x: Expr)(symbolTable: Option[SymbolTable[SemTypes.SemType]], pos: (Int, Int)): Statement = {
+      Println(x, None)(symbolTable, pos)
+    }
+  }
 
   case class If(cond: Expr, thenStat: Statement, elseStat: Statement)(val pos: (Int, Int)) extends Statement
 

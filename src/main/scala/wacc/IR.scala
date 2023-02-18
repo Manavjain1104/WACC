@@ -6,8 +6,8 @@ object IR {
   sealed trait IR
 
   // Top level statements
-  case object Data                         extends IR
-  case object Text                         extends IR
+  case class Data(strings : List[String], startIndex : Int) extends IR
+//  case object Text                         extends IR
   case class Global(globals: List[String]) extends IR
   case object LTORG                        extends IR
 
@@ -104,10 +104,6 @@ object Registers {
     override def toString = "r10"
   }
 
-  case object R11 extends Reg {
-    override def toString = "r11"
-  }
-
   case object R12 extends Reg {
     override def toString = "r12"
   }
@@ -118,10 +114,6 @@ object Registers {
 
   case object R14 extends Reg {
     override def toString = "r14"
-  }
-
-  case object R15 extends Reg {
-    override def toString = "r15"
   }
 
   case object FP extends Reg {

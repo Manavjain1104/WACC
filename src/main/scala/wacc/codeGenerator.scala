@@ -3,6 +3,7 @@ package wacc
 import wacc.AST._
 import wacc.IR._
 import wacc.Registers._
+import wacc.SemTypes._
 
 import scala.collection.mutable.ListBuffer
 
@@ -12,14 +13,16 @@ class codeGenerator(program: Program) {
   private var labelOrder = 0
   private val FUNCTION_PREFIX = "wacc_"
 
-  val strings: ListBuffer[String] = ListBuffer.empty[String]
-  var stringNum: Int = 0
+  private val strings: ListBuffer[String] = ListBuffer.empty[String]
+  private var stringNum = 0
+
+  private val widgets = collection.mutable.Map.empty[String, ListBuffer[String]]
 
   /*
   TODO - Back End
   1) Print, Println statements etc
   2) Return and frees
-  3) Heaps - Arrays and pair --> len exprs
+  3) Heaps - Arrays and pair --> len expressions
   4) Rvalue - just has expr right now
   5) checking for overflow, div by 0
    */
@@ -28,8 +31,6 @@ class codeGenerator(program: Program) {
     val irs = ListBuffer.empty[IR]
 
     // assembly hygiene
-    irs += Data
-    irs += Text
     irs += Global(List("main"))
 
     // this is consuming the *Main* body of the program
@@ -54,6 +55,12 @@ class codeGenerator(program: Program) {
     for (func <- program.funcs) {
       irs.appendAll(generateFuncIR(func, localRegs))
     }
+    irs.prepend(Data(strings.toList, 0))
+
+    // checking widgets
+    if (widgets.contains("print")) {
+      widgets("print").foreach(flag => irs.appendAll(printAll(flag)))
+    }
 
     irs.toList
   }
@@ -61,7 +68,7 @@ class codeGenerator(program: Program) {
   // this function writes instructions that calculate the value of the expression
   // and leave them on top of the stack, only use R8 and R9 as temporaries
   def generateExprIR(expr: Expr, liveMap : SymbolTable[Location]): List[IR] = {
-    val locals = liveMap.map.size
+    val locals = liveMap.getNestedEntries()
     expr match {
       case IntExpr(x) => List(MOVImm(scratchReg1, x, "Default"), PUSH(scratchReg1))
       case BoolExpr(b) => {
@@ -152,7 +159,7 @@ class codeGenerator(program: Program) {
       //      case NewPair(expr1, expr2) => [] TODO
 
       case Call(ident, lArgs) => {
-        val localCount = liveMap.map.size
+        val localCount = liveMap.getNestedEntries()
         val irs = ListBuffer.empty[IR]
 
         irs.append(PUSHMul(localRegs.slice(0, localCount))) // caller saved
@@ -233,19 +240,19 @@ class codeGenerator(program: Program) {
   def generateStatIR(stat: Statement, liveMap : SymbolTable[Location], localRegs : List[Reg]): List[IR] = {
     stat match {
 
-    case Exit(e) => generateExprIR(e, liveMap) ++ List(POP(R0), BL("exit"))
+      case Exit(e) => generateExprIR(e, liveMap) ++ List(POP(R0), BL("exit"))
 
-    case Skip => List.empty[IR]
+      case Skip => List.empty[IR]
 
-    case ScopeStat(stat) => generateStatIR(stat, liveMap, localRegs)
+      case ScopeStat(stat) => generateStatIR(stat, liveMap, localRegs)
 
-    case VarDec(_, ident, rvalue) => generateRvalue(rvalue, liveMap, localRegs) ++ assignLocal(ident, liveMap, localRegs)
+      case VarDec(_, ident, rvalue) => generateRvalue(rvalue, liveMap, localRegs) ++ assignLocal(ident, liveMap, localRegs)
 
-    case ConsecStat(first, next) => generateStatIR(first, liveMap, localRegs) ++ generateStatIR(next, liveMap, localRegs)
+      case ConsecStat(first, next) => generateStatIR(first, liveMap, localRegs) ++ generateStatIR(next, liveMap, localRegs)
 
-    case ScopeStat(stat) => generateStatIR(stat, new SymbolTable[Location](Some(liveMap)), localRegs)
+      case ScopeStat(stat) => generateStatIR(stat, new SymbolTable[Location](Some(liveMap)), localRegs)
 
-    case While(cond, doStat) => {
+      case While(cond, doStat) => {
       val label1 : String = getNewLabel()
       val label2 : String = getNewLabel()
 
@@ -263,7 +270,7 @@ class codeGenerator(program: Program) {
       whileIr.toList
     }
 
-    case If(cond, thenStat, elseStat) => {
+      case If(cond, thenStat, elseStat) => {
       val label0 : String = getNewLabel()
       val label1 : String = getNewLabel()
 
@@ -283,10 +290,131 @@ class codeGenerator(program: Program) {
       ifIr.toList
     }
 
-    case Return(e) => generateExprIR(e, liveMap).appended(POP(R0))
+      case Print(e, opType) => {
+        val irs = ListBuffer.empty[IR]
 
-    case _ => null // TODO
+        val clobber = liveMap.getNestedEntries() > 4
+        if (clobber) {
+          if (opType.get == BoolSemType || opType.get == StringSemType || opType.get == ArraySemType(CharSemType)) {
+            irs.append(PUSHMul(List(R0, R1, R2)))
+          } else {
+            irs.append(PUSHMul(List(R0, R1)))
+          }
+        }
+
+        irs.appendAll(generateExprIR(e, liveMap))
+        irs.append(POP(R0))
+        val flag = opType.get match {
+          case CharSemType => "c"
+          case IntSemType => "i"
+          case StringSemType => "s"
+          case PairSemType(_, _) => "p"
+          case BoolSemType => "b"
+          case ArraySemType(t) =>{
+            if (t == CharSemType) "s"
+            else "p"
+          }
+          case _ => { // TODO ask possible
+            assert(assertion = false, "not possible to print internal pair type")
+            "n,;'/ot possible"
+          }
+
+        }
+
+        irs.append(BL("_print" + flag))
+        if (widgets.contains("print")) {
+          widgets("print").append(flag)
+        } else {
+          widgets("print") = ListBuffer(flag)
+        }
+
+        if (clobber) {
+          if (opType.get == BoolSemType || opType.get == StringSemType || opType.get == ArraySemType(CharSemType)) {
+            irs.append(POPMul(List(R0, R1, R2)))
+          } else {
+            irs.append(POPMul(List(R0, R1)))
+          }
+        }
+        irs.toList
+      }
+
+      case Return(e) => generateExprIR(e, liveMap).appended(POP(R0))
+
+      case _ => null // TODO
+    }
   }
+
+  def printAll(flag : String) : List[IR] = {
+    flag match {
+      case "c" => printBasic("c")
+      case "i" => printBasic("i")
+      case "s" => printString()
+      case "b" => printBool()
+      case  _  => null
+    }
+  }
+
+  private def printBool() : List[IR] = {
+    val ir = ListBuffer.empty[IR]
+    ir.append(Data(List("false", "true", "%.*s"), stringNum))
+    ir.append(Label("_printb"))
+    ir.append(PUSH(LR))
+    ir.append(CMPImm(R0, 0))
+    val label0 = getNewLabel()
+    val label1 = getNewLabel()
+    ir.append(BNE(label0))
+    ir.append(StringInit(R2, stringNum))
+    ir.append(BUC(label1))
+    ir.append(Label(label0))
+    ir.append(StringInit(R2, stringNum + 1))
+    ir.append(Label(label1))
+    ir.append(LDR(R1, R2, -4))
+    ir.append(StringInit(R0, stringNum + 2))
+    ir.append(BL("printf"))
+    ir.append(MOVImm(R0, 0, "Default"))
+    ir.append(BL("fflush"))
+    ir.append(POP(PC))
+    stringNum += 3
+    ir.toList
+  }
+
+
+  private def printString() : List[IR] = {
+    val flag = "s"
+    val format = "%.*s"
+    val ir = ListBuffer.empty[IR]
+    ir.append(Data(List(format), stringNum))
+    ir.append(Label("_print" + flag))
+    ir.append(PUSH(LR))
+    ir.append(MOV(R2, R0))
+    ir.append(LDR(R1, R0, -4))
+    ir.append(StringInit(R0, stringNum))
+    stringNum += 1
+    ir.append(BL("printf"))
+    ir.append(MOVImm(R0, 0, "Default"))
+    ir.append(BL("fflush"))
+    ir.append(POP(PC))
+    ir.toList
+  }
+
+  private def printBasic(flag : String): List[IR] ={
+    val format : String = flag match {
+      case "c" => "%c"
+      case "i" => "%d"
+      case  _  => "Error: Invalid!!"
+    }
+    val ir = ListBuffer.empty[IR]
+    ir.append(Data(List(format), stringNum))
+    ir.append(Label("_print" + flag))
+    ir.append(PUSH(LR))
+    ir.append(MOV(R1, R0))
+    ir.append(StringInit(R0, stringNum))
+    stringNum += 1
+    ir.append(BL("printf"))
+    ir.append(MOVImm(R0, 0, "Default"))
+    ir.append(BL("fflush"))
+    ir.append(POP(PC))
+    ir.toList
   }
 
   def getIntoTarget(name: String, target : Reg, liveMap : SymbolTable[Location]): List[IR] = {
@@ -299,7 +427,7 @@ class codeGenerator(program: Program) {
   }
 
   def assignLocal(ident: String, liveMap: SymbolTable[Location], localRegs : List[Reg]): List[IR] = {
-    val localCount = liveMap.map.size + 1
+    val localCount = liveMap.getNestedEntries() + 1
     assert(liveMap.lookup(ident).isEmpty, "First assignment of " + ident + " in child scope")
     if (localCount <= localRegs.size) {
       liveMap.add(ident, localRegs(localCount - 1))

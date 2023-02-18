@@ -24,4 +24,14 @@ class SymbolTable[A](val encSymTable: Option[SymbolTable[A]],
     }
     None
   }
+
+  def getNestedEntries(): Int = {
+    var locals = 0
+    var liveMap = Option(this)
+    while (liveMap.isDefined) {
+      locals += liveMap.size
+      liveMap = liveMap.get.encSymTable
+    }
+    locals
+  }
 }

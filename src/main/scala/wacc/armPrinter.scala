@@ -8,23 +8,24 @@ object armPrinter {
 
   def print(cg : codeGenerator) : String = {
      val sb = new StringBuilder()
-     cg.generateProgIR().foreach(ir => sb.append(printIR(ir, cg) + "\n"))
+     cg.generateProgIR().foreach(ir => sb.append(printIR(ir) + "\n"))
      sb.toString()
   }
 
-  def printIR(ir: IR, cg: codeGenerator): String = {
+  def printIR(ir: IR): String = {
     ir match {
-      case Data => {
+      case Data(strings: List[String], startIndex : Int) => {
         val s = new StringBuilder(".data")
-        for (i <- 0 until cg.stringNum) {
+        for (i <- strings.indices) {
           s ++= s"\n@ length of .L.str$i\n"
-          s ++= "   .word " + cg.strings(i).length.toString + "\n"
-          s ++= s".L.str$i\n"
-          s ++= "   .asciz \"" + cg.strings(i) + "\"\n"
+          s ++= "   .word " + strings(i).length.toString + "\n"
+          val count = i + startIndex
+          s ++= s".L.str$count\n"
+          s ++= "   .asciz \"" + strings(i) + "\"\n"
         }
+        s ++= ".text"
         s.toString()
       }
-      case Text => ".text"
       case Global(globals) => ".global" + globals.foldLeft("")((x, y) => x + " " + y)
       case LTORG => "   .ltorg"
 
@@ -74,15 +75,15 @@ object armPrinter {
       case DIV(rd, rs, locals) => {
         val sb = new StringBuilder
         if (locals > 4) {
-          sb.append(printIR(PUSHMul(List(R0, R1)), cg) + "\n")
+          sb.append(printIR(PUSHMul(List(R0, R1))) + "\n")
         }
-        sb.append(printIR(MOV(R0, rd), cg) + "\n")
-        sb.append(printIR(MOV(R1, rs), cg) + "\n")
-        sb.append(printIR(BL("__aeabi_idivmod"),   cg) + "\n")
-        sb.append(printIR(PUSH(R0), cg) + "\n")
+        sb.append(printIR(MOV(R0, rd)) + "\n")
+        sb.append(printIR(MOV(R1, rs)) + "\n")
+        sb.append(printIR(BL("__aeabi_idivmod")) + "\n")
+        sb.append(printIR(PUSH(R0)) + "\n")
 
         if (locals > 4) {
-          sb.append(printIR(POPMul(List(R0, R1)), cg))
+          sb.append(printIR(POPMul(List(R0, R1))))
         }
 
         sb.toString()
@@ -97,15 +98,15 @@ object armPrinter {
       case MOD(rd, rs, locals) => {
         val sb = new StringBuilder
         if (locals > 4) {
-          sb.append(printIR(PUSHMul(List(R0, R1)), cg) + "\n")
+          sb.append(printIR(PUSHMul(List(R0, R1))) + "\n")
         }
-        sb.append(printIR(MOV(R0, rd), cg) + "\n")
-        sb.append(printIR(MOV(R1, rs), cg) + "\n")
-        sb.append(printIR(BL("__aeabi_idivmod"), cg) + "\n")
-        sb.append(printIR(PUSH(R1), cg) + "\n")
+        sb.append(printIR(MOV(R0, rd)) + "\n")
+        sb.append(printIR(MOV(R1, rs)) + "\n")
+        sb.append(printIR(BL("__aeabi_idivmod")) + "\n")
+        sb.append(printIR(PUSH(R1)) + "\n")
 
         if (locals > 4) {
-          sb.append(printIR(POPMul(List(R0, R1)), cg))
+          sb.append(printIR(POPMul(List(R0, R1))))
         }
 
         sb.toString()
@@ -118,22 +119,22 @@ object armPrinter {
       // Logical Binary Operators
       case AND(rd, rn, label: String) => {
         val sb = new StringBuilder
-        sb.append(printIR(CMPImm(rd,1), cg))
-        sb.append(printIR(BNE(label), cg))
-        sb.append(printIR(CMPImm(rn, 1), cg))
+        sb.append(printIR(CMPImm(rd,1)))
+        sb.append(printIR(BNE(label)))
+        sb.append(printIR(CMPImm(rn, 1)))
         sb.append(label)
-        sb.append(printIR(MOVImm(rd, 1, "EQ"), cg))
-        sb.append(printIR(MOVImm(rd, 0, "NE"), cg))
+        sb.append(printIR(MOVImm(rd, 1, "EQ")))
+        sb.append(printIR(MOVImm(rd, 0, "NE")))
         sb.toString()
       }
       case OR(rd, rn, label: String) => {
         val sb = new StringBuilder
-        sb.append(printIR(CMPImm(rd,1), cg))
-        sb.append(printIR(BEQ(label), cg))
-        sb.append(printIR(CMPImm(rn, 1), cg))
+        sb.append(printIR(CMPImm(rd,1)))
+        sb.append(printIR(BEQ(label)))
+        sb.append(printIR(CMPImm(rn, 1)))
         sb.append(label)
-        sb.append(printIR(MOVImm(rd, 1, "EQ"), cg))
-        sb.append(printIR(MOVImm(rd, 0, "NE"), cg))
+        sb.append(printIR(MOVImm(rd, 1, "EQ")))
+        sb.append(printIR(MOVImm(rd, 0, "NE")))
         sb.toString()
       }
 
