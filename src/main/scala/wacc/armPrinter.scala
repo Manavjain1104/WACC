@@ -33,7 +33,7 @@ object armPrinter {
       case Label(label) => label + ":"
       case BNE(label) => "bne " + label
       case BEQ(label) => "beq " + label
-      case BUC(label) => "buc " + label
+      case BUC(label) => "b " + label
       case BL(label) => "bl " + label
       case BLNE(label) => "blne " + label
 
