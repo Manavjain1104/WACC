@@ -121,13 +121,12 @@ class codeGenerator(program: Program) {
             generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POP(scratchReg2), POP(scratchReg1), CMP(scratchReg1, scratchReg2), MOVImm(scratchReg1, 1, "GE"), MOVImm(scratchReg1,0, "LT"), PUSH(scratchReg1))
           case LTEQExpr(e1, e2) =>
             generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POP(scratchReg2), POP(scratchReg1), CMP(scratchReg1, scratchReg2), MOVImm(scratchReg1, 1, "LE"), MOVImm(scratchReg1,0, "GE"), PUSH(scratchReg1))
-          case AndExpr(e1, e2) => {
+          case AndExpr(e1, e2) =>
             val L1 : List[IR] = generateExprIR(e1, liveMap)
             val L2 : List[IR] = generateExprIR(e2, liveMap)
             val label : String = getNewLabel()
             val L3 : List[IR] = List(POP(scratchReg2), POP(scratchReg1), AND(scratchReg1, scratchReg2, label), PUSH(scratchReg1))
             L1 ++ L2 ++ L3
-          }
           case OrExpr(e1, e2) =>
             val L1 : List[IR] = generateExprIR(e1, liveMap)
             val L2 : List[IR] = generateExprIR(e2, liveMap)
@@ -164,7 +163,9 @@ class codeGenerator(program: Program) {
         val localCount = liveMap.getNestedEntries()
         val irs = ListBuffer.empty[IR]
 
-        irs.append(PUSHMul(localRegs.slice(0, localCount))) // caller saved
+        if (localCount > 0) {
+          irs.append(PUSHMul(localRegs.slice(0, localCount))) // caller saved
+        }
 
         for (i <- lArgs.indices) {
           val expr = lArgs(i)
@@ -182,7 +183,9 @@ class codeGenerator(program: Program) {
 
         irs.append(MOV(scratchReg1, R0))
 
-        irs.append(POPMul(localRegs.slice(0, localCount))) // caller saved
+        if (localCount > 0) {
+          irs.append(POPMul(localRegs.slice(0, localCount))) // caller saved
+        }
 
         irs.append(PUSH(scratchReg1))
         irs.toList
@@ -302,7 +305,7 @@ class codeGenerator(program: Program) {
         getPrintIR(e, opType.get, liveMap, ln = true)
       }
 
-      case Return(e) => generateExprIR(e, liveMap).appended(POP(R0))
+      case Return(e) => generateExprIR(e, liveMap).appendedAll(List(POP(R0), POPMul(List(FP, PC))))
 
       case _ => null // TODO
     }
