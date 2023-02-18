@@ -14,28 +14,28 @@ object armPrinter {
 
   def printIR(ir: IR, cg: codeGenerator): String = {
     ir match {
-
-      case Data() => {
-        val s = new StringBuilder(".data\n")
+      case Data => {
+        val s = new StringBuilder(".data")
         for (i <- 0 until cg.stringNum) {
-          s ++= s"@ length of .L.str$i\n"
+          s ++= s"\n@ length of .L.str$i\n"
           s ++= "   .word " + cg.strings(i).length.toString + "\n"
           s ++= s".L.str$i\n"
           s ++= "   .asciz \"" + cg.strings(i) + "\"\n"
         }
         s.toString()
-
-        // TODO print strings
       }
-      case Text() => ".text"
+      case Text => ".text"
       case Global(globals) => ".global" + globals.foldLeft("")((x, y) => x + " " + y)
+      case LTORG => "   .ltorg"
+
 
       // Label and Branch Statements
-      case Label(label) => label + ":"
-      case BL(label) => "bl " + label
+      case Label(label) => "\n" + label + ":"
       case BNE(label) => "bne " + label
       case BEQ(label) => "beq " + label
       case BUC(label) => "buc " + label
+      case BL(label) => "bl " + label
+      case BLNE(label) => "blne " + label
 
       // Move statements
       case MOV(rd, rs) => "mov " + rd + ", " + rs
@@ -44,7 +44,7 @@ object armPrinter {
           case "Default" => "mov " + rd + ", #" + i
           case "GT" => "movgt " + rd + ", #" + i
           case "LT" => "movlt " + rd + ", #" + i
-          case "GT" => "movge " + rd + ", #" + i
+          case "GE" => "movge " + rd + ", #" + i
           case "LE" => "movle " + rd + ", #" + i
           case "EQ" => "moveq " + rd + ", #" + i
           case "NE" => "movne " + rd + ", #" + i
@@ -57,15 +57,23 @@ object armPrinter {
       case POPMul(regs) => "pop {" + regs.map(reg => reg.toString).mkString(",") + "}"
       case POP(reg) => "pop {" + reg + "}"
 
-      // Unary Operators TODO
-
+      // Unary Operators
+      case NEG(rd, rs) => "rsbs " + rd + ", " + rs + ", " + "#0"
+      case NOT(rd, rs) => {
+        val sb = new StringBuilder()
+        sb.append(CMPImm(rs, 0) + "\n")
+        sb.append(MOVImm(rs, 1, "eq") + "\n")
+        sb.append(MOVImm(rs, 0, "ne") + "\n")
+        sb.append(MOV(rd, rs))
+        sb.toString()
+      }
 
       // Arithmetic Binary Operators
       case ADD(rd, rn, i) => "add " + rd + ", " + rn + ", #" + i
       case SUB(rd, rn, i) => "sub " + rd + ", " + rn + ", #" + i //TODO check order
-      case DIV(rd, rs) => {
+      case DIV(rd, rs, locals) => {
         val sb = new StringBuilder
-        if (cg.numLocals() > 4) {
+        if (locals > 4) {
           sb.append(printIR(PUSHMul(List(R0, R1)), cg) + "\n")
         }
         sb.append(printIR(MOV(R0, rd), cg) + "\n")
@@ -73,15 +81,22 @@ object armPrinter {
         sb.append(printIR(BL("__aeabi_idivmod"),   cg) + "\n")
         sb.append(printIR(PUSH(R0), cg) + "\n")
 
-        if (cg.numLocals() > 4) {
+        if (locals > 4) {
           sb.append(printIR(POPMul(List(R0, R1)), cg))
         }
 
         sb.toString()
       }
-      case MUL(rd, rs) => ""   // TODO ask Jamie about cmp r8, r9 asm #31
-      case MOD(rd, rs) => {val sb = new StringBuilder
-        if (cg.numLocals() > 4) {
+      case MUL(rd, rs) => {
+        val sb = new StringBuilder()
+        sb.append("smull " + rd + ", " + rs + ", " + rd + ", " + rs + "\n")  // rd - low, rs - high
+//        sb.append(printIR(CMP(rs, rd),cg) + "asr #31\n")
+//        sb.append(printIR(BLNE("_errOverflow"),cg)) // TODO overflow
+        sb.toString()
+      }
+      case MOD(rd, rs, locals) => {
+        val sb = new StringBuilder
+        if (locals > 4) {
           sb.append(printIR(PUSHMul(List(R0, R1)), cg) + "\n")
         }
         sb.append(printIR(MOV(R0, rd), cg) + "\n")
@@ -89,7 +104,7 @@ object armPrinter {
         sb.append(printIR(BL("__aeabi_idivmod"), cg) + "\n")
         sb.append(printIR(PUSH(R1), cg) + "\n")
 
-        if (cg.numLocals() > 4) {
+        if (locals > 4) {
           sb.append(printIR(POPMul(List(R0, R1)), cg))
         }
 
@@ -97,8 +112,8 @@ object armPrinter {
       }
 
       // Comparison Binary Operators
+      case CMP(rd, rn) => "cmp " + rd + ", " + rn
       case CMPImm(rd, i) => "cmp " + rd.toString + ", #" + i.toString
-      case CMP(rd, rn)   => "cmp " + rd + ", " + rn
 
       // Logical Binary Operators
       case AND(rd, rn, label: String) => {
@@ -121,6 +136,11 @@ object armPrinter {
         sb.append(printIR(MOVImm(rd, 0, "NE"), cg))
         sb.toString()
       }
+
+      // Misc Statements
+      case LDR(rd, rs, offset) => "ldr " + rd +", [" + rs + ", #" + offset + "]"
+      case STR(rd, rs, offset) => "str " + rd +", [" + rs + ", #" + offset + "]"
+      case StringInit(reg, stringNum) => "ldr " + reg + ", " + "=.L.str" + stringNum.toString
       case _ => "Unreachable"
     }
   }

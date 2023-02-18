@@ -6,16 +6,18 @@ object IR {
   sealed trait IR
 
   // Top level statements
-  case class Data()                        extends IR
-  case class Text()                        extends IR
+  case object Data                         extends IR
+  case object Text                         extends IR
   case class Global(globals: List[String]) extends IR
+  case object LTORG                        extends IR
 
   // Label and Branch Statements
-  case class Label(label: String) extends IR
-  case class BNE (label : String) extends IR
-  case class BEQ (label : String) extends IR
-  case class BUC (label : String) extends IR
-  case class BL  (label : String) extends IR
+  case class Label(label: String)  extends IR
+  case class BNE (label : String)  extends IR
+  case class BEQ (label : String)  extends IR
+  case class BUC (label : String)  extends IR
+  case class BL  (label : String)  extends IR
+  case class BLNE (label : String) extends IR
 
   // Move statements
   case class MOV(rd: Reg, rs: Reg)                    extends IR
@@ -32,24 +34,24 @@ object IR {
   case class NOT(rd : Reg, rs : Reg) extends IR
 
   // Arithmetic Binary Operators
-  case class ADD(rd: Reg, rn: Reg, i: Int ) extends IR
-  case class SUB(rd: Reg, rn: Reg, i: Int ) extends IR
-  case class DIV(rd : Reg, rs : Reg)        extends IR
-  case class MUL(rd : Reg, rs : Reg)        extends IR
-  case class MOD(rd : Reg, rs : Reg)        extends IR
+  case class ADD(rd: Reg, rn: Reg, i: Int )               extends IR
+  case class SUB(rd: Reg, rn: Reg, i: Int )               extends IR
+  case class DIV(rd : Reg, rs : Reg, locals : Int)        extends IR
+  case class MUL(rd : Reg, rs : Reg)                      extends IR
+  case class MOD(rd : Reg, rs : Reg, locals : Int)        extends IR
 
   // Comparison Binary Operators
   case class CMP(rd: Reg, rn: Reg)   extends IR
   case class CMPImm(rd: Reg, i: Int) extends IR
 
   // Logical Binary Operators
-  case class AND(rd: Reg, rn: Reg, label: String) extends IR //Edit
+  case class AND(rd: Reg, rn: Reg, label: String) extends IR
   case class OR(rd: Reg, rn: Reg, label: String)  extends IR
 
   // Misc Statements
   case class LDR(rd : Reg, rs : Reg, offset : Int) extends IR
-  case class STR(rd : Reg, rs : Reg, offset : Int) extends  IR
-  case class StringInit(reg: Reg, stringNum: Int) extends IR
+  case class STR(rd : Reg, rs : Reg, offset : Int) extends IR
+  case class StringInit(reg: Reg, stringNum: Int)  extends IR
 
 }
 

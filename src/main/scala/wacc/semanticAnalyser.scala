@@ -15,13 +15,16 @@ class semanticAnalyser {
   // to store function return type in the intermediate scope
   private final val ENCLOSING_FUNC_RETURN_TYPE = "?_returnType"
 
+  // mangling function names to maintain uniqueness
+  private final val FUNCTION_PREFIX = "wacc_"
+
   def checkProgram(program: Program, topLevelSymbolTable: SymbolTable[SemType]): Option[ListBuffer[SemanticError]] = {
 
     // first pass to develop function names on the top level symbol table
     val funcDefinitions = mutable.Set.empty[Func]
     for (func <- program.funcs) {
-      if (topLevelSymbolTable.lookup("$" + func.ident).isEmpty) {
-        topLevelSymbolTable.add("$" + func.ident, convertToSem(func))
+      if (topLevelSymbolTable.lookup(FUNCTION_PREFIX + func.ident).isEmpty) {
+        topLevelSymbolTable.add(FUNCTION_PREFIX + func.ident, convertToSem(func))
         funcDefinitions.add(func)
       } else {
         errorLog += DuplicateIdentifier(func.pos, func.ident, Some("Duplicate function definition."))
@@ -409,7 +412,7 @@ class semanticAnalyser {
 
       case call@Call(ident, args) =>
         // valid function in symbol table
-        val identSemType = symbolTable.lookupAll("$" + ident)
+        val identSemType = symbolTable.lookupAll(FUNCTION_PREFIX + ident)
         if (identSemType.isEmpty) {
           errorLog += UnknownIdentifierError(call.pos, ident, Some("Unknown function identifier found"))
           return Some(InternalPairSemType)

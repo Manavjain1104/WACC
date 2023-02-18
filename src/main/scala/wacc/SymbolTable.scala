@@ -5,6 +5,7 @@ import scala.collection.mutable
 class SymbolTable[A](val encSymTable: Option[SymbolTable[A]],
                   val map: mutable.Map[String, A] = mutable.Map.empty[String, A]) {
 
+
   def add(name: String, ty: A) = {
     map.addOne(name, ty)
   }

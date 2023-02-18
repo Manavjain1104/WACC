@@ -53,15 +53,15 @@ object Main {
                 }
               }
               generateOutputMessages(ListBuffer.empty[error.SemanticError], None, file.getPath, OK_EXIT_CODE)
-              println(value)
+//              println(value)
 
               // TODO : Code Generation
               val output = armPrinter.print(new codeGenerator(prog))
-              new codeGenerator(prog).generateProgIR().foreach(ir => println(ir))
+//              new codeGenerator(prog).generateProgIR().foreach(ir => println(ir))
 //              println(output)
 
               // Write assembly to .s file
-              val writerToFile = new PrintWriter(new File(file.getName.dropRight(EXT_LENGTH) + ".s"))
+              val writerToFile = new PrintWriter(new File(file.getName.dropRight(EXT_LENGTH - 1) + ".s"))
               writerToFile.write(output)
               writerToFile.close()
 
