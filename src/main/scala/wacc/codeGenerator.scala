@@ -104,39 +104,39 @@ class codeGenerator(program: Program) {
       case expr: BinopExpr => {
         expr match {
           case AddExpr(e1, e2) =>
-            generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POPMul(List(scratchReg1, scratchReg2)), ADD(scratchReg1, scratchReg2, 0), PUSH(scratchReg1))  // TODO : check for overflow
+            generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POP(scratchReg2), POP(scratchReg1), ADD(scratchReg1, scratchReg2, 0), PUSH(scratchReg1))  // TODO : check for overflow
           case SubExpr(e1, e2) =>
-            generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POPMul(List(scratchReg1, scratchReg2)), SUB(scratchReg1, scratchReg2, 0), PUSH(scratchReg1))  // TODO : check for overflow
+            generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POP(scratchReg2), POP(scratchReg1), SUB(scratchReg1, scratchReg2, 0), PUSH(scratchReg1))  // TODO : check for overflow
           case MulExpr(e1, e2) =>
-            generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POPMul(List(scratchReg1, scratchReg2)), MUL(scratchReg1, scratchReg2), PUSH(scratchReg1)) // TODO : check for overflow
+            generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POP(scratchReg2), POP(scratchReg1), MUL(scratchReg1, scratchReg2), PUSH(scratchReg1)) // TODO : check for overflow
           case DivExpr(e1, e2) =>
-            generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POPMul(List(scratchReg1, scratchReg2)), DIV(scratchReg1, scratchReg2, locals)) // TODO : check for division by zero
+            generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POP(scratchReg2), POP(scratchReg1), DIV(scratchReg1, scratchReg2, locals)) // TODO : check for division by zero
           case ModExpr(e1, e2) =>
-            generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POPMul(List(scratchReg1, scratchReg2)), MOD(scratchReg1, scratchReg2, locals))
+            generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POP(scratchReg2), POP(scratchReg1), MOD(scratchReg1, scratchReg2, locals))
           case GTExpr(e1, e2) =>
-            generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POPMul(List(scratchReg1, scratchReg2)), CMP(scratchReg1, scratchReg2), MOVImm(scratchReg1, 1, "GT"), MOVImm(scratchReg1,0, "LE"), PUSH(scratchReg1))
+            generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POP(scratchReg2), POP(scratchReg1), CMP(scratchReg1, scratchReg2), MOVImm(scratchReg1, 1, "GT"), MOVImm(scratchReg1,0, "LE"), PUSH(scratchReg1))
           case LTExpr(e1, e2) =>
-            generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POPMul(List(scratchReg1, scratchReg2)), CMP(scratchReg1, scratchReg2), MOVImm(scratchReg1, 1, "LT"), MOVImm(scratchReg1,0, "GE"), PUSH(scratchReg1))
+            generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POP(scratchReg2), POP(scratchReg1), CMP(scratchReg1, scratchReg2), MOVImm(scratchReg1, 1, "LT"), MOVImm(scratchReg1,0, "GE"), PUSH(scratchReg1))
           case GTEQExpr(e1, e2) =>
-            generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POPMul(List(scratchReg1, scratchReg2)), CMP(scratchReg1, scratchReg2), MOVImm(scratchReg1, 1, "GE"), MOVImm(scratchReg1,0, "LT"), PUSH(scratchReg1))
+            generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POP(scratchReg2), POP(scratchReg1), CMP(scratchReg1, scratchReg2), MOVImm(scratchReg1, 1, "GE"), MOVImm(scratchReg1,0, "LT"), PUSH(scratchReg1))
           case LTEQExpr(e1, e2) =>
-            generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POPMul(List(scratchReg1, scratchReg2)), CMP(scratchReg1, scratchReg2), MOVImm(scratchReg1, 1, "LE"), MOVImm(scratchReg1,0, "GE"), PUSH(scratchReg1))
+            generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POP(scratchReg2), POP(scratchReg1), CMP(scratchReg1, scratchReg2), MOVImm(scratchReg1, 1, "LE"), MOVImm(scratchReg1,0, "GE"), PUSH(scratchReg1))
           case AndExpr(e1, e2) => {
             val L1 : List[IR] = generateExprIR(e1, liveMap)
             val L2 : List[IR] = generateExprIR(e2, liveMap)
             val label : String = getNewLabel()
-            val L3 : List[IR] = List(POPMul(List(scratchReg1, scratchReg2)), AND(scratchReg1, scratchReg2, label), PUSH(scratchReg1))
+            val L3 : List[IR] = List(POP(scratchReg2), POP(scratchReg1), AND(scratchReg1, scratchReg2, label), PUSH(scratchReg1))
             L1 ++ L2 ++ L3
           }
           case OrExpr(e1, e2) =>
             val L1 : List[IR] = generateExprIR(e1, liveMap)
             val L2 : List[IR] = generateExprIR(e2, liveMap)
             val label : String = getNewLabel()
-            val L3 : List[IR] = List(POPMul(List(scratchReg1, scratchReg2)), OR(scratchReg1, scratchReg2, label), PUSH(scratchReg1))
+            val L3 : List[IR] = List(POP(scratchReg2), POP(scratchReg1), OR(scratchReg1, scratchReg2, label), PUSH(scratchReg1))
             L1 ++ L2 ++ L3
 
-          case EQExpr(e1, e2) =>  generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POPMul(List(scratchReg1, scratchReg2)), CMP(scratchReg1, scratchReg2), MOVImm(scratchReg1, 1, "EQ"), MOVImm(scratchReg1,0, "NE"), PUSH(scratchReg1))
-          case NEQExpr(e1, e2) => generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POPMul(List(scratchReg1, scratchReg2)), CMP(scratchReg1, scratchReg2), MOVImm(scratchReg1, 1, "NE"), MOVImm(scratchReg1,0, "EQ"), PUSH(scratchReg1))
+          case EQExpr(e1, e2) =>  generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POP(scratchReg2), POP(scratchReg1), CMP(scratchReg1, scratchReg2), MOVImm(scratchReg1, 1, "EQ"), MOVImm(scratchReg1,0, "NE"), PUSH(scratchReg1))
+          case NEQExpr(e1, e2) => generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POP(scratchReg2), POP(scratchReg1), CMP(scratchReg1, scratchReg2), MOVImm(scratchReg1, 1, "NE"), MOVImm(scratchReg1,0, "EQ"), PUSH(scratchReg1))
         }
       }
     }
