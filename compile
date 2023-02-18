@@ -4,7 +4,7 @@
 # but do *not* change its name.
 # shellcheck disable=SC2068
 java -jar wacc-25-compiler.jar $@
-#bash compile_and_run.sh
+bash compile_and_run.sh
 
 exit $?
 
