@@ -20,11 +20,10 @@ class codeGenerator(program: Program) {
 
   /*
   TODO - Back End
-  1) Print, Println statements etc
-  2) Return and frees
-  3) Heaps - Arrays and pair --> len expressions
-  4) Rvalue - just has expr right now
-  5) checking for overflow, div by 0
+  1) Return and frees
+  2) Heaps - Arrays and pair --> len expressions
+  3) Rvalue - just has expr right now
+  4) checking for overflow, div by 0
    */
 
   def generateProgIR(): List[IR] = {
@@ -60,11 +59,10 @@ class codeGenerator(program: Program) {
       if (widgets.contains("print")) {
         widgets("print").foreach(flag => irs.appendAll(printAll(flag)))
       }
-      if (widgets.contains("println")) irs.appendAll(println())
+      if (widgets.contains("printNewLine")) irs.appendAll(printNewLine())
 
-
-
-    irs.toList
+    optimisePushPop(irs.toList)
+//    irs.toList
   }
 
   // this function writes instructions that calculate the value of the expression
@@ -121,13 +119,12 @@ class codeGenerator(program: Program) {
             generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POP(scratchReg2), POP(scratchReg1), CMP(scratchReg1, scratchReg2), MOVImm(scratchReg1, 1, "GE"), MOVImm(scratchReg1,0, "LT"), PUSH(scratchReg1))
           case LTEQExpr(e1, e2) =>
             generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POP(scratchReg2), POP(scratchReg1), CMP(scratchReg1, scratchReg2), MOVImm(scratchReg1, 1, "LE"), MOVImm(scratchReg1,0, "GE"), PUSH(scratchReg1))
-          case AndExpr(e1, e2) => {
+          case AndExpr(e1, e2) =>
             val L1 : List[IR] = generateExprIR(e1, liveMap)
             val L2 : List[IR] = generateExprIR(e2, liveMap)
             val label : String = getNewLabel()
             val L3 : List[IR] = List(POP(scratchReg2), POP(scratchReg1), AND(scratchReg1, scratchReg2, label), PUSH(scratchReg1))
             L1 ++ L2 ++ L3
-          }
           case OrExpr(e1, e2) =>
             val L1 : List[IR] = generateExprIR(e1, liveMap)
             val L2 : List[IR] = generateExprIR(e2, liveMap)
@@ -164,7 +161,9 @@ class codeGenerator(program: Program) {
         val localCount = liveMap.getNestedEntries()
         val irs = ListBuffer.empty[IR]
 
-        irs.append(PUSHMul(localRegs.slice(0, localCount))) // caller saved
+        if (localCount > 0) {
+          irs.append(PUSHMul(localRegs.slice(0, localCount))) // caller saved
+        }
 
         for (i <- lArgs.indices) {
           val expr = lArgs(i)
@@ -182,7 +181,9 @@ class codeGenerator(program: Program) {
 
         irs.append(MOV(scratchReg1, R0))
 
-        irs.append(POPMul(localRegs.slice(0, localCount))) // caller saved
+        if (localCount > 0) {
+          irs.append(POPMul(localRegs.slice(0, localCount))) // caller saved
+        }
 
         irs.append(PUSH(scratchReg1))
         irs.toList
@@ -302,7 +303,7 @@ class codeGenerator(program: Program) {
         getPrintIR(e, opType.get, liveMap, ln = true)
       }
 
-      case Return(e) => generateExprIR(e, liveMap).appended(POP(R0))
+      case Return(e) => generateExprIR(e, liveMap).appendedAll(List(POP(R0), POPMul(List(FP, PC))))
 
       case _ => null // TODO
     }
@@ -348,7 +349,7 @@ class codeGenerator(program: Program) {
 
     if (ln) {
       irs.append(BL("_println"))
-      widgets("println") = collection.mutable.Set.empty
+      widgets("printNewLine") = collection.mutable.Set.empty
     }
 
     if (clobber) {
@@ -434,7 +435,7 @@ class codeGenerator(program: Program) {
     ir.toList
   }
 
-  def println() : List[IR] = {
+  def printNewLine() : List[IR] = {
     val ir = ListBuffer.empty[IR]
     ir.append(Data(List(""), stringNum))
     ir.append(Label("_println"))
@@ -474,6 +475,40 @@ class codeGenerator(program: Program) {
     val label : String = ".L" + labelOrder.toString
     labelOrder += 1
     label
+  }
+
+  def optimisePushPop(irs : List[IR]) : List[IR] = {
+    val newIRs = ListBuffer.empty[IR]
+    var i = 0
+    while (i < irs.length) {
+      val ir = irs(i)
+      if (i < (irs.length - 1)) {
+        ir match {
+          case PUSH(reg1) =>
+            val irNext = irs(i + 1)
+            irNext match {
+              case POP(reg2) =>
+                if (reg1 == reg2) {
+                  i += 2
+                }
+                else {
+                  newIRs.append(MOV(reg2, reg1))
+                  i += 2
+                }
+              case _ =>
+                newIRs.append(ir)
+                i += 1
+            }
+          case _ =>
+            newIRs.append(ir)
+            i += 1
+        }
+      } else {
+        newIRs.append(ir)
+        i += 1
+      }
+    }
+    newIRs.toList
   }
 
   def clearLiveMap(liveMap: SymbolTable[Location]) : Unit = liveMap.map.clear()
