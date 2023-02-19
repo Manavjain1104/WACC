@@ -29,7 +29,7 @@ class SymbolTable[A](val encSymTable: Option[SymbolTable[A]],
     var locals = 0
     var liveMap = Option(this)
     while (liveMap.isDefined) {
-      locals += liveMap.size
+      locals += liveMap.get.map.size
       liveMap = liveMap.get.encSymTable
     }
     locals

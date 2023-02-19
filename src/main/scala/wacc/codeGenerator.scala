@@ -480,11 +480,11 @@ class codeGenerator(program: Program) {
   }
 
   def assignLocal(ident: String, liveMap: SymbolTable[Location], localRegs : List[Reg]): List[IR] = {
-    val localCount = liveMap.getNestedEntries() + 1
+    val localCount = liveMap.getNestedEntries()
     assert(liveMap.lookup(ident).isEmpty, "First assignment of " + ident + " in child scope")
     if (localCount <= localRegs.size) {
-      liveMap.add(ident, localRegs(localCount - 1))
-      List(POP(localRegs(localCount - 1)))
+      liveMap.add(ident, localRegs(localCount))
+      List(POP(localRegs(localCount)))
     } else {
       val offset = (localCount - localRegs.size)*(-4)
       liveMap.add(ident, Stack(offset))
