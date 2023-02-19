@@ -120,21 +120,21 @@ object armPrinter {
       // Logical Binary Operators
       case AND(rd, rn, label: String) => {
         val sb = new StringBuilder
-        sb.append(printIR(CMPImm(rd,1)))
-        sb.append(printIR(BNE(label)))
-        sb.append(printIR(CMPImm(rn, 1)))
-        sb.append(label)
-        sb.append(printIR(MOVImm(rd, 1, "EQ")))
+        sb.append(printIR(CMPImm(rd,1)) + "\n")
+        sb.append(printIR(BNE(label)) + "\n")
+        sb.append(printIR(CMPImm(rn, 1)) + "\n")
+        sb.append(printIR(Label(label)) + "\n")
+        sb.append(printIR(MOVImm(rd, 1, "EQ")) + "\n")
         sb.append(printIR(MOVImm(rd, 0, "NE")))
         sb.toString()
       }
       case OR(rd, rn, label: String) => {
         val sb = new StringBuilder
-        sb.append(printIR(CMPImm(rd,1)))
-        sb.append(printIR(BEQ(label)))
-        sb.append(printIR(CMPImm(rn, 1)))
-        sb.append(label)
-        sb.append(printIR(MOVImm(rd, 1, "EQ")))
+        sb.append(printIR(CMPImm(rd,1)) + "\n")
+        sb.append(printIR(BEQ(label)) + "\n")
+        sb.append(printIR(CMPImm(rn, 1)) + "\n")
+        sb.append(printIR(Label(label)) + "\n")
+        sb.append(printIR(MOVImm(rd, 1, "EQ")) + "\n")
         sb.append(printIR(MOVImm(rd, 0, "NE")))
         sb.toString()
       }
