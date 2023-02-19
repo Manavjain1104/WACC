@@ -20,7 +20,7 @@ object armPrinter {
           s ++= "   .word " + strings(i).length.toString + "\n"
           val count = i + startIndex
           s ++= s".L.str$count:\n"
-          s ++= "   .asciz \"" + strings(i) + "\"\n"
+          s ++= "   .asciz \"" + strings(i).replace("\"", "\\\"") + "\"\n"
         }
         s ++= ".text"
         s.toString()
