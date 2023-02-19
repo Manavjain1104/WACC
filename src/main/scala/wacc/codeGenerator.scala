@@ -249,8 +249,6 @@ class codeGenerator(program: Program) {
 
       case Skip => List.empty[IR]
 
-      case ScopeStat(stat) => generateStatIR(stat, liveMap, localRegs, numParams)
-
       case VarDec(_, ident, rvalue) => generateRvalue(rvalue, liveMap, localRegs) ++ assignLocal(ident, liveMap, localRegs, numParams)
 
       case Assign(lvalue, rvalue) => {
