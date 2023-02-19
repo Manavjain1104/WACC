@@ -251,6 +251,24 @@ class codeGenerator(program: Program) {
 
       case VarDec(_, ident, rvalue) => generateRvalue(rvalue, liveMap, localRegs) ++ assignLocal(ident, liveMap, localRegs)
 
+      case Assign(lvalue, rvalue) => {
+        lvalue match {
+//          case elem: PairElem => // TODO
+//          case ArrayElem(ident, exprs) => // TODO
+          case IdentValue(s) => {
+            val irs = ListBuffer.empty[IR]
+            irs.appendAll(generateRvalue(rvalue, liveMap, localRegs))
+
+            assert(liveMap.lookupAll(s).isDefined)
+            liveMap.lookupAll(s).get match {
+              case reg: Reg => irs.append(POP(reg))
+              case Stack(offset) => irs.appendAll(List(POP(scratchReg1), STR(scratchReg1, SP, offset)))
+            }
+            irs.toList
+          }
+        }
+      }
+
       case ConsecStat(first, next) => generateStatIR(first, liveMap, localRegs) ++ generateStatIR(next, liveMap, localRegs)
 
       case ScopeStat(stat) => generateStatIR(stat, new SymbolTable[Location](Some(liveMap)), localRegs)
@@ -305,7 +323,10 @@ class codeGenerator(program: Program) {
 
       case Return(e) => generateExprIR(e, liveMap).appendedAll(List(POP(R0), POPMul(List(FP, PC))))
 
-      case _ => null // TODO
+      case stat => {
+        println(stat)
+        null
+      } // TODO
     }
   }
 
