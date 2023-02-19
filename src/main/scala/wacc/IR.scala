@@ -34,8 +34,10 @@ object IR {
   case class NOT(rd : Reg, rs : Reg) extends IR
 
   // Arithmetic Binary Operators
-  case class ADD(rd: Reg, rn: Reg, i: Int )               extends IR
+  case class ADD(rd: Reg, rn: Reg, i: Int)                extends IR
+  case class ADDREG(rd: Reg, rn: Reg, rm: Reg)            extends IR
   case class SUB(rd: Reg, rn: Reg, i: Int )               extends IR
+  case class SUBREG(rd: Reg, rn: Reg, rm: Reg)            extends IR
   case class DIV(rd : Reg, rs : Reg, locals : Int)        extends IR
   case class MUL(rd : Reg, rs : Reg)                      extends IR
   case class MOD(rd : Reg, rs : Reg, locals : Int)        extends IR
