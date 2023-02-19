@@ -102,9 +102,9 @@ class codeGenerator(program: Program) {
       case expr: BinopExpr => {
         expr match {
           case AddExpr(e1, e2) =>
-            generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POP(scratchReg2), POP(scratchReg1), ADD(scratchReg1, scratchReg2, 1), PUSH(scratchReg1))  // TODO : check for overflow
+            generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POP(scratchReg2), POP(scratchReg1), ADDREG(scratchReg1, scratchReg2, scratchReg1), PUSH(scratchReg1))  // TODO : check for overflow
           case SubExpr(e1, e2) =>
-            generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POP(scratchReg2), POP(scratchReg1), SUB(scratchReg1, scratchReg2, 1), PUSH(scratchReg1))  // TODO : check for overflow
+            generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POP(scratchReg2), POP(scratchReg1), SUBREG(scratchReg1, scratchReg1, scratchReg2), PUSH(scratchReg1))  // TODO : check for overflow
           case MulExpr(e1, e2) =>
             generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POP(scratchReg2), POP(scratchReg1), MUL(scratchReg1, scratchReg2), PUSH(scratchReg1)) // TODO : check for overflow
           case DivExpr(e1, e2) =>

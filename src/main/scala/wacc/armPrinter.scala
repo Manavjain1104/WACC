@@ -69,8 +69,10 @@ object armPrinter {
       }
 
       // Arithmetic Binary Operators
-      case ADD(rd, rn, i) => "add " + rd + ", " + rn + ", #" + i
-      case SUB(rd, rn, i) => "sub " + rd + ", " + rn + ", #" + i //TODO check order
+      case ADD(rd, rn, i) => "adds " + rd + ", " + rn + ", #" + i
+      case ADDREG(rd, rn, rm) => "adds " + rd + ", " + rn + ", " + rm
+      case SUB(rd, rn, i) => "subs " + rd + ", " + rn + ", #" + i //TODO check order
+      case SUBREG(rd, rn, rm) => "subs " + rd + ", " + rn + ", " + rm
       case DIV(rd, rs, locals) => {
         val sb = new StringBuilder
         if (locals > 4) {
