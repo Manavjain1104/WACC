@@ -46,6 +46,9 @@ class codeGenerator(program: Program) {
     val liveMap = new SymbolTable[Location](None)
     irs.appendAll(generateStatIR(program.stat, liveMap, localRegs, 0))
 
+    if (numLocalsInMain > numLocalRegs) {
+      irs.append(ADD(SP, SP, (numLocalsInMain - numLocalRegs) * 4))
+    }
     irs += MOVImm(R0, 0, "Default")
     irs += POPMul(List(FP, PC))
 
@@ -499,7 +502,6 @@ class codeGenerator(program: Program) {
     } else {
       val offset = (localCount - localRegs.size)*(-4)
       liveMap.add(ident, Stack(offset))
-      println(ident, liveMap.map, "\n")
       List(POP(scratchReg1), STR(scratchReg1, FP, offset))
     }
   }
