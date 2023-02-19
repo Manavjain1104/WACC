@@ -313,12 +313,12 @@ class codeGenerator(program: Program) {
 
       case Print(e, opType) => {
         assert(opType.isDefined, "Expr must have a type")
-        getPrintIR(e, opType.get, liveMap, ln = false)
+        getPrintIR(e, opType.get, liveMap, localRegs,ln = false)
       }
 
       case Println(e, opType) => {
         assert(opType.isDefined, "Expr must have a type")
-        getPrintIR(e, opType.get, liveMap, ln = true)
+        getPrintIR(e, opType.get, liveMap, localRegs,ln = true)
       }
 
       case Return(e) => generateExprIR(e, liveMap).appendedAll(List(POP(R0), POPMul(List(FP, PC))))
@@ -330,12 +330,22 @@ class codeGenerator(program: Program) {
     }
   }
 
-  def getPrintIR(e : Expr, expType : SemType, liveMap : SymbolTable[Location], ln : Boolean) = {
+  def getPrintIR(e : Expr, expType : SemType, liveMap : SymbolTable[Location], localReg : List[Reg],ln : Boolean) = {
     val irs = ListBuffer.empty[IR]
 
-    val clobber = liveMap.getNestedEntries() > 4
+    var clobber = false
+    var i = 0
+    while (!clobber && i < liveMap.getNestedEntries()) {
+      if (localReg(i) == R0) {
+        clobber = true
+      }
+      i += 1
+    }
+    clobber = clobber || !localReg.contains(R0)
+
     if (clobber) {
       if (expType == BoolSemType || expType == StringSemType || expType == ArraySemType(CharSemType)) {
+        println("here")
         irs.append(PUSHMul(List(R0, R1, R2)))
       } else {
         irs.append(PUSHMul(List(R0, R1)))
