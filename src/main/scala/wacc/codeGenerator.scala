@@ -83,10 +83,16 @@ class codeGenerator(program: Program) {
         List(MOVImm(scratchReg1, c.toInt, "Default"), PUSH(scratchReg1))
       }
       case StringExpr(s) => {
-        stringNum += 1
-        strings += s
-        List(StringInit(scratchReg1, stringNum - 1), PUSH(scratchReg1))
+        val found = strings.find(st => s.equals(st))
+        var num = 0
+        if (found.isEmpty) {
+          num = stringNum
+          stringNum += 1
+          strings += s
+        } else num = strings.indexOf(s)
+        List(StringInit(scratchReg1, num), PUSH(scratchReg1))
       }
+
       case IdentExpr(ident) => {
         // transfer identifier expr to the first available register
         getIntoTarget(ident, scratchReg1, liveMap).appended(PUSH(scratchReg1))
@@ -121,7 +127,7 @@ class codeGenerator(program: Program) {
           case GTEQExpr(e1, e2) =>
             generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POP(scratchReg2), POP(scratchReg1), CMP(scratchReg1, scratchReg2), MOVImm(scratchReg1, 1, "GE"), MOVImm(scratchReg1,0, "LT"), PUSH(scratchReg1))
           case LTEQExpr(e1, e2) =>
-            generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POP(scratchReg2), POP(scratchReg1), CMP(scratchReg1, scratchReg2), MOVImm(scratchReg1, 1, "LE"), MOVImm(scratchReg1,0, "GE"), PUSH(scratchReg1))
+            generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POP(scratchReg2), POP(scratchReg1), CMP(scratchReg1, scratchReg2), MOVImm(scratchReg1, 1, "LE"), MOVImm(scratchReg1,0, "GT"), PUSH(scratchReg1))
           case AndExpr(e1, e2) =>
             val L1 : List[IR] = generateExprIR(e1, liveMap)
             val L2 : List[IR] = generateExprIR(e2, liveMap)
@@ -155,7 +161,7 @@ class codeGenerator(program: Program) {
   }
 
   // writes instructions that calculate the value and place it on top of the stack
-  def generateRvalue(rvalue: RValue, liveMap: SymbolTable[Location], localRegs : List[Reg]) : List[IR] = {
+  def generateRvalue(rvalue: RValue, liveMap: SymbolTable[Location], localRegs : List[Reg], numParams : Int) : List[IR] = {
     rvalue match {
       case expr: Expr => generateExprIR(expr, liveMap)
       //      case NewPair(expr1, expr2) => [] TODO
@@ -164,18 +170,23 @@ class codeGenerator(program: Program) {
         val localCount = liveMap.getNestedEntries()
         val irs = ListBuffer.empty[IR]
 
-        if (localCount > 0) {
-          irs.append(PUSHMul(localRegs.slice(0, localCount))) // caller saved
+        // caller saved
+        if (numParams > 0) {
+          irs.append(PUSHMul(paramRegs.slice(0, numParams)))
+        }
+        val realCount = localCount - numParams
+        if (realCount > 0) {
+          irs.append(PUSHMul(localRegs.slice(0, realCount)))
         }
 
-        for (i <- lArgs.indices) {
-          val expr = lArgs(i)
-          irs.appendAll(generateExprIR(expr, liveMap)) // this leaves the value on top of stack for function call
-          if (i < 4) {
-            irs.append(POP(paramRegs(i)))
-          }
+        for (i <- lArgs.length - 1 to 0 by -1) {
+          irs.appendAll(generateExprIR(lArgs(i), liveMap)) // this leaves the value on top of stack for function call
         }
-        // TODO : SOmewhere wrong here
+
+        for (i <- 0 until math.min(4, lArgs.length)) {
+          irs.append(POP(paramRegs(i)))
+        }
+
         irs.append(BL(FUNCTION_PREFIX + ident))
 
         if (lArgs.length > 4) {
@@ -184,8 +195,12 @@ class codeGenerator(program: Program) {
 
         irs.append(MOV(scratchReg1, R0))
 
-        if (localCount > 0) {
-          irs.append(POPMul(localRegs.slice(0, localCount))) // caller saved
+        // caller saved
+        if (realCount > 0) {
+          irs.append(POPMul(localRegs.slice(0, realCount)))
+        }
+        if (numParams > 0) {
+          irs.append(POPMul(paramRegs.slice(0, numParams)))
         }
 
         irs.append(PUSH(scratchReg1))
@@ -210,7 +225,7 @@ class codeGenerator(program: Program) {
       if (i < 4) {
         liveMap.add(func.params(i).ident, paramRegs(i))
       } else {
-        liveMap.add(func.params(i).ident, Stack(((numParams - i + 1) * 4)))
+        liveMap.add(func.params(i).ident, Stack(((i - 2) * 4)))
       }
     }
 
@@ -224,8 +239,6 @@ class codeGenerator(program: Program) {
       }
     }
 
-    println(localRegsBuilder.toList)
-
     // this code should consume the statement body of the function (Caller saved convention)
     val numLocalsInBody = findNumLocals(func.stat)
     val localRegs = localRegsBuilder.toList
@@ -235,7 +248,6 @@ class codeGenerator(program: Program) {
     }
     val childLiveMap = new SymbolTable[Location](Some(liveMap))
     irs.appendAll(generateStatIR(func.stat, childLiveMap, localRegs, numParams))
-    println(childLiveMap.map)
     irs += POPMul(List(FP, PC))
 
     if (numLocalsInBody > numLocalRegs) {
@@ -252,7 +264,7 @@ class codeGenerator(program: Program) {
 
       case Skip => List.empty[IR]
 
-      case VarDec(_, ident, rvalue) => generateRvalue(rvalue, liveMap, localRegs) ++ assignLocal(ident, liveMap, localRegs, numParams)
+      case VarDec(_, ident, rvalue) => generateRvalue(rvalue, liveMap, localRegs, numParams) ++ assignLocal(ident, liveMap, localRegs, numParams)
 
       case Assign(lvalue, rvalue) => {
         lvalue match {
@@ -260,7 +272,7 @@ class codeGenerator(program: Program) {
 //          case ArrayElem(ident, exprs) => // TODO
           case IdentValue(s) => {
             val irs = ListBuffer.empty[IR]
-            irs.appendAll(generateRvalue(rvalue, liveMap, localRegs))
+            irs.appendAll(generateRvalue(rvalue, liveMap, localRegs, numParams))
 
             assert(liveMap.lookupAll(s).isDefined)
             liveMap.lookupAll(s).get match {
@@ -347,12 +359,7 @@ class codeGenerator(program: Program) {
     clobber = clobber || !localReg.contains(R0)
 
     if (clobber) {
-      if (expType == BoolSemType || expType == StringSemType || expType == ArraySemType(CharSemType)) {
-        println("here")
-        irs.append(PUSHMul(List(R0, R1, R2, R3)))
-      } else {
-        irs.append(PUSHMul(List(R0, R1, R2, R3)))
-      }
+      irs.append(PUSHMul(List(R0, R1, R2, R3)))
     }
 
     irs.appendAll(generateExprIR(e, liveMap))
@@ -387,11 +394,7 @@ class codeGenerator(program: Program) {
     }
 
     if (clobber) {
-      if (expType == BoolSemType || expType == StringSemType || expType == ArraySemType(CharSemType)) {
-        irs.append(POPMul(List(R0, R1, R2, R3))) // TODO: ask what to save her , and why r12 <-- SP
-      } else {
-        irs.append(POPMul(List(R0, R1, R2, R3)))
-      }
+      irs.append(POPMul(List(R0, R1, R2, R3)))
     }
     irs.toList
   }

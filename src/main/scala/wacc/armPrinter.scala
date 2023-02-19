@@ -61,10 +61,10 @@ object armPrinter {
       case NEG(rd, rs) => "rsbs " + rd + ", " + rs + ", " + "#0"
       case NOT(rd, rs) => {
         val sb = new StringBuilder()
-        sb.append(CMPImm(rs, 0) + "\n")
-        sb.append(MOVImm(rs, 1, "eq") + "\n")
-        sb.append(MOVImm(rs, 0, "ne") + "\n")
-        sb.append(MOV(rd, rs))
+        sb.append(printIR(CMPImm(rs, 0)) + "\n")
+        sb.append(printIR(MOVImm(rs, 1, "EQ")) + "\n")
+        sb.append(printIR(MOVImm(rs, 0, "NE")) + "\n")
+        sb.append(printIR(MOV(rd, rs)))
         sb.toString()
       }
 
@@ -91,7 +91,7 @@ object armPrinter {
       }
       case MUL(rd, rs) => {
         val sb = new StringBuilder()
-        sb.append("smull " + rd + ", " + rs + ", " + rd + ", " + rs + "\n")  // rd - low, rs - high
+        sb.append("smull " + rd + ", " + rs + ", " + rd + ", " + rs)  // rd - low, rs - high
 //        sb.append(printIR(CMP(rs, rd),cg) + "asr #31\n")
 //        sb.append(printIR(BLNE("_errOverflow"),cg)) // TODO overflow
         sb.toString()
