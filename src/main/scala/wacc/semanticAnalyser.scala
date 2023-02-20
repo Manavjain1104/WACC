@@ -12,6 +12,7 @@ class semanticAnalyser {
   // error semanticErrLogs for semantic analysis
   private final val errorLog = mutable.ListBuffer.empty[SemanticError]
 
+
   // to store function return type in the intermediate scope
   private final val ENCLOSING_FUNC_RETURN_TYPE = "?_returnType"
 
@@ -741,13 +742,15 @@ class semanticAnalyser {
             Some(InternalPairSemType)
         }
 
-      case printStat@Print(expr: Expr) =>
+      case printStat : Print =>
         printStat.symbolTable = Some(symbolTable)
-        checkExpr(expr, symbolTable)
+        printStat.expType = checkExpr(printStat.e, symbolTable)
+        printStat.expType
 
-      case printlnStat@Println(expr: Expr) =>
+      case printlnStat : Println =>
         printlnStat.symbolTable = Some(symbolTable)
-        checkExpr(expr, symbolTable)
+        printlnStat.expType = checkExpr(printlnStat.e, symbolTable)
+        printlnStat.expType
 
       case If(cond, thenStat, elseStat) =>
         val condType: Option[SemType] = checkExpr(cond, symbolTable)

@@ -53,7 +53,6 @@ object Main {
                 }
               }
               generateOutputMessages(ListBuffer.empty[error.SemanticError], None, file.getPath, OK_EXIT_CODE)
-//              println(value)
 
               // TODO : Code Generation
               val output = armPrinter.print(new codeGenerator(prog))
