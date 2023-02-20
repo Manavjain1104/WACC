@@ -503,7 +503,7 @@ class codeGenerator(program: Program) {
       liveMap.add(ident, localRegs(realLocal))
       List(POP(localRegs(realLocal)))
     } else {
-      val offset = (localCount - localRegs.size)*(-4)
+      val offset = (realLocal - localRegs.size + 1)*(-4)
       liveMap.add(ident, Stack(offset))
       List(POP(scratchReg1), STR(scratchReg1, FP, offset))
     }
