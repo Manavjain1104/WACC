@@ -12,7 +12,7 @@ class LValueTests extends AnyFlatSpec {
   behavior of "ident LValue"
   it should "generate the correct ident LValue expression" taggedAs(LValueTests, SyntacticTests) in {
     val exp = "abcde"
-    val lvalue_ident = IdentValue(exp)(0,0)
+    val lvalue_ident = IdentValue(exp)(None, (0,0))
     val repr = lvalue.parse(exp).get
     assert(repr === lvalue_ident)
   }
@@ -36,7 +36,7 @@ class LValueTests extends AnyFlatSpec {
   behavior of "ident pair-elem LValue"
   it should "generate the correct ident pair-elem LValue expression" taggedAs(LValueTests, SyntacticTests) in {
     val exp = "fst abcde"
-    val pair_elem_ident = Fst(IdentValue("abcde")(0,0))(0,0)
+    val pair_elem_ident = Fst(IdentValue("abcde")(None, (0,0)))(0,0)
     val repr = lvalue.parse(exp).get
     assert(repr === pair_elem_ident)
   }
@@ -52,7 +52,7 @@ class LValueTests extends AnyFlatSpec {
   behavior of "nested pair-elem LValue"
   it should "generate the correct nested pair-elem LValue expression" taggedAs(LValueTests, SyntacticTests) in {
     val exp = "fst snd abcde"
-    val nested_pair_elem = Fst(Snd(IdentValue("abcde")(0,0))(0,0))(0,0)
+    val nested_pair_elem = Fst(Snd(IdentValue("abcde")(None, (0,0)))(0,0))(0,0)
     val repr = lvalue.parse(exp).get
     assert(repr === nested_pair_elem)
   }

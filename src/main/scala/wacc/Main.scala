@@ -20,7 +20,7 @@ object Main {
 
   def main(args: Array[String]): Unit = {
 
-    println("-- Compiling...")
+//    println("-- Compiling...")
 
     val sem: semanticAnalyser = new semanticAnalyser
     val file: File = new File(args.head)

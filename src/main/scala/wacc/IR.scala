@@ -51,7 +51,7 @@ object IR {
   case class OR(rd: Reg, rn: Reg, label: String)  extends IR
 
   // Misc Statements
-  case class LDR(rd : Reg, rs : Reg, offset : Int) extends IR
+  case class LDR(rd : Reg, rs : Reg, offset : Int, flag : String) extends IR
   case class STR(rd : Reg, rs : Reg, offset : Int) extends IR
   case class StringInit(reg: Reg, stringNum: Int)  extends IR
 

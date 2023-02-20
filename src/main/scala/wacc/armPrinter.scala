@@ -4,12 +4,20 @@ import wacc.IR._
 import wacc.Registers._
 object armPrinter {
 
-  // TODO if we have a PUSH R8 followed by POP R8 remove that during printing - small optimisations
-
   def print(cg : codeGenerator) : String = {
      val sb = new StringBuilder()
      cg.generateProgIR().foreach(ir => sb.append(printIR(ir) + "\n"))
      sb.toString()
+  }
+
+  def printInstr(Instr : String, regs : List[Reg]) : String = {
+    Instr + regs.map(reg => reg.toString).mkString(", ")
+  }
+  def printInstr(Instr : String, reg1 : Reg, IntVal : Int) : String = {
+       Instr + reg1 + ", #" + IntVal
+     }
+  def printInstr(Instr : String, reg1 : Reg, reg2 : Reg,  IntVal : Int) : String = {
+    Instr + reg1 + ", " + reg2 +", #" + IntVal
   }
 
   def printIR(ir: IR): String = {
@@ -41,24 +49,24 @@ object armPrinter {
       case MOV(rd, rs) => "mov " + rd + ", " + rs
       case MOVImm(rd, i, flag) => {
         flag match {
-          case "Default" => "mov " + rd + ", #" + i
-          case "GT" => "movgt " + rd + ", #" + i
-          case "LT" => "movlt " + rd + ", #" + i
-          case "GE" => "movge " + rd + ", #" + i
-          case "LE" => "movle " + rd + ", #" + i
-          case "EQ" => "moveq " + rd + ", #" + i
-          case "NE" => "movne " + rd + ", #" + i
+          case "Default" => printInstr("mov ", rd, i)
+          case "GT"      => printInstr("movgt ", rd, i)
+          case "LT"      => printInstr("movlt ", rd, i)
+          case "GE"      => printInstr("movge ", rd, i)
+          case "LE"      => printInstr("movle ", rd, i)
+          case "EQ"      => printInstr("moveq ", rd, i)
+          case "NE"      => printInstr("movne ", rd, i)
         }
       }
 
       // Push and Pop Statements
-      case PUSHMul(regs) => "push {" + regs.map(reg => reg.toString).mkString(",") + "}"
-      case PUSH(reg) => "push {" + reg + "}"
-      case POPMul(regs) => "pop {" + regs.map(reg => reg.toString).mkString(",") + "}"
-      case POP(reg) => "pop {" + reg + "}"
+      case PUSHMul(regs) => "push {" + regs.map(reg => reg.toString).mkString(", ") + "}"
+      case PUSH(reg)     => "push {" + reg + "}"
+      case POPMul(regs)  => "pop {" + regs.map(reg => reg.toString).mkString(", ") + "}"
+      case POP(reg)      => "pop {" + reg + "}"
 
       // Unary Operators
-      case NEG(rd, rs) => "rsbs " + rd + ", " + rs + ", " + "#0"
+      case NEG(rd, rs) => printInstr("rsbs ", rd, rs, 0)
       case NOT(rd, rs) => {
         val sb = new StringBuilder()
         sb.append(printIR(CMPImm(rs, 0)) + "\n")
@@ -69,10 +77,10 @@ object armPrinter {
       }
 
       // Arithmetic Binary Operators
-      case ADD(rd, rn, i) => "adds " + rd + ", " + rn + ", #" + i
-      case ADDREG(rd, rn, rm) => "adds " + rd + ", " + rn + ", " + rm
-      case SUB(rd, rn, i) => "subs " + rd + ", " + rn + ", #" + i //TODO check order
-      case SUBREG(rd, rn, rm) => "subs " + rd + ", " + rn + ", " + rm
+      case ADD(rd, rn, i)     => printInstr("adds ", rd, rn, i)
+      case ADDREG(rd, rn, rm) => printInstr("adds ", List(rd, rn, rm))
+      case SUB(rd, rn, i)     => printInstr("subs ", rd, rn, i) //TODO check order
+      case SUBREG(rd, rn, rm) => printInstr("subs ", List(rd, rn, rm))
       case DIV(rd, rs, locals) => {
         val sb = new StringBuilder
         if (locals > 4) {
@@ -91,13 +99,13 @@ object armPrinter {
       }
       case MUL(rd, rs) => {
         val sb = new StringBuilder()
-        sb.append("smull " + rd + ", " + rs + ", " + rd + ", " + rs)  // rd - low, rs - high
+        sb.append(printInstr("smull ", List(rd, rs, rd, rs)) ) // rd - low, rs - high
 //        sb.append(printIR(CMP(rs, rd),cg) + "asr #31\n")
 //        sb.append(printIR(BLNE("_errOverflow"),cg)) // TODO overflow
         sb.toString()
       }
       case MOD(rd, rs, locals) => {
-        val sb = new StringBuilder
+        val sb = new StringBuilder()
         if (locals > 4) {
           sb.append(printIR(PUSHMul(List(R0, R1))) + "\n")
         }
@@ -114,8 +122,8 @@ object armPrinter {
       }
 
       // Comparison Binary Operators
-      case CMP(rd, rn) => "cmp " + rd + ", " + rn
-      case CMPImm(rd, i) => "cmp " + rd.toString + ", #" + i.toString
+      case CMP(rd, rn)   => printInstr("cmp ", List(rd , rn))
+      case CMPImm(rd, i) => printInstr("cmp ", rd, i)
 
       // Logical Binary Operators
       case AND(rd, rn, label: String) => {
@@ -140,9 +148,14 @@ object armPrinter {
       }
 
       // Misc Statements
-      case LDR(rd, rs, offset) => "ldr " + rd +", [" + rs + ", #" + offset + "]"
-      case STR(rd, rs, offset) => "str " + rd +", [" + rs + ", #" + offset + "]"
-      case StringInit(reg, stringNum) => "ldr " + reg + ", " + "=.L.str" + stringNum.toString
+      case LDR(rd, rs, offset, flag) => {
+        flag match {
+          case "Default" => "ldr " + rd +", [" + rs + ", #" + offset + "]"
+          case "sb"      => "ldrsb " + rd +", [" + rs + ", #" + offset + "]"
+        }
+      }
+      case STR(rd, rs, offset)        => "str " + rd +", [" + rs + ", #" + offset + "]"
+      case StringInit(reg, stringNum) => "ldr " + reg + ", " + "=.L.str" + stringNum
       case _ => "Unreachable"
     }
   }

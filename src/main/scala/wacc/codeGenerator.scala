@@ -59,10 +59,13 @@ class codeGenerator(program: Program) {
     irs.prepend(Data(strings.toList, 0))
 
     // checking widget
-      if (widgets.contains("print")) {
-        widgets("print").foreach(flag => irs.appendAll(printAll(flag)))
-      }
-      if (widgets.contains("printNewLine")) irs.appendAll(printNewLine())
+    if (widgets.contains("print")) {
+      widgets("print").foreach(flag => irs.appendAll(printAll(flag)))
+    }
+    if (widgets.contains("read")) {
+      widgets("read").foreach(flag => irs.appendAll(readAll(flag)))
+    }
+    if (widgets.contains("printNewLine")) irs.appendAll(printNewLine())
 
     optimisePushPop(irs.toList)
 //    irs.toList
@@ -284,6 +287,7 @@ class codeGenerator(program: Program) {
         }
       }
 
+
       case ConsecStat(first, next) => generateStatIR(first, liveMap, localRegs, numParams) ++ generateStatIR(next, liveMap, localRegs, numParams)
 
       case ScopeStat(stat) => generateStatIR(stat, new SymbolTable[Location](Some(liveMap)), localRegs, numParams)
@@ -336,6 +340,29 @@ class codeGenerator(program: Program) {
         getPrintIR(e, opType.get, liveMap, localRegs,ln = true)
       }
 
+
+      case Read(lvalue) => {
+        lvalue match {
+          case id@IdentValue(s) => {
+            assert(id.st.isDefined, "Symbol table not associated with ident value")
+            val idType = id.st.get.lookupAll(s)
+            assert(idType.isDefined, "Ident"+ s + " not in symbol table ")
+            idType.get match {
+              case SemTypes.IntSemType => getReadIr(s,"i", liveMap, localRegs)
+              case SemTypes.CharSemType => getReadIr(s,"c", liveMap, localRegs)
+              case t => {
+                println("Wrong type ", t)
+                throw new RuntimeException("Cannot read into non int/char - should not get here")
+              }
+            }
+
+          }
+//          case elem: PairElem => TODO
+//          case ArrayElem(ident, exprs) => TODO
+        }
+      }
+
+
       case Return(e) => generateExprIR(e, liveMap).appendedAll(List(POP(R0), POPMul(List(FP, PC))))
 
       case stat => {
@@ -345,18 +372,21 @@ class codeGenerator(program: Program) {
     }
   }
 
-  def getPrintIR(e : Expr, expType : SemType, liveMap : SymbolTable[Location], localReg : List[Reg],ln : Boolean) = {
-    val irs = ListBuffer.empty[IR]
-
-    var clobber = false
+  def willClobber(localReg : List[Reg], liveMap : SymbolTable[Location]) : Boolean = {
     var i = 0
-    while (!clobber && i < localReg.length && i < liveMap.getNestedEntries()) {
+    while (i < localReg.length && i < liveMap.getNestedEntries()) {
       if (localReg(i) == R0) {
-        clobber = true
+        return true
       }
       i += 1
     }
-    clobber = clobber || !localReg.contains(R0)
+    !localReg.contains(R0)
+  }
+
+  def getPrintIR(e : Expr, expType : SemType, liveMap : SymbolTable[Location], localReg : List[Reg],ln : Boolean) = {
+    val irs = ListBuffer.empty[IR]
+
+    val clobber = willClobber(localReg, liveMap)
 
     if (clobber) {
       irs.append(PUSHMul(List(R0, R1, R2, R3)))
@@ -364,6 +394,7 @@ class codeGenerator(program: Program) {
 
     irs.appendAll(generateExprIR(e, liveMap))
     irs.append(POP(R0))
+
     val flag = expType match {
       case CharSemType => "c"
       case IntSemType => "i"
@@ -399,6 +430,83 @@ class codeGenerator(program: Program) {
     irs.toList
   }
 
+  def getReadIr(ident : String, flag : String, liveMap : SymbolTable[Location], localReg : List[Reg]) : List[IR] = {
+    val irs = ListBuffer.empty[IR]
+
+    val didClobber = willClobber(localReg, liveMap)
+
+    if (didClobber) {
+      irs.append(PUSHMul(List(R0, R1, R2, R3)))
+    }
+
+    // R0 should hold the value of ident
+    assert(liveMap.lookupAll(ident).isDefined, "Ident " + ident + "has not been defined")
+    liveMap.lookupAll(ident).get match {
+      case Stack(offset) => irs.append(LDR(R0, FP, offset, "Default"))
+      case reg: Reg => irs.append(MOV(R0, reg))
+    }
+
+    irs.append(BL("_read" + flag))
+    if (widgets.contains("read")) {
+      widgets("read").add(flag)
+    } else {
+      widgets("read") = collection.mutable.Set(flag)
+    }
+
+    irs.append(MOV(scratchReg1, R0))
+
+    if (didClobber) {
+      irs.append(POPMul(List(R0, R1, R2, R3)))
+    }
+
+    liveMap.lookupAll(ident).get match {
+      case Stack(offset) => irs.append(STR(scratchReg1, FP, offset))
+      case reg: Reg => irs.append(MOV(reg, scratchReg1))
+    }
+
+    irs.toList
+  }
+
+  def readChar(): List[IR] = {
+    val ir = ListBuffer.empty[IR]
+    ir.append(Data(List(" %c"), stringNum))
+    ir.append(Label("_readc"))
+    ir.append(PUSH(LR))
+    ir.append(PUSH(R0))
+    ir.append(MOV(R1, SP))
+    ir.append(StringInit(R0,stringNum))
+    stringNum += 1
+    ir.append(BL("scanf"))
+    ir.append(LDR(R0, SP, 0, "sb"))
+    ir.append(ADD(SP, SP, 4))
+    ir.append(POP(PC))
+    ir.toList
+  }
+
+  def readInt(): List[IR] = {
+    val ir = ListBuffer.empty[IR]
+    ir.append(Data(List("%d"), stringNum))
+    ir.append(Label("_readi"))
+    ir.append(PUSH(LR))
+    ir.append(PUSH(R0))
+    ir.append(MOV(R1, SP))
+    ir.append(StringInit(R0,stringNum))
+    stringNum += 1
+    ir.append(BL("scanf"))
+    ir.append(LDR(R0, SP, 0, "Default"))
+    ir.append(ADD(SP, SP, 4))
+    ir.append(POP(PC))
+    ir.toList
+  }
+
+  def readAll(flag : String) : List[IR] = {
+    flag match {
+      case "c" => readChar()
+      case "i" => readInt()
+    }
+  }
+
+
   def printAll(flag : String) : List[IR] = {
     flag match {
       case "c" => printBasic("c")
@@ -423,7 +531,7 @@ class codeGenerator(program: Program) {
     ir.append(Label(label0))
     ir.append(StringInit(R2, stringNum + 1))
     ir.append(Label(label1))
-    ir.append(LDR(R1, R2, -4))
+    ir.append(LDR(R1, R2, -4, "Default"))
     ir.append(StringInit(R0, stringNum + 2))
     ir.append(BL("printf"))
     ir.append(MOVImm(R0, 0, "Default"))
@@ -442,7 +550,7 @@ class codeGenerator(program: Program) {
     ir.append(Label("_print" + flag))
     ir.append(PUSH(LR))
     ir.append(MOV(R2, R0))
-    ir.append(LDR(R1, R0, -4))
+    ir.append(LDR(R1, R0, -4, "Default"))
     ir.append(StringInit(R0, stringNum))
     stringNum += 1
     ir.append(BL("printf"))
@@ -491,7 +599,7 @@ class codeGenerator(program: Program) {
     assert(location.isDefined, name + " must be defined in live map for getting its val")
     location.get match {
       case src: Reg => List(MOV(target, src))
-      case Stack(offset) => List(LDR(scratchReg1, FP, offset), MOV(target, scratchReg1))
+      case Stack(offset) => List(LDR(scratchReg1, FP, offset, "Default"), MOV(target, scratchReg1))
     }
   }
 

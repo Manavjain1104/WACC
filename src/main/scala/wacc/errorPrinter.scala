@@ -17,7 +17,7 @@ object errorPrinter {
                              syntaxError: Option[SyntaxError],
                              filename: String, exitCode: Int): Unit = {
     if (exitCode == OK_EXIT_CODE) {
-      println("---- Compilation success. Exit code 0 returned ---- \n")
+//      println("---- Compilation success. Exit code 0 returned ---- \n")
       return
     }
 

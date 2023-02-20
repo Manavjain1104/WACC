@@ -37,7 +37,7 @@ class RValueTests extends AnyFlatSpec {
   behavior of "ident pair-elem RValue"
   it should "generate the correct ident pair-elem RValue expression" taggedAs(RValueTests, SyntacticTests) in {
     val exp = "fst abcde"
-    val pair_elem_ident = Fst(IdentValue("abcde")(0,0))(0,0)
+    val pair_elem_ident = Fst(IdentValue("abcde")(None, (0,0)))(0,0)
     val repr = rvalue.parse(exp).get
     assert(repr === pair_elem_ident)
   }
@@ -53,7 +53,7 @@ class RValueTests extends AnyFlatSpec {
   behavior of "nested pair-elem RValue"
   it should "generate the correct nested pair-elem RValue expression" taggedAs(RValueTests, SyntacticTests) in {
     val exp = "fst snd abcde"
-    val nested_pair_elem = Fst(Snd(IdentValue("abcde")(0,0))(0,0))(0,0)
+    val nested_pair_elem = Fst(Snd(IdentValue("abcde")(None, (0,0)))(0,0))(0,0)
     val repr = rvalue.parse(exp).get
     assert(repr === nested_pair_elem)
   }

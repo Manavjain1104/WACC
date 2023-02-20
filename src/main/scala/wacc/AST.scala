@@ -322,9 +322,9 @@ object AST {
   // LValue branch of AST
   sealed trait LValue extends AST
 
-  case class IdentValue(s: String)(val pos: (Int, Int)) extends LValue
+  case class IdentValue(s: String)(var st: Option[SymbolTable[SemTypes.SemType]], val pos: (Int, Int)) extends LValue
 
-  object IdentValue extends ParserBridgePos1[String, LValue]
+  object IdentValue extends ParserBridgeSymPos1[String, LValue]
 
   case class ArrayElem(ident: String, exprs: List[Expr])(var st : Option[SymbolTable[SemTypes.SemType]], val pos: (Int, Int)) extends LValue with Expr
 
