@@ -1,10 +1,12 @@
 package wacc
 
-import org.scalatest.{Tag}
+import org.scalatest.Tag
 import org.scalatest.flatspec.AnyFlatSpec
+
 import java.io.File
 import scala.Console.out
 import scala.language.postfixOps
+import scala.util.control.Breaks.break
 import sys.process._
 
 object ChecksAllValid extends Tag("ChecksAllValid")
@@ -42,6 +44,7 @@ class ChecksAllValid extends AnyFlatSpec {
 
   behavior of "valid advanced tests"
   it should "succeed with exit code 0" taggedAs(ChecksAllValid) in {
+    assert(3 == 4)
     applyRecursively("src/test/scala/wacc/valid/advanced", exampleFn)
   }
 
