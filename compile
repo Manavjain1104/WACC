@@ -4,6 +4,12 @@
 # but do *not* change its name.
 # shellcheck disable=SC2068
 java -jar wacc-25-compiler.jar $@
+
+if [ mycmd != "0" ]
+then
+    exit $?
+fi
+
 fname=$(basename "$1" .wacc)
 arm-linux-gnueabi-gcc -o "${fname}" -mcpu=arm1176jzf-s -mtune=arm1176jzf-s "${fname}.s"
 qemu-arm -L /usr/arm-linux-gnueabi/ "${fname}"
