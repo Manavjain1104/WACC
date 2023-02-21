@@ -9,6 +9,7 @@ object armPrinter {
   def print(cg : codeGenerator) : String = {
      val sb = new StringBuilder()
      cg.generateProgIR().foreach(ir => sb.append(printIR(ir) + NewLineChar))
+     println(sb.last.toInt)
      sb.toString()
   }
 
@@ -64,7 +65,7 @@ object armPrinter {
           case "LE"      => printInstr("movle ", List(rd, rs))
           case "EQ"      => printInstr("moveq ", List(rd, rs))
           case "NE"      => printInstr("movne ", List(rd, rs))
-          case _         => printInstr("mov ", List(rd, rs))
+          case _         => "WTH WRONG INSTRUCTION"
         }
       }
 
@@ -175,11 +176,16 @@ object armPrinter {
           case "Default" => "ldr " + rd +", [" + rs + ", #" + offset + "]"
           case "sb"      => "ldrsb " + rd +", [" + rs + ", #" + offset + "]"
           case "index"     => "ldr " + rd + ", ["+ rd + ", " + rs + ", lsl #" + offset + "]"
+          case "sbReg"   => "ldrsb " + rd +", [" + rd + ", " + rs + "]"
         }
       }
+
+
       case STR(rd, rs, offset)        => "str " + rd +", [" + rs + ", #" + offset + "]"
-      case FETCHINDEX(rd : Reg, rb : Reg, ri : Reg, elemSize : Int)
+      case STOREINDEX(rd : Reg, rb : Reg, ri : Reg, elemSize : Int)
         => "str " + rd +", [" + rb + ", " + ri + ", lsl #" + elemSize + "]"
+      case STOREINDEXB(rd: Reg, rb: Reg, ri: Reg)
+      => "strb " + rd + ", ["+ rb + ", " + ri + "]"
       case StringInit(reg, stringNum) => "ldr " + reg + ", " + "=.L.str" + stringNum
       case _ => "Unreachable"
     }

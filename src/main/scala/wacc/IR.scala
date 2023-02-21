@@ -49,7 +49,8 @@ object IR {
   // Misc Statements
   case class LDR(rd : Reg, rs : Reg, offset : Int, flag : String) extends IR
   case class STR(rd : Reg, rs : Reg, offset : Int) extends IR
-  case class FETCHINDEX(rd: Reg, rb: Reg, ri: Reg, elemSize: Int) extends IR
+  case class STOREINDEX(rd: Reg, rb: Reg, ri: Reg, elemSize: Int) extends IR
+  case class STOREINDEXB(rs: Reg, rb: Reg, ri: Reg) extends IR
   case class StringInit(reg: Reg, stringNum: Int)  extends IR
 
 }

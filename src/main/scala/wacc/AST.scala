@@ -264,9 +264,9 @@ object AST {
 
   case object Skip extends Statement with ParserBridge0[Statement]
 
-  case class VarDec(assignType: Type, ident: String, rvalue: RValue)(val pos: (Int, Int)) extends Statement
+  case class VarDec(assignType: Type, ident: String, rvalue: RValue)(var symbolTable: Option[SymbolTable[SemTypes.SemType]], val pos: (Int, Int)) extends Statement
 
-  object VarDec extends ParserBridgePos3[Type, String, RValue, Statement]
+  object VarDec extends ParserBridgeSymPos3[Type, String, RValue, Statement]
 
   case class Assign(lvalue: LValue, rvalue: RValue)(val pos: (Int, Int)) extends Statement
 

@@ -19,7 +19,7 @@ class StatementTests extends AnyFlatSpec {
   behavior of "variable assignment statement"
   it should "generate the correct statement" taggedAs(StatementTests, SyntacticTests) in {
     val exp = "int x = 5"
-    val var_ass = VarDec(IntType()(0,0),"x",IntExpr(5)(0,0))(0,0)
+    val var_ass = VarDec(IntType()(0,0),"x",IntExpr(5)(0,0))(None, (0,0))
     val repr = statement.parse(exp).get
     assert(repr === var_ass)
   }
@@ -105,13 +105,13 @@ class StatementTests extends AnyFlatSpec {
     assert(repr === scope_stmt)
   }
 
-  behavior of "consec statements"
+  behavior of "consecutive statements"
   it should "generate the correct statement" taggedAs(StatementTests, SyntacticTests) in {
     val exp = "read abc; return 5; exit 100"
-    val consec_stmts = ConsecStat(ConsecStat(Read(IdentValue("abc")(None, (0,0)))(None,(0,0)),
+    val consecutive_stmts = ConsecStat(ConsecStat(Read(IdentValue("abc")(None, (0,0)))(None,(0,0)),
       Return(IntExpr(5)(0,0))(0,0)),Exit(IntExpr(100)(0,0))(0,0))
     val repr = statement.parse(exp).get
-    assert(repr === consec_stmts)
+    assert(repr === consecutive_stmts)
   }
 
 }

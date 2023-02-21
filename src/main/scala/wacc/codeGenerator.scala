@@ -21,10 +21,10 @@ class codeGenerator(program: Program) {
 
   /*
   TODO - Back End
-  1) Return and frees
-  2) Heaps - Arrays and pair --> len expressions
-  3) Rvalue - just has expr right now
-  WORDSIZE) checking for overflow, div by 0
+  1) Free
+  2) Heaps - pair
+  3) Overflow, Div by 0, IntExpr large Int
+  4) Squish to 1 byte char arr, print arr addr
    */
 
   def generateProgIR(): List[IR] = {
@@ -69,6 +69,8 @@ class codeGenerator(program: Program) {
     if (widgets.contains("printNewLine")) irs.appendAll(printNewLine())
     if (widgets.contains("arrLoad")) irs.appendAll(arrLoad())
     if (widgets.contains("arrStore")) irs.appendAll(arrStore())
+    if (widgets.contains("arrLoadB")) irs.appendAll(arrLoadB())
+    if (widgets.contains("arrStoreB")) irs.appendAll(arrStoreB())
     if (widgets.contains("boundsCheck")) {
       irs.appendAll(boundsCheck())
     }
@@ -186,7 +188,7 @@ class codeGenerator(program: Program) {
           case NEQExpr(e1, e2) => generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POP(scratchReg2), POP(scratchReg1), CMP(scratchReg1, scratchReg2), MOVImm(scratchReg1, 1, "NE"), MOVImm(scratchReg1,0, "EQ"), PUSH(scratchReg1))
         }
       }
-      case ArrayElem(ident, exprs) => {
+      case arrElem @ ArrayElem(ident, exprs) => {
         val irs = ListBuffer.empty[IR]
 
         irs.append(MOV(R12, R3, "Default"))
@@ -194,16 +196,26 @@ class codeGenerator(program: Program) {
         // place array on stack for first index
         irs.appendAll(getIntoTarget(ident, R3, liveMap))
 
+        val isChar = getSizeFromArrElem(arrElem) == 1
+
         for (expr <- exprs) {
           irs.appendAll(generateExprIR(expr, liveMap))
           irs.append(POP(R10))
-          irs.append(BRANCH("_arrLoad", "L"))
+          if (isChar) {
+            irs.append(BRANCH("_arrLoadB", "L"))
+          } else {
+            irs.append(BRANCH("_arrLoad", "L"))
+          }
         }
 
         irs.append(PUSH(R3))
         irs.append(MOV(R3, R12, "Default"))
+        if (isChar) {
+          widgets("arrLoadB") = collection.mutable.Set.empty
+        } else {
+          widgets("arrLoad") = collection.mutable.Set.empty
+        }
 
-        widgets("arrLoad") = collection.mutable.Set.empty
         widgets("boundsCheck") = collection.mutable.Set.empty
         irs.toList
       }
@@ -225,20 +237,32 @@ class codeGenerator(program: Program) {
   }
 
   // writes instructions that calculate the value and place it on top of the stack
-  def generateRvalue(rvalue: RValue, liveMap: SymbolTable[Location], localRegs : List[Reg], numParams : Int) : List[IR] = {
+  def generateRvalue(rvalue: RValue, liveMap: SymbolTable[Location], localRegs : List[Reg], numParams : Int, lval : LValue) : List[IR] = {
     rvalue match {
       case expr: Expr => generateExprIR(expr, liveMap)
       //      case NewPair(expr1, expr2) => [] TODO
       case ArrayLiter(exprs) => {
         val irs = ListBuffer.empty[IR]
-        val numWords = exprs.length + 1
+        val exprLen = exprs.length
         val saveParamRegs = willClobber(localRegs, liveMap)
+
+        val size = lval match {
+          case id@IdentValue(s) => {
+            assert(id.st.isDefined, "id does not have symbol table")
+            id.st.get.lookupAll(s).get match {
+              case SemTypes.CharSemType => 1
+              case _ => WORDSIZE
+            }
+          }
+          case ar : ArrayElem => getSizeFromArrElem(ar)
+//          case elem: PairElem => TODO
+        }
 
         if (saveParamRegs) {
           irs.append(PUSHMul(paramRegs))
         }
 
-        irs.append(MOVImm(R0, numWords * WORDSIZE, "Default"))
+        irs.append(MOVImm(R0, (exprLen * size) + WORDSIZE, "Default"))
         irs.append(BRANCH("malloc", "L"))
         irs.append(MOV(R12, R0, "Default"))
 
@@ -249,18 +273,19 @@ class codeGenerator(program: Program) {
         irs.append(ADD(R12, R12, WORDSIZE))
 
         // store size of array
-        irs.append(MOVImm(scratchReg1, numWords - 1 , "Default"))
+        irs.append(MOVImm(scratchReg1, exprLen, "Default"))
         irs.append(STR(scratchReg1, R12, -WORDSIZE))
 
         // set all the expr in mem
         for (i <- exprs.indices) {
           irs.appendAll(generateExprIR(exprs(i), liveMap))
           irs.append(POP(scratchReg1))
-          irs.append(STR(scratchReg1, R12, i * WORDSIZE))  // TODO : can optimise this for chars
+          irs.append(STR(scratchReg1, R12, i * size))
         }
         irs.append(PUSH(R12))
         irs.toList
       }
+
       case Call(ident, lArgs) => {
         val localCount = liveMap.getNestedEntries()
         val irs = ListBuffer.empty[IR]
@@ -302,6 +327,26 @@ class codeGenerator(program: Program) {
         irs.append(PUSH(scratchReg1))
         irs.toList
       }
+    }
+  }
+
+  def getSizeFromArrElem (arrElem : ArrayElem) : Int = {
+    var arrType = arrElem.st.get.lookupAll(arrElem.ident).get
+    var depth = arrElem.exprs.length
+
+    while (depth > 0) {
+      arrType match {
+        case ArraySemType(t) => {
+          arrType = t
+        }
+        case _ => throw new RuntimeException("should not reach here")
+      }
+      depth -= 1
+    }
+
+    arrType match {
+      case SemTypes.CharSemType => 1
+      case _ => 4
     }
   }
 
@@ -360,41 +405,62 @@ class codeGenerator(program: Program) {
 
       case Skip => List.empty[IR]
 
-      case VarDec(_, ident, rvalue) => generateRvalue(rvalue, liveMap, localRegs, numParams) ++ assignLocal(ident, liveMap, localRegs, numParams)
+      case varDec@VarDec(_, ident, rvalue) =>
+        generateRvalue(rvalue, liveMap, localRegs, numParams, IdentValue(ident)(varDec.symbolTable, (0,0))) ++ assignLocal(ident, liveMap, localRegs, numParams)
 
       case Assign(lvalue, rvalue) => {
         lvalue match {
 //          case elem: PairElem => // TODO
-          case ArrayElem(ident, exprs) => {
+          case arrElem @ ArrayElem(ident, exprs) => {
             val irs = ListBuffer.empty[IR]
             irs.append(PUSH(R3))
             irs.append(MOV(FP, SP, "Default"))
 
             irs.appendAll(getIntoTarget(ident, R3, liveMap))
+
+            val isChar = getSizeFromArrElem(arrElem) == 1
+
             for (expr <- exprs.slice(0, exprs.length - 1)) {
               irs.appendAll(generateExprIR(expr, liveMap))
               irs.append(POP(R10))
-              irs.append(BRANCH("_arrLoad", "L"))
+              if (isChar) {
+                irs.append(BRANCH("_arrLoadB", "L"))
+              }
+              else {
+                irs.append(BRANCH("_arrLoad", "L"))
+              }
             }
 
             // Now R3 contains the required array and last expr is what we want
             irs.appendAll(generateExprIR(exprs.last, liveMap))
             irs.append(POP(R10))
-            irs.appendAll(generateRvalue(rvalue, liveMap, localRegs, numParams))
+            irs.appendAll(generateRvalue(rvalue, liveMap, localRegs, numParams, lvalue))
             irs.append(POP(scratchReg1))
-            irs.append(BRANCH("_arrStore", "L"))
+
+            if (isChar) {
+              irs.append(BRANCH("_arrStoreB", "L"))
+            }
+            else {
+              irs.append(BRANCH("_arrStore", "L"))
+            }
+
 
             irs.append(MOV(SP, FP, "Default"))
             irs.append(POP(R3))
 
-            widgets("arrStore") = collection.mutable.Set.empty
+            if (isChar) {
+              irs.append(BRANCH("_arrStoreB", "L"))
+            }
+            else {
+              irs.append(BRANCH("_arrStore", "L"))
+            }
             widgets("boundsCheck") = collection.mutable.Set.empty
 
             irs.toList
           }
           case IdentValue(s) => {
             val irs = ListBuffer.empty[IR]
-            irs.appendAll(generateRvalue(rvalue, liveMap, localRegs, numParams))
+            irs.appendAll(generateRvalue(rvalue, liveMap, localRegs, numParams, lvalue))
 
             assert(liveMap.lookupAll(s).isDefined)
             liveMap.lookupAll(s).get match {
@@ -597,7 +663,7 @@ class codeGenerator(program: Program) {
       }
       case _ => { // TODO ask possible
         assert(assertion = false, "not possible to print internal pair type")
-        "n,;'/ot possible"
+        "not possible"
       }
 
     }
@@ -675,7 +741,7 @@ class codeGenerator(program: Program) {
 
   def readInt(): List[IR] = {
     val ir = ListBuffer.empty[IR]
-    ir.append(Data(List("%d"), stringNum))
+    ir.append(Data(List(" %d"), stringNum))
     ir.append(Label("_readi"))
     ir.append(PUSH(LR))
     ir.append(PUSH(R0))
@@ -702,8 +768,23 @@ class codeGenerator(program: Program) {
       case "i" => printBasic("i")
       case "s" => printString()
       case "b" => printBool()
-      case  _  => null
-    }
+      case "p" => printPointer()
+   }
+  }
+
+
+  private def printPointer() : List[IR] = {
+    val ir = ListBuffer.empty[IR]
+    ir.append(Data(List("%p"), stringNum))
+    ir.append(PUSH(LR))
+    ir.append(MOV(R1, R0, "Default"))
+    ir.append(StringInit(R0, stringNum))
+    stringNum += 1
+    ir.append(BRANCH("printf", "L"))
+    ir.append(MOVImm(R0, 0, "Default"))
+    ir.append(BRANCH("fflush", "L"))
+    ir.append(POP(PC))
+    ir.toList
   }
 
   private def printBool() : List[IR] = {
@@ -861,18 +942,35 @@ class codeGenerator(program: Program) {
     ir.toList
   }
 
-  def arrLoad() : List[IR] = {
+  def arrLoad(): List[IR] = {
     val ir = new ListBuffer[IR]
     ir.append(Label("_arrLoad"))
     ir.append(PUSH(LR))
     ir.append(CMPImm(R10, 0))
-    ir.append(MOV(R1, R10, "lt"))
+    ir.append(MOV(R1, R10, "LT"))
     ir.append(BRANCH("_boundsCheck", "LLT"))
     ir.append(LDR(LR, R3, -WORDSIZE, "Default"))
     ir.append(CMP(R10, LR))
     ir.append(MOV(R1, R10, "GE"))
     ir.append(BRANCH("_boundsCheck", "LGE"))
-    ir.append(LDR(R3, R10, 2, "index"))
+    ir.append(LDR(R3, R10, 0, "sb"))
+    ir.append(POP(PC))
+    ir.toList
+  }
+
+
+  def arrLoadB() : List[IR] = {
+    val ir = new ListBuffer[IR]
+    ir.append(Label("_arrLoadB"))
+    ir.append(PUSH(LR))
+    ir.append(CMPImm(R10, 0))
+    ir.append(MOV(R1, R10, "LT"))
+    ir.append(BRANCH("_boundsCheck", "LLT"))
+    ir.append(LDR(LR, R3, -WORDSIZE, "Default"))
+    ir.append(CMP(R10, LR))
+    ir.append(MOV(R1, R10, "GE"))
+    ir.append(BRANCH("_boundsCheck", "LGE"))
+    ir.append(LDR(R3, R10, 0, "sbReg"))
     ir.append(POP(PC))
     ir.toList
   }
@@ -888,7 +986,23 @@ class codeGenerator(program: Program) {
     ir.append(CMP(R10, LR))
     ir.append(MOV(R1, R10, "GE"))
     ir.append(BRANCH("_boundsCheck", "LGE"))
-    ir.append(FETCHINDEX(scratchReg1, R3, R10, 2))
+    ir.append(STOREINDEX(scratchReg1, R3, R10, 2))
+    ir.append(POP(PC))
+    ir.toList
+  }
+
+  def arrStoreB(): List[IR] = {
+    val ir = new ListBuffer[IR]
+    ir.append(Label("_arrStoreB"))
+    ir.append(PUSH(LR))
+    ir.append(CMPImm(R10, 0))
+    ir.append(MOV(R1, R10, "lt"))
+    ir.append(BRANCH("_boundsCheck", "LLT"))
+    ir.append(LDR(LR, R3, -WORDSIZE, "Default"))
+    ir.append(CMP(R10, LR))
+    ir.append(MOV(R1, R10, "GE"))
+    ir.append(BRANCH("_boundsCheck", "LGE"))
+    ir.append(STOREINDEXB(scratchReg1, R3, R10))
     ir.append(POP(PC))
     ir.toList
   }

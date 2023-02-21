@@ -588,6 +588,7 @@ class semanticAnalyser {
             Some(InternalPairSemType)
           } else {
             symbolTable.add(ident, assignSemType)
+            varDec.symbolTable = Some(symbolTable)
             Some(assignSemType)
           }
         }
