@@ -44,9 +44,10 @@ class ChecksAllValid extends AnyFlatSpec {
 
   behavior of "valid advanced tests"
   it should "succeed with exit code 0" taggedAs(ChecksAllValid) in {
+    println("ls" !!)
+    println("pwd" !!)
 
-    applyRecursively("src/test/scala/wacc/valid/advanced", exampleFn)
-    assert(3 == 4)
+    applyRecursively("/src/test/scala/wacc/valid/advanced", exampleFn)
   }
 
   behavior of "valid array tests"
