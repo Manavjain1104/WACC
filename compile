@@ -5,9 +5,10 @@
 # shellcheck disable=SC2068
 java -jar wacc-25-compiler.jar $@
 
-if [ mycmd != "0" ]
+ecode=$?
+if [ $ecode -ne 0 ]
 then
-    exit $?
+    exit $ecode
 fi
 
 fname=$(basename "$1" .wacc)
