@@ -1,0 +1,16 @@
+#!/bin/bash
+# Bash front-end for your compiler.
+# You are free to change the language used for this script,
+# but do *not* change its name.
+# shellcheck disable=SC2068
+java -jar wacc-25-compiler.jar $@
+
+ecode=$?
+if [ $ecode -ne 0 ]
+then
+    exit $ecode
+fi
+
+exit $?
+
+
