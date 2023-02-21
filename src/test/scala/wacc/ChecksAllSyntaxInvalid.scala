@@ -1,9 +1,11 @@
 package wacc
 
-import java.io.{File}
+import java.io.File
 import org.scalatest.Tag
 import org.scalatest.flatspec.AnyFlatSpec
+
 import scala.language.postfixOps
+import scala.util.control.Breaks.break
 import sys.process._
 
 object ChecksAllSyntaxInvalid extends Tag("ChecksAllSyntaxInvalid")
@@ -29,7 +31,7 @@ class ChecksAllSyntaxInvalid extends AnyFlatSpec {
     file.toString.endsWith(".wacc") match {
       case true => {
         println(s"processing $file")
-        val o = s"./compile $file check" !!
+        val o = s"./compileFrontend.sh $file check" !!
 
         println(s"file: $o")
         if (o.contains(" 0") || o.contains("200")) {

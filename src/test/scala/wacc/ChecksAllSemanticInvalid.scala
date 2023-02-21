@@ -30,7 +30,7 @@ class ChecksAllSemanticInvalid extends AnyFlatSpec {
     file.toString.endsWith(".wacc") match {
       case true => {
         println(s"processing $file")
-        val o = s"./compile $file check" !!
+        val o = s"./compileFrontend.sh $file check" !!
 
         println(o.takeRight(4))
         if (o.contains("100") || o.contains(" 0")) {

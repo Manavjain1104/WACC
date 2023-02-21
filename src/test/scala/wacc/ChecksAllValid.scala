@@ -30,7 +30,7 @@ class ChecksAllValid extends AnyFlatSpec {
     file.toString.endsWith(".wacc") match {
       case true => {
         println(s"processing $file")
-        val o = s"./compile $file check" !!
+        val o = s"./compileFrontend.sh $file check" !!
 
         if (o.contains("returning 100") || o.contains("returning 200")) {
           fail("Wrong exit code")
