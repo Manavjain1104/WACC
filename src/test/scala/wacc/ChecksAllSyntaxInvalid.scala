@@ -51,58 +51,58 @@ class ChecksAllSyntaxInvalid extends AnyFlatSpec {
 
   behavior of "invalid syntax array tests"
   it should "fail with exit code 100" taggedAs(ChecksAllSyntaxInvalid) in {
-    applyRecursively("src/test/scala/wacc/invalid/syntaxErr/array", exampleFn)
+    applyRecursively("/src/test/scala/wacc/invalid/syntaxErr/array", exampleFn)
 
   }
 
   behavior of "invalid syntax basic tests"
   it should "fail with exit code 100" taggedAs(ChecksAllSyntaxInvalid) in {
-    applyRecursively("src/test/scala/wacc/invalid/syntaxErr/basic", exampleFn)
+    applyRecursively("/src/test/scala/wacc/invalid/syntaxErr/basic", exampleFn)
   }
 
   behavior of "invalid syntax expressions tests"
   it should "fail with exit code 100" taggedAs(ChecksAllSyntaxInvalid) in {
-    applyRecursively("src/test/scala/wacc/invalid/syntaxErr/expressions", exampleFn)
+    applyRecursively("/src/test/scala/wacc/invalid/syntaxErr/expressions", exampleFn)
   }
 
   behavior of "invalid syntax functions tests"
   it should "fail with exit code 100" taggedAs(ChecksAllSyntaxInvalid) in {
-    applyRecursively("src/test/scala/wacc/invalid/syntaxErr/functions", exampleFn)
+    applyRecursively("/src/test/scala/wacc/invalid/syntaxErr/functions", exampleFn)
   }
 
   behavior of "invalid syntax if tests"
   it should "fail with exit code 100" taggedAs(ChecksAllSyntaxInvalid) in {
-    applyRecursively("src/test/scala/wacc/invalid/syntaxErr/if", exampleFn)
+    applyRecursively("/src/test/scala/wacc/invalid/syntaxErr/if", exampleFn)
   }
 
   behavior of "invalid syntax literals tests"
   it should "fail with exit code 100" taggedAs(ChecksAllSyntaxInvalid) in {
-    applyRecursively("src/test/scala/wacc/invalid/syntaxErr/literals", exampleFn)
+    applyRecursively("/src/test/scala/wacc/invalid/syntaxErr/literals", exampleFn)
   }
 
   behavior of "invalid syntax pairs tests"
   it should "fail with exit code 100" taggedAs(ChecksAllSyntaxInvalid) in {
-    applyRecursively("src/test/scala/wacc/invalid/syntaxErr/pairs", exampleFn)
+    applyRecursively("/src/test/scala/wacc/invalid/syntaxErr/pairs", exampleFn)
   }
 
   behavior of "invalid syntax print tests"
   it should "fail with exit code 100" taggedAs(ChecksAllSyntaxInvalid) in {
-    applyRecursively("src/test/scala/wacc/invalid/syntaxErr/print", exampleFn)
+    applyRecursively("/src/test/scala/wacc/invalid/syntaxErr/print", exampleFn)
   }
 
   behavior of "invalid syntax sequence tests"
   it should "fail with exit code 100" taggedAs(ChecksAllSyntaxInvalid) in {
-    applyRecursively("src/test/scala/wacc/invalid/syntaxErr/sequence", exampleFn)
+    applyRecursively("/src/test/scala/wacc/invalid/syntaxErr/sequence", exampleFn)
   }
 
   behavior of "invalid syntax variables tests"
   it should "fail with exit code 100" taggedAs(ChecksAllSyntaxInvalid) in {
-    applyRecursively("src/test/scala/wacc/invalid/syntaxErr/variables", exampleFn)
+    applyRecursively("/src/test/scala/wacc/invalid/syntaxErr/variables", exampleFn)
   }
 
   behavior of "invalid syntax while tests"
   it should "fail with exit code 100" taggedAs(ChecksAllSyntaxInvalid) in {
-    applyRecursively("src/test/scala/wacc/invalid/syntaxErr/while", exampleFn)
+    applyRecursively("/src/test/scala/wacc/invalid/syntaxErr/while", exampleFn)
   }
 
 }
