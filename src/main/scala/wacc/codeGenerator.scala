@@ -12,6 +12,7 @@ class codeGenerator(program: Program) {
   private val paramRegs = List(R0, R1, R2, R3)
   private var labelOrder = 0
   private val FUNCTION_PREFIX = "wacc_"
+  private val WORDSIZE = 4
 
   private val strings: ListBuffer[String] = ListBuffer.empty[String]
   private var stringNum = 0
@@ -23,7 +24,7 @@ class codeGenerator(program: Program) {
   1) Return and frees
   2) Heaps - Arrays and pair --> len expressions
   3) Rvalue - just has expr right now
-  4) checking for overflow, div by 0
+  WORDSIZE) checking for overflow, div by 0
    */
 
   def generateProgIR(): List[IR] = {
@@ -38,16 +39,16 @@ class codeGenerator(program: Program) {
 
     irs += Label("main")
     irs += PUSHMul(List(FP, LR))
-    irs.append(MOV(FP, SP))
+    irs.append(MOV(FP, SP, "Default"))
     val numLocalsInMain = findNumLocals(program.stat)
     if (numLocalsInMain > numLocalRegs) {
-      irs.append(SUB(SP, SP, (numLocalsInMain - numLocalRegs) * 4))
+      irs.append(SUB(SP, SP, (numLocalsInMain - numLocalRegs) * WORDSIZE))
     }
     val liveMap = new SymbolTable[Location](None)
     irs.appendAll(generateStatIR(program.stat, liveMap, localRegs, 0))
 
     if (numLocalsInMain > numLocalRegs) {
-      irs.append(ADD(SP, SP, (numLocalsInMain - numLocalRegs) * 4))
+      irs.append(ADD(SP, SP, (numLocalsInMain - numLocalRegs) * WORDSIZE))
     }
     irs += MOVImm(R0, 0, "Default")
     irs += POPMul(List(FP, PC))
@@ -66,6 +67,12 @@ class codeGenerator(program: Program) {
       widgets("read").foreach(flag => irs.appendAll(readAll(flag)))
     }
     if (widgets.contains("printNewLine")) irs.appendAll(printNewLine())
+    if (widgets.contains("arrLoad")) irs.appendAll(arrLoad())
+    if (widgets.contains("arrStore")) irs.appendAll(arrLoad())
+    if (widgets.contains("boundsCheck")) {
+      irs.appendAll(boundsCheck())
+    }
+
 
     optimisePushPop(irs.toList)
 //    irs.toList
@@ -148,6 +155,29 @@ class codeGenerator(program: Program) {
           case NEQExpr(e1, e2) => generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POP(scratchReg2), POP(scratchReg1), CMP(scratchReg1, scratchReg2), MOVImm(scratchReg1, 1, "NE"), MOVImm(scratchReg1,0, "EQ"), PUSH(scratchReg1))
         }
       }
+      case ArrayElem(ident, exprs) => {
+        val irs = ListBuffer.empty[IR]
+
+        irs.append(MOV(R12, R3, "Default"))
+
+        // place array on stack for first index
+        irs.appendAll(getIntoTarget(ident, R3, liveMap))
+
+        for (expr <- exprs) {
+          irs.appendAll(generateExprIR(expr, liveMap))
+          irs.append(POP(R10))
+          irs.append(BRANCH("_arrLoad", "L"))
+        }
+
+        irs.append(PUSH(R3))
+        irs.append(MOV(R3, R12, "Default"))
+
+        widgets("arrLoad") = collection.mutable.Set.empty
+        widgets("boundscheck") = collection.mutable.Set.empty
+        irs.toList
+      }
+//      case PairExpr() => TODO
+
     }
   }
 
@@ -168,10 +198,42 @@ class codeGenerator(program: Program) {
     rvalue match {
       case expr: Expr => generateExprIR(expr, liveMap)
       //      case NewPair(expr1, expr2) => [] TODO
+      case ArrayLiter(exprs) => {
+        val irs = ListBuffer.empty[IR]
+        val numWords = exprs.length + 1
+        val saveParamRegs = willClobber(localRegs, liveMap)
 
+        if (saveParamRegs) {
+          PUSHMul(paramRegs)
+        }
+
+        irs.append(MOVImm(R0, numWords * WORDSIZE, "Default"))
+        irs.append(BRANCH("malloc", "L"))
+        irs.append(MOV(R12, R0, "Default"))
+
+        if (saveParamRegs) {
+          POPMul(paramRegs)
+        }
+
+        irs.append(ADD(R12, R12, WORDSIZE))
+
+        // store size of array
+        irs.append(MOVImm(scratchReg1, numWords - 1 , "Default"))
+        irs.append(STR(scratchReg1, R12, -WORDSIZE))
+
+        // set all the expr in mem
+        for (i <- exprs.indices) {
+          irs.appendAll(generateExprIR(exprs(i), liveMap))
+          irs.append(POP(scratchReg1))
+          irs.append(STR(scratchReg1, R12, i * WORDSIZE))  // TODO : can optimise this for chars
+        }
+        irs.append(PUSH(R12))
+        irs.toList
+      }
       case Call(ident, lArgs) => {
         val localCount = liveMap.getNestedEntries()
         val irs = ListBuffer.empty[IR]
+
 
         // caller saved
         if (numParams > 0) {
@@ -186,17 +248,17 @@ class codeGenerator(program: Program) {
           irs.appendAll(generateExprIR(lArgs(i), liveMap)) // this leaves the value on top of stack for function call
         }
 
-        for (i <- 0 until math.min(4, lArgs.length)) {
+        for (i <- 0 until math.min(WORDSIZE, lArgs.length)) {
           irs.append(POP(paramRegs(i)))
         }
 
-        irs.append(BL(FUNCTION_PREFIX + ident))
+        irs.append(BRANCH(FUNCTION_PREFIX + ident, "L"))
 
-        if (lArgs.length > 4) {
-          irs.append(ADD(SP, SP, (lArgs.length - 4) * 4))
+        if (lArgs.length > WORDSIZE) {
+          irs.append(ADD(SP, SP, (lArgs.length - WORDSIZE) * WORDSIZE))
         }
 
-        irs.append(MOV(scratchReg1, R0))
+        irs.append(MOV(scratchReg1, R0, "Default"))
 
         // caller saved
         if (realCount > 0) {
@@ -218,26 +280,26 @@ class codeGenerator(program: Program) {
     val irs = ListBuffer.empty[IR]
     irs += Label(FUNCTION_PREFIX + func.ident)
     irs += PUSHMul(List(FP, LR))
-    irs.append(MOV(FP, SP))
+    irs.append(MOV(FP, SP, "Default"))
 
     // set up function parameters
     val liveMap = new SymbolTable[Location](None)
 
     val numParams = func.params.length
     for (i <- 0 until numParams) {
-      if (i < 4) {
+      if (i < WORDSIZE) {
         liveMap.add(func.params(i).ident, paramRegs(i))
       } else {
-        liveMap.add(func.params(i).ident, Stack(((i - 2) * 4)))
+        liveMap.add(func.params(i).ident, Stack((i - 2) * WORDSIZE))
       }
     }
 
     // setting up function local registers
     val localRegsBuilder = ListBuffer.empty[Reg]
     val totalNum = totalLocalRegs.length
-    localRegsBuilder.appendAll(totalLocalRegs.slice(0,4))
-    if (numParams <= 4) {
-      for (i <- (totalNum - (4 - numParams)) until totalNum) {
+    localRegsBuilder.appendAll(totalLocalRegs.slice(0,WORDSIZE))
+    if (numParams <= WORDSIZE) {
+      for (i <- (totalNum - (WORDSIZE - numParams)) until totalNum) {
         localRegsBuilder.append(totalLocalRegs(i))
       }
     }
@@ -247,14 +309,14 @@ class codeGenerator(program: Program) {
     val localRegs = localRegsBuilder.toList
     val numLocalRegs = localRegs.length
     if (numLocalsInBody > numLocalRegs) {
-      irs.append(SUB(SP, SP, (numLocalsInBody - numLocalRegs) * 4))
+      irs.append(SUB(SP, SP, (numLocalsInBody - numLocalRegs) * WORDSIZE))
     }
     val childLiveMap = new SymbolTable[Location](Some(liveMap))
     irs.appendAll(generateStatIR(func.stat, childLiveMap, localRegs, numParams))
     irs += POPMul(List(FP, PC))
 
     if (numLocalsInBody > numLocalRegs) {
-      irs.append(ADD(SP, SP, (numLocalsInBody - numLocalRegs) * 4))
+      irs.append(ADD(SP, SP, (numLocalsInBody - numLocalRegs) * WORDSIZE))
     }
     irs.append(LTORG)
     irs.toList
@@ -263,7 +325,7 @@ class codeGenerator(program: Program) {
   def generateStatIR(stat: Statement, liveMap : SymbolTable[Location], localRegs : List[Reg], numParams : Int): List[IR] = {
     stat match {
 
-      case Exit(e) => generateExprIR(e, liveMap) ++ List(POP(R0), BL("exit"))
+      case Exit(e) => generateExprIR(e, liveMap) ++ List(POP(R0), BRANCH("exit", "L"))
 
       case Skip => List.empty[IR]
 
@@ -272,7 +334,34 @@ class codeGenerator(program: Program) {
       case Assign(lvalue, rvalue) => {
         lvalue match {
 //          case elem: PairElem => // TODO
-//          case ArrayElem(ident, exprs) => // TODO
+          case ArrayElem(ident, exprs) => {
+            val irs = ListBuffer.empty[IR]
+            irs.append(PUSH(R3))
+            irs.append(MOV(FP, SP, "Default"))
+
+            irs.appendAll(getIntoTarget(ident, R3, liveMap))
+
+            for (expr <- exprs.slice(0, exprs.length - 1)) {
+              irs.appendAll(generateExprIR(expr, liveMap))
+              irs.append(POP(R10))
+              irs.append(BRANCH("_arrLoad", "L"))
+            }
+
+            // Now R3 contains the required array and last expr is what we want
+            irs.appendAll(generateExprIR(exprs.last, liveMap))
+            irs.append(POP(R10))
+            irs.appendAll(generateRvalue(rvalue, liveMap, localRegs, numParams))
+            irs.append(POP(scratchReg1))
+            irs.append(BRANCH("_arrStore", "L"))
+
+            irs.append(MOV(SP, FP, "Default"))
+            irs.append(POP(R3))
+
+            widgets("arrStore") = collection.mutable.Set.empty
+            widgets("boundsCheck") = collection.mutable.Set.empty
+
+            irs.toList
+          }
           case IdentValue(s) => {
             val irs = ListBuffer.empty[IR]
             irs.appendAll(generateRvalue(rvalue, liveMap, localRegs, numParams))
@@ -297,7 +386,7 @@ class codeGenerator(program: Program) {
       val label2 : String = getNewLabel()
 
       val whileIr = ListBuffer.empty[IR]
-      whileIr.append(BUC(label2))
+      whileIr.append(BRANCH(label2 , "Default"))
       whileIr.append(Label(label1))
       val doLiveMap = new SymbolTable[Location](Some(liveMap))
       whileIr.appendAll(generateStatIR(doStat, doLiveMap, localRegs, numParams))
@@ -305,7 +394,7 @@ class codeGenerator(program: Program) {
       whileIr.appendAll(generateExprIR(cond, liveMap))
       whileIr.append(POP(scratchReg1))
       whileIr.append(CMPImm(scratchReg1, 0))
-      whileIr.append(BNE(label1))
+      whileIr.append(BRANCH(label1, "NE"))
 
       whileIr.toList
     }
@@ -318,10 +407,10 @@ class codeGenerator(program: Program) {
       ifIr.appendAll(generateExprIR(cond, liveMap))
       ifIr.append(POP(scratchReg1))
       ifIr.append(CMPImm(scratchReg1, 0))
-      ifIr.append(BEQ(label1))
+      ifIr.append(BRANCH(label1, "EQ"))
       val thenLiveMap = new SymbolTable[Location](Some(liveMap))
       ifIr.appendAll(generateStatIR(thenStat, thenLiveMap, localRegs, numParams))
-      ifIr.append(BUC(label0))
+      ifIr.append(BRANCH(label0,"Default"))
       ifIr.append(Label(label1))
       val elseLiveMap = new SymbolTable[Location](Some(liveMap))
       ifIr.appendAll(generateStatIR(elseStat, elseLiveMap, localRegs, numParams))
@@ -358,7 +447,70 @@ class codeGenerator(program: Program) {
 
           }
 //          case elem: PairElem => TODO
-//          case ArrayElem(ident, exprs) => TODO
+          case ar @ ArrayElem(ident, exprs) => {
+            val irs = ListBuffer.empty[IR]
+
+            irs.append(PUSH(R3))
+            irs.append(MOV(FP, SP, "Default"))
+
+            // place array on stack for first index
+            irs.appendAll(getIntoTarget(ident, R3, liveMap))
+
+            for (expr <- exprs) {
+              irs.appendAll(generateExprIR(expr, liveMap))
+              irs.append(POP(R10))
+              irs.append(BRANCH("_arrLoad", "L"))
+            }
+
+
+            // at this point R3 - contains the accessed value arr[x][y]
+            val shouldSave = willClobber(localRegs, liveMap)
+            if (shouldSave) {
+              irs.append(PUSHMul(paramRegs.slice(0,3)))
+            }
+
+            irs.append(MOV(R0, R3, "Default"))
+
+            // find out what kind of read it is
+            assert(ar.st.isDefined, "Array Elem does not have st attached to it")
+            assert(ar.st.get.lookupAll(ident).isDefined, "array elem not in st")
+            val flag = getArrType(ar.st.get.lookupAll(ident).get) match {
+              case SemTypes.CharSemType => "c"
+              case SemTypes.IntSemType => "i"
+              case _ => throw new RuntimeException("Should not be possible to read into non int/char arr")
+            }
+
+            irs.append(BRANCH("_read" + flag, "L"))
+            if (widgets.contains("read")) {
+              widgets("read").add(flag)
+            } else {
+              widgets("read") = collection.mutable.Set(flag)
+            }
+
+            irs.append(MOV(R12, R0, "Default")) // R12 holds the value of the read
+
+            irs.appendAll(getIntoTarget(ident, R3, liveMap))
+
+            for (expr <- exprs.slice(0, exprs.length - 1)) {
+              irs.appendAll(generateExprIR(expr, liveMap))
+              irs.append(POP(R10))
+              irs.append(BRANCH("_arrLoad", "L"))
+            }
+
+            // Now R3 contains the required array and last expr is what we want
+            irs.appendAll(generateExprIR(exprs.last, liveMap))
+            irs.append(POP(R10))
+            irs.append(MOV(scratchReg1, R12, "Default"))
+            irs.append(BRANCH("_arrStore", "L"))
+
+            if (shouldSave) {
+              irs.append(POPMul(paramRegs.slice(0,3)))
+            }
+
+            irs.append(MOV(SP, FP, "Default"))
+            irs.append(POP(R3))
+            irs.toList
+          }
         }
       }
 
@@ -369,6 +521,13 @@ class codeGenerator(program: Program) {
         println(stat)
         null
       } // TODO
+    }
+  }
+
+  def getArrType(arrType : SemType): SemType = {
+    arrType match {
+      case ArraySemType(t) => getArrType(t)
+      case x => x
     }
   }
 
@@ -383,13 +542,13 @@ class codeGenerator(program: Program) {
     !localReg.contains(R0)
   }
 
-  def getPrintIR(e : Expr, expType : SemType, liveMap : SymbolTable[Location], localReg : List[Reg],ln : Boolean) = {
+  def getPrintIR(e : Expr, expType : SemType, liveMap : SymbolTable[Location], localReg : List[Reg], ln : Boolean): List[IR] = {
     val irs = ListBuffer.empty[IR]
 
     val clobber = willClobber(localReg, liveMap)
 
     if (clobber) {
-      irs.append(PUSHMul(List(R0, R1, R2, R3)))
+      irs.append(PUSHMul(paramRegs))
     }
 
     irs.appendAll(generateExprIR(e, liveMap))
@@ -412,7 +571,7 @@ class codeGenerator(program: Program) {
 
     }
 
-    irs.append(BL("_print" + flag))
+    irs.append(BRANCH("_print" + flag, "L"))
     if (widgets.contains("print")) {
       widgets("print").add(flag)
     } else {
@@ -420,12 +579,12 @@ class codeGenerator(program: Program) {
     }
 
     if (ln) {
-      irs.append(BL("_println"))
+      irs.append(BRANCH("_println", "L"))
       widgets("printNewLine") = collection.mutable.Set.empty
     }
 
     if (clobber) {
-      irs.append(POPMul(List(R0, R1, R2, R3)))
+      irs.append(POPMul(paramRegs))
     }
     irs.toList
   }
@@ -436,49 +595,49 @@ class codeGenerator(program: Program) {
     val didClobber = willClobber(localReg, liveMap)
 
     if (didClobber) {
-      irs.append(PUSHMul(List(R0, R1, R2, R3)))
+      irs.append(PUSHMul(paramRegs))
     }
 
     // R0 should hold the value of ident
     assert(liveMap.lookupAll(ident).isDefined, "Ident " + ident + "has not been defined")
     liveMap.lookupAll(ident).get match {
       case Stack(offset) => irs.append(LDR(R0, FP, offset, "Default"))
-      case reg: Reg => irs.append(MOV(R0, reg))
+      case reg: Reg => irs.append(MOV(R0, reg, "Default"))
     }
 
-    irs.append(BL("_read" + flag))
+    irs.append(BRANCH("_read" + flag, "L"))
     if (widgets.contains("read")) {
       widgets("read").add(flag)
     } else {
       widgets("read") = collection.mutable.Set(flag)
     }
 
-    irs.append(MOV(scratchReg1, R0))
+    irs.append(MOV(scratchReg1, R0, "Default"))
 
     if (didClobber) {
-      irs.append(POPMul(List(R0, R1, R2, R3)))
+      irs.append(POPMul(paramRegs))
     }
 
     liveMap.lookupAll(ident).get match {
       case Stack(offset) => irs.append(STR(scratchReg1, FP, offset))
-      case reg: Reg => irs.append(MOV(reg, scratchReg1))
+      case reg: Reg => irs.append(MOV(reg, scratchReg1, "Default"))
     }
 
     irs.toList
   }
 
-  def readChar(): List[IR] = {
+  private def readChar(): List[IR] = {
     val ir = ListBuffer.empty[IR]
     ir.append(Data(List(" %c"), stringNum))
     ir.append(Label("_readc"))
     ir.append(PUSH(LR))
     ir.append(PUSH(R0))
-    ir.append(MOV(R1, SP))
+    ir.append(MOV(R1, SP, "Default"))
     ir.append(StringInit(R0,stringNum))
     stringNum += 1
-    ir.append(BL("scanf"))
+    ir.append(BRANCH("scanf", "L"))
     ir.append(LDR(R0, SP, 0, "sb"))
-    ir.append(ADD(SP, SP, 4))
+    ir.append(ADD(SP, SP, WORDSIZE))
     ir.append(POP(PC))
     ir.toList
   }
@@ -489,12 +648,12 @@ class codeGenerator(program: Program) {
     ir.append(Label("_readi"))
     ir.append(PUSH(LR))
     ir.append(PUSH(R0))
-    ir.append(MOV(R1, SP))
+    ir.append(MOV(R1, SP, "Default"))
     ir.append(StringInit(R0,stringNum))
     stringNum += 1
-    ir.append(BL("scanf"))
+    ir.append(BRANCH("scanf", "L"))
     ir.append(LDR(R0, SP, 0, "Default"))
-    ir.append(ADD(SP, SP, 4))
+    ir.append(ADD(SP, SP, WORDSIZE))
     ir.append(POP(PC))
     ir.toList
   }
@@ -505,7 +664,6 @@ class codeGenerator(program: Program) {
       case "i" => readInt()
     }
   }
-
 
   def printAll(flag : String) : List[IR] = {
     flag match {
@@ -525,22 +683,21 @@ class codeGenerator(program: Program) {
     ir.append(CMPImm(R0, 0))
     val label0 = getNewLabel()
     val label1 = getNewLabel()
-    ir.append(BNE(label0))
+    ir.append(BRANCH(label0, "NE"))
     ir.append(StringInit(R2, stringNum))
-    ir.append(BUC(label1))
+    ir.append(BRANCH(label1, "Default"))
     ir.append(Label(label0))
     ir.append(StringInit(R2, stringNum + 1))
     ir.append(Label(label1))
-    ir.append(LDR(R1, R2, -4, "Default"))
+    ir.append(LDR(R1, R2, -WORDSIZE, "Default"))
     ir.append(StringInit(R0, stringNum + 2))
-    ir.append(BL("printf"))
+    ir.append(BRANCH("printf", "L"))
     ir.append(MOVImm(R0, 0, "Default"))
-    ir.append(BL("fflush"))
+    ir.append(BRANCH("fflush", "L"))
     ir.append(POP(PC))
     stringNum += 3
     ir.toList
   }
-
 
   private def printString() : List[IR] = {
     val flag = "s"
@@ -549,13 +706,13 @@ class codeGenerator(program: Program) {
     ir.append(Data(List(format), stringNum))
     ir.append(Label("_print" + flag))
     ir.append(PUSH(LR))
-    ir.append(MOV(R2, R0))
-    ir.append(LDR(R1, R0, -4, "Default"))
+    ir.append(MOV(R2, R0, "Default"))
+    ir.append(LDR(R1, R0, -WORDSIZE, "Default"))
     ir.append(StringInit(R0, stringNum))
     stringNum += 1
-    ir.append(BL("printf"))
+    ir.append(BRANCH("printf", "L"))
     ir.append(MOVImm(R0, 0, "Default"))
-    ir.append(BL("fflush"))
+    ir.append(BRANCH("fflush", "L"))
     ir.append(POP(PC))
     ir.toList
   }
@@ -570,12 +727,12 @@ class codeGenerator(program: Program) {
     ir.append(Data(List(format), stringNum))
     ir.append(Label("_print" + flag))
     ir.append(PUSH(LR))
-    ir.append(MOV(R1, R0))
+    ir.append(MOV(R1, R0, "Default"))
     ir.append(StringInit(R0, stringNum))
     stringNum += 1
-    ir.append(BL("printf"))
+    ir.append(BRANCH("printf", "L"))
     ir.append(MOVImm(R0, 0, "Default"))
-    ir.append(BL("fflush"))
+    ir.append(BRANCH("fflush", "L"))
     ir.append(POP(PC))
     ir.toList
   }
@@ -586,9 +743,9 @@ class codeGenerator(program: Program) {
     ir.append(Label("_println"))
     ir.append(PUSH(LR))
     ir.append(StringInit(R0, stringNum))
-    ir.append(BL("puts"))
+    ir.append(BRANCH("puts", "L"))
     ir.append(MOVImm(R0, 0, "Default"))
-    ir.append(BL("fflush"))
+    ir.append(BRANCH("fflush", "L"))
     ir.append(POP(PC))
     stringNum += 1
     ir.toList
@@ -598,8 +755,8 @@ class codeGenerator(program: Program) {
     val location = liveMap.lookupAll(name)
     assert(location.isDefined, name + " must be defined in live map for getting its val")
     location.get match {
-      case src: Reg => List(MOV(target, src))
-      case Stack(offset) => List(LDR(scratchReg1, FP, offset, "Default"), MOV(target, scratchReg1))
+      case src: Reg => List(MOV(target, src, "Default"))
+      case Stack(offset) => List(LDR(scratchReg1, FP, offset, "Default"), MOV(target, scratchReg1, "Default"))
     }
   }
 
@@ -611,7 +768,7 @@ class codeGenerator(program: Program) {
       liveMap.add(ident, localRegs(realLocal))
       List(POP(localRegs(realLocal)))
     } else {
-      val offset = (realLocal - localRegs.size + 1)*(-4)
+      val offset = (realLocal - localRegs.size + 1)*(-WORDSIZE)
       liveMap.add(ident, Stack(offset))
       List(POP(scratchReg1), STR(scratchReg1, FP, offset))
     }
@@ -638,7 +795,7 @@ class codeGenerator(program: Program) {
                   i += 2
                 }
                 else {
-                  newIRs.append(MOV(reg2, reg1))
+                  newIRs.append(MOV(reg2, reg1, "Default"))
                   i += 2
                 }
               case _ =>
@@ -659,6 +816,51 @@ class codeGenerator(program: Program) {
 
   def clearLiveMap(liveMap: SymbolTable[Location]) : Unit = liveMap.map.clear()
 
+  def boundsCheck() : List[IR] = {
+    val ir = new ListBuffer[IR]
+    ir.append(Data(List("fatal error: array index %d out of bounds\n"), stringNum))
+    ir.append(Label("_boundsCheck"))
+    ir.append(StringInit(R0, stringNum))
+    stringNum += 1
+    ir.append(BRANCH("printf", "L"))
+    ir.append(MOVImm(R0, 0, "Default"))
+    ir.append(BRANCH("fflush", "L"))
+    ir.append(MOVImm(R0, 255, "Default"))
+    ir.append(BRANCH("exit", "L"))
+    ir.toList
+  }
+
+  def arrLoad() : List[IR] = {
+    val ir = new ListBuffer[IR]
+    ir.append(Label("_arrLoad"))
+    ir.append(PUSH(LR))
+    ir.append(CMPImm(R10, 0))
+    ir.append(MOV(R1, R10, "lt"))
+    ir.append(BRANCH("_boundsCheck", "LLT"))
+    ir.append(LDR(LR, R3, -WORDSIZE, "Default"))
+    ir.append(CMP(R10, LR))
+    ir.append(MOV(R1, R10, "GE"))
+    ir.append(BRANCH("_boundsCheck", "LGE"))
+    ir.append(LDR(R3, R10, 2, "Index"))
+    ir.append(POP(PC))
+    ir.toList
+  }
+
+  def arrStore(): List[IR] = {
+    val ir = new ListBuffer[IR]
+    ir.append(Label("_arrStore"))
+    ir.append(PUSH(LR))
+    ir.append(CMPImm(R10, 0))
+    ir.append(MOV(R1, R10, "lt"))
+    ir.append(BRANCH("_boundsCheck", "LLT"))
+    ir.append(LDR(LR, R3, -WORDSIZE, "Default"))
+    ir.append(CMP(R10, LR))
+    ir.append(MOV(R1, R10, "GE"))
+    ir.append(BRANCH("_boundsCheck", "LGE"))
+    ir.append(FETCHINDEX(scratchReg1, R3, R10, 2))
+    ir.append(POP(PC))
+    ir.toList
+  }
 //  def getStringsData(): List[String] = strings.toList
 
 }
