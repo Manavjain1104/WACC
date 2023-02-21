@@ -9,7 +9,6 @@ object armPrinter {
   def print(cg : codeGenerator) : String = {
      val sb = new StringBuilder()
      cg.generateProgIR().foreach(ir => sb.append(printIR(ir) + NewLineChar))
-     println(sb.last.toInt)
      sb.toString()
   }
 
@@ -65,7 +64,7 @@ object armPrinter {
           case "LE"      => printInstr("movle ", List(rd, rs))
           case "EQ"      => printInstr("moveq ", List(rd, rs))
           case "NE"      => printInstr("movne ", List(rd, rs))
-          case _         => "WTH WRONG INSTRUCTION"
+          case _         => "WTH2 WRONG INSTRUCTION"
         }
       }
 
