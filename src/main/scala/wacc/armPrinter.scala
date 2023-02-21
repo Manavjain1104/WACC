@@ -25,7 +25,7 @@ object armPrinter {
   def printIR(ir: IR): String = {
     ir match {
       case Data(strings: List[String], startIndex : Int) => {
-        val s = new StringBuilder(".data\n")
+        val s = new StringBuilder("\n.data\n")
         for (i <- strings.indices) {
           s ++= "   .word " + strings(i).length.toString + NewLineChar
           val count = i + startIndex
@@ -40,7 +40,7 @@ object armPrinter {
 
 
       // Label and Branch Statements
-      case Label(label) => label + ":"
+      case Label(label) => "\n" + label + ":"
       case BRANCH(label, suffix) => {
         suffix match {
           case "Default" => "b " + label
@@ -101,7 +101,7 @@ object armPrinter {
       // Arithmetic Binary Operators
       case ADD(rd, rn, i)     => printInstr("adds ", rd, rn, i)
       case ADDREG(rd, rn, rm) => printInstr("adds ", List(rd, rn, rm))
-      case SUB(rd, rn, i)     => printInstr("subs ", rd, rn, i) //TODO check order
+      case SUB(rd, rn, i)     => printInstr("subs ", rd, rn, i)
       case SUBREG(rd, rn, rm) => printInstr("subs ", List(rd, rn, rm))
       case DIV(rd, rs, locals) => {
         val sb = new StringBuilder
@@ -180,7 +180,13 @@ object armPrinter {
       }
 
 
-      case STR(rd, rs, offset)        => "str " + rd +", [" + rs + ", #" + offset + "]"
+      case STR(rd, rs, offset, flag) => {
+        flag match {
+          case "b" => "strb " + rd +", [" + rs + ", #" + offset + "]"
+          case _ => "str " + rd +", [" + rs + ", #" + offset + "]"
+        }
+
+      }
       case STOREINDEX(rd : Reg, rb : Reg, ri : Reg, elemSize : Int)
         => "str " + rd +", [" + rb + ", " + ri + ", lsl #" + elemSize + "]"
       case STOREINDEXB(rd: Reg, rb: Reg, ri: Reg)

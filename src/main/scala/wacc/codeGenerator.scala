@@ -271,7 +271,6 @@ class codeGenerator(program: Program) {
         if (saveParamRegs) {
           irs.append(PUSHMul(paramRegs))
         }
-        println(exprLen, size)
         irs.append(MOVImm(R0, (exprLen * size) + WORDSIZE, "Default"))
         irs.append(BRANCH("malloc", "L"))
         irs.append(MOV(R12, R0, "Default"))
@@ -284,13 +283,13 @@ class codeGenerator(program: Program) {
 
         // store size of array
         irs.append(MOVImm(scratchReg1, exprLen, "Default"))
-        irs.append(STR(scratchReg1, R12, -WORDSIZE))
+        irs.append(STR(scratchReg1, R12, -WORDSIZE, "Default"))
 
         // set all the expr in mem
         for (i <- exprs.indices) {
           irs.appendAll(generateExprIR(exprs(i), liveMap))
           irs.append(POP(scratchReg1))
-          irs.append(STR(scratchReg1, R12, i * size))
+          irs.append(STR(scratchReg1, R12, i * size, "Default"))
         }
         irs.append(PUSH(R12))
         irs.toList
@@ -474,7 +473,7 @@ class codeGenerator(program: Program) {
             assert(liveMap.lookupAll(s).isDefined)
             liveMap.lookupAll(s).get match {
               case reg: Reg => irs.append(POP(reg))
-              case Stack(offset) => irs.appendAll(List(POP(scratchReg1), STR(scratchReg1, SP, offset)))
+              case Stack(offset) => irs.appendAll(List(POP(scratchReg1), STR(scratchReg1, SP, offset, "Default")))
             }
             irs.toList
           }
@@ -747,7 +746,7 @@ class codeGenerator(program: Program) {
     }
 
     liveMap.lookupAll(ident).get match {
-      case Stack(offset) => irs.append(STR(scratchReg1, FP, offset))
+      case Stack(offset) => irs.append(STR(scratchReg1, FP, offset, "Default"))
       case reg: Reg => irs.append(MOV(reg, scratchReg1, "Default"))
     }
 
@@ -759,13 +758,14 @@ class codeGenerator(program: Program) {
     ir.append(Data(List(" %c"), stringNum))
     ir.append(Label("_readc"))
     ir.append(PUSH(LR))
-    ir.append(PUSH(R0))
+    ir.append(STR(R0, SP, -1,"b"))
+    ir.append(SUB(SP, SP, 1))
     ir.append(MOV(R1, SP, "Default"))
     ir.append(StringInit(R0,stringNum))
     stringNum += 1
     ir.append(BRANCH("scanf", "L"))
     ir.append(LDR(R0, SP, 0, "sb"))
-    ir.append(ADD(SP, SP, WORDSIZE))
+    ir.append(ADD(SP, SP, 1))
     ir.append(POP(PC))
     ir.toList
   }
@@ -913,7 +913,7 @@ class codeGenerator(program: Program) {
     } else {
       val offset = (realLocal - localRegs.size + 1)*(-WORDSIZE)
       liveMap.add(ident, Stack(offset))
-      List(POP(scratchReg1), STR(scratchReg1, FP, offset))
+      List(POP(scratchReg1), STR(scratchReg1, FP, offset, "Default"))
     }
   }
 
