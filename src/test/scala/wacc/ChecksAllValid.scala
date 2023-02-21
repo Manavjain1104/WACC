@@ -52,62 +52,62 @@ class ChecksAllValid extends AnyFlatSpec {
 
   behavior of "valid array tests"
   it should "succeed with exit code 0" taggedAs(ChecksAllValid) in {
-    applyRecursively("src/test/scala/wacc/valid/array", exampleFn)
+    applyRecursively("/src/test/scala/wacc/valid/array", exampleFn)
   }
 
   behavior of "valid basic tests"
   it should "succeed with exit code 0" taggedAs(ChecksAllValid) in {
-    applyRecursively("src/test/scala/wacc/valid/basic", exampleFn)
+    applyRecursively("/src/test/scala/wacc/valid/basic", exampleFn)
   }
 
   behavior of "valid expressions tests"
   it should "succeed with exit code 0" taggedAs(ChecksAllValid) in {
-    applyRecursively("src/test/scala/wacc/valid/expressions", exampleFn)
+    applyRecursively("/src/test/scala/wacc/valid/expressions", exampleFn)
   }
 
   behavior of "valid function tests"
   it should "succeed with exit code 0" taggedAs(ChecksAllValid) in {
-    applyRecursively("src/test/scala/wacc/valid/function", exampleFn)
+    applyRecursively("/src/test/scala/wacc/valid/function", exampleFn)
   }
 
   behavior of "valid if tests"
   it should "succeed with exit code 0" taggedAs(ChecksAllValid) in {
-    applyRecursively("src/test/scala/wacc/valid/if", exampleFn)
+    applyRecursively("/src/test/scala/wacc/valid/if", exampleFn)
   }
 
   behavior of "valid IO tests"
   it should "succeed with exit code 0" taggedAs(ChecksAllValid) in {
-    applyRecursively("src/test/scala/wacc/valid/IO", exampleFn)
+    applyRecursively("/src/test/scala/wacc/valid/IO", exampleFn)
   }
 
   behavior of "valid pairs tests"
   it should "succeed with exit code 0" taggedAs(ChecksAllValid) in {
-    applyRecursively("src/test/scala/wacc/valid/pairs", exampleFn)
+    applyRecursively("/src/test/scala/wacc/valid/pairs", exampleFn)
   }
 
   behavior of "valid runtimeErr tests"
   it should "succeed with exit code 0" taggedAs(ChecksAllValid) in {
-    applyRecursively("src/test/scala/wacc/valid/runtimeErr", exampleFn)
+    applyRecursively("/src/test/scala/wacc/valid/runtimeErr", exampleFn)
   }
 
   behavior of "valid scope tests"
   it should "succeed with exit code 0" taggedAs(ChecksAllValid) in {
-    applyRecursively("src/test/scala/wacc/valid/scope", exampleFn)
+    applyRecursively("/src/test/scala/wacc/valid/scope", exampleFn)
   }
 
   behavior of "valid sequence tests"
   it should "succeed with exit code 0" taggedAs(ChecksAllValid) in {
-    applyRecursively("src/test/scala/wacc/valid/sequence", exampleFn)
+    applyRecursively("/src/test/scala/wacc/valid/sequence", exampleFn)
   }
 
   behavior of "valid variables tests"
   it should "succeed with exit code 0" taggedAs(ChecksAllValid) in {
-    applyRecursively("src/test/scala/wacc/valid/variables", exampleFn)
+    applyRecursively("/src/test/scala/wacc/valid/variables", exampleFn)
   }
 
   behavior of "valid while tests"
   it should "succeed with exit code 0" taggedAs(ChecksAllValid) in {
-    applyRecursively("src/test/scala/wacc/valid/while", exampleFn)
+    applyRecursively("/src/test/scala/wacc/valid/while", exampleFn)
   }
 
 }
