@@ -290,7 +290,7 @@ class codeGenerator(program: Program) {
       if (i < WORDSIZE) {
         liveMap.add(func.params(i).ident, paramRegs(i))
       } else {
-        liveMap.add(func.params(i).ident, Stack(((i - 2) * WORDSIZE)))
+        liveMap.add(func.params(i).ident, Stack((i - 2) * WORDSIZE))
       }
     }
 
@@ -463,7 +463,7 @@ class codeGenerator(program: Program) {
             }
 
 
-            // at this point R3 - containts the accesed value arr[x][y]
+            // at this point R3 - contains the accessed value arr[x][y]
             val shouldSave = willClobber(localRegs, liveMap)
             if (shouldSave) {
               irs.append(PUSHMul(paramRegs.slice(0,3)))
@@ -542,7 +542,7 @@ class codeGenerator(program: Program) {
     !localReg.contains(R0)
   }
 
-  def getPrintIR(e : Expr, expType : SemType, liveMap : SymbolTable[Location], localReg : List[Reg], ln : Boolean) = {
+  def getPrintIR(e : Expr, expType : SemType, liveMap : SymbolTable[Location], localReg : List[Reg], ln : Boolean): List[IR] = {
     val irs = ListBuffer.empty[IR]
 
     val clobber = willClobber(localReg, liveMap)
@@ -841,12 +841,12 @@ class codeGenerator(program: Program) {
     ir.append(CMP(R10, LR))
     ir.append(MOV(R1, R10, "GE"))
     ir.append(BRANCH("_boundsCheck", "LGE"))
-    ir.append(LDR(R3, R10, 2, "lsl"))
+    ir.append(LDR(R3, R10, 2, "Index"))
     ir.append(POP(PC))
     ir.toList
   }
 
-  def arrStore() = {
+  def arrStore(): List[IR] = {
     val ir = new ListBuffer[IR]
     ir.append(Label("_arrStore"))
     ir.append(PUSH(LR))
