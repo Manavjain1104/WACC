@@ -5,7 +5,7 @@
 # shellcheck disable=SC2068
 java -jar wacc-25-compiler.jar $@
 
-if [ mycmd != "0" ]
+if [ $? != "0" ]
 then
     exit $?
 fi
