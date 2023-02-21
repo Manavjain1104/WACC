@@ -7,20 +7,16 @@ object IR {
 
   // Top level statements
   case class Data(strings : List[String], startIndex : Int) extends IR
-//  case object Text                         extends IR
   case class Global(globals: List[String]) extends IR
   case object LTORG                        extends IR
 
   // Label and Branch Statements
   case class Label(label: String)  extends IR
-  case class BNE (label : String)  extends IR
-  case class BEQ (label : String)  extends IR
-  case class BUC (label : String)  extends IR
-  case class BL  (label : String)  extends IR
-  case class BLNE (label : String) extends IR
+  case class BRANCH(label: String, Suffix: String) extends IR
+
 
   // Move statements
-  case class MOV(rd: Reg, rs: Reg)                    extends IR
+  case class MOV(rd: Reg, rs: Reg, Flag : String)     extends IR
   case class MOVImm(rd: Reg, i: Int, Suffix : String) extends IR
 
   // Push and Pop Statements
@@ -53,6 +49,7 @@ object IR {
   // Misc Statements
   case class LDR(rd : Reg, rs : Reg, offset : Int, flag : String) extends IR
   case class STR(rd : Reg, rs : Reg, offset : Int) extends IR
+  case class FETCHINDEX(rd: Reg, rb: Reg, ri: Reg, elemSize: Int) extends IR
   case class StringInit(reg: Reg, stringNum: Int)  extends IR
 
 }

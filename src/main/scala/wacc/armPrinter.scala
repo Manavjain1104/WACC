@@ -4,9 +4,11 @@ import wacc.IR._
 import wacc.Registers._
 object armPrinter {
 
+  private val NewLineChar = "\n"
+
   def print(cg : codeGenerator) : String = {
      val sb = new StringBuilder()
-     cg.generateProgIR().foreach(ir => sb.append(printIR(ir) + "\n"))
+     cg.generateProgIR().foreach(ir => sb.append(printIR(ir) + NewLineChar))
      sb.toString()
   }
 
@@ -25,7 +27,7 @@ object armPrinter {
       case Data(strings: List[String], startIndex : Int) => {
         val s = new StringBuilder(".data\n")
         for (i <- strings.indices) {
-          s ++= "   .word " + strings(i).length.toString + "\n"
+          s ++= "   .word " + strings(i).length.toString + NewLineChar
           val count = i + startIndex
           s ++= s".L.str$count:\n"
           s ++= "   .asciz \"" + strings(i).replace("\"", "\\\"") + "\"\n"
@@ -39,14 +41,33 @@ object armPrinter {
 
       // Label and Branch Statements
       case Label(label) => label + ":"
-      case BNE(label) => "bne " + label
-      case BEQ(label) => "beq " + label
-      case BUC(label) => "b " + label
-      case BL(label) => "bl " + label
-      case BLNE(label) => "blne " + label
+      case BRANCH(label, suffix) => {
+        suffix match {
+          case "Default" => "b " + label
+          case "NE"      => "bne " + label
+          case "EQ"      => "beq " + label
+          case "L"       => "bl "  + label
+          case "LNE"     => "blne " + label
+          case "LLT"     => "bllt " + label
+          case "LGE"     => "blge " + label
+          case _         => "WTH WRONG INSTRUCTION"
+        }
+      }
 
       // Move statements
-      case MOV(rd, rs) => "mov " + rd + ", " + rs
+      case MOV(rd, rs, flag) => {
+        flag match {
+          case "Default" => printInstr("mov ", List(rd, rs))
+          case "GT"      => printInstr("movgt ", List(rd, rs))
+          case "LT"      => printInstr("movlt ", List(rd, rs))
+          case "GE"      => printInstr("movge ", List(rd, rs))
+          case "LE"      => printInstr("movle ", List(rd, rs))
+          case "EQ"      => printInstr("moveq ", List(rd, rs))
+          case "NE"      => printInstr("movne ", List(rd, rs))
+          case _         => printInstr("mov ", List(rd, rs))
+        }
+      }
+
       case MOVImm(rd, i, flag) => {
         flag match {
           case "Default" => printInstr("mov ", rd, i)
@@ -56,6 +77,7 @@ object armPrinter {
           case "LE"      => printInstr("movle ", rd, i)
           case "EQ"      => printInstr("moveq ", rd, i)
           case "NE"      => printInstr("movne ", rd, i)
+          case _         => printInstr("mov ", rd, i)
         }
       }
 
@@ -69,10 +91,10 @@ object armPrinter {
       case NEG(rd, rs) => printInstr("rsbs ", rd, rs, 0)
       case NOT(rd, rs) => {
         val sb = new StringBuilder()
-        sb.append(printIR(CMPImm(rs, 0)) + "\n")
-        sb.append(printIR(MOVImm(rs, 1, "EQ")) + "\n")
-        sb.append(printIR(MOVImm(rs, 0, "NE")) + "\n")
-        sb.append(printIR(MOV(rd, rs)))
+        sb.append(printIR(CMPImm(rs, 0)) + NewLineChar)
+        sb.append(printIR(MOVImm(rs, 1, "EQ")) + NewLineChar)
+        sb.append(printIR(MOVImm(rs, 0, "NE")) + NewLineChar)
+        sb.append(printIR(MOV(rd, rs, "Default")))
         sb.toString()
       }
 
@@ -84,12 +106,12 @@ object armPrinter {
       case DIV(rd, rs, locals) => {
         val sb = new StringBuilder
         if (locals > 4) {
-          sb.append(printIR(PUSHMul(List(R0, R1))) + "\n")
+          sb.append(printIR(PUSHMul(List(R0, R1))) + NewLineChar)
         }
-        sb.append(printIR(MOV(R0, rd)) + "\n")
-        sb.append(printIR(MOV(R1, rs)) + "\n")
-        sb.append(printIR(BL("__aeabi_idivmod")) + "\n")
-        sb.append(printIR(PUSH(R0)) + "\n")
+        sb.append(printIR(MOV(R0, rd, "Default")) + NewLineChar)
+        sb.append(printIR(MOV(R1, rs, "Default")) + NewLineChar)
+        sb.append(printIR(BRANCH("__aeabi_idivmod", "L")) + NewLineChar)
+        sb.append(printIR(PUSH(R0)) + NewLineChar)
 
         if (locals > 4) {
           sb.append(printIR(POPMul(List(R0, R1))))
@@ -107,12 +129,12 @@ object armPrinter {
       case MOD(rd, rs, locals) => {
         val sb = new StringBuilder()
         if (locals > 4) {
-          sb.append(printIR(PUSHMul(List(R0, R1))) + "\n")
+          sb.append(printIR(PUSHMul(List(R0, R1))) + NewLineChar)
         }
-        sb.append(printIR(MOV(R0, rd)) + "\n")
-        sb.append(printIR(MOV(R1, rs)) + "\n")
-        sb.append(printIR(BL("__aeabi_idivmod")) + "\n")
-        sb.append(printIR(PUSH(R1)) + "\n")
+        sb.append(printIR(MOV(R0, rd, "Default")) + NewLineChar)
+        sb.append(printIR(MOV(R1, rs, "Default")) + NewLineChar)
+        sb.append(printIR(BRANCH("__aeabi_idivmod", "L")) + NewLineChar)
+        sb.append(printIR(PUSH(R1)) + NewLineChar)
 
         if (locals > 4) {
           sb.append(printIR(POPMul(List(R0, R1))))
@@ -128,21 +150,21 @@ object armPrinter {
       // Logical Binary Operators
       case AND(rd, rn, label: String) => {
         val sb = new StringBuilder
-        sb.append(printIR(CMPImm(rd,1)) + "\n")
-        sb.append(printIR(BNE(label)) + "\n")
-        sb.append(printIR(CMPImm(rn, 1)) + "\n")
-        sb.append(printIR(Label(label)) + "\n")
-        sb.append(printIR(MOVImm(rd, 1, "EQ")) + "\n")
+        sb.append(printIR(CMPImm(rd,1)) + NewLineChar)
+        sb.append(printIR(BRANCH(label, "NE")) + NewLineChar)
+        sb.append(printIR(CMPImm(rn, 1)) + NewLineChar)
+        sb.append(printIR(Label(label)) + NewLineChar)
+        sb.append(printIR(MOVImm(rd, 1, "EQ")) + NewLineChar)
         sb.append(printIR(MOVImm(rd, 0, "NE")))
         sb.toString()
       }
       case OR(rd, rn, label: String) => {
         val sb = new StringBuilder
-        sb.append(printIR(CMPImm(rd,1)) + "\n")
-        sb.append(printIR(BEQ(label)) + "\n")
-        sb.append(printIR(CMPImm(rn, 1)) + "\n")
-        sb.append(printIR(Label(label)) + "\n")
-        sb.append(printIR(MOVImm(rd, 1, "EQ")) + "\n")
+        sb.append(printIR(CMPImm(rd,1)) + NewLineChar)
+        sb.append(printIR(BRANCH(label, "EQ")) + NewLineChar)
+        sb.append(printIR(CMPImm(rn, 1)) + NewLineChar)
+        sb.append(printIR(Label(label)) + NewLineChar)
+        sb.append(printIR(MOVImm(rd, 1, "EQ")) + NewLineChar)
         sb.append(printIR(MOVImm(rd, 0, "NE")))
         sb.toString()
       }
@@ -152,9 +174,12 @@ object armPrinter {
         flag match {
           case "Default" => "ldr " + rd +", [" + rs + ", #" + offset + "]"
           case "sb"      => "ldrsb " + rd +", [" + rs + ", #" + offset + "]"
+          case "index"     => "ldr " + rd + ", ["+ rd + ", " + rs + ", lsl #" + offset + "]"
         }
       }
       case STR(rd, rs, offset)        => "str " + rd +", [" + rs + ", #" + offset + "]"
+      case FETCHINDEX(rd : Reg, rb : Reg, ri : Reg, elemSize : Int)
+        => "str " + rd +", [" + rb + ", " + ri + ", lsl #" + elemSize + "]"
       case StringInit(reg, stringNum) => "ldr " + reg + ", " + "=.L.str" + stringNum
       case _ => "Unreachable"
     }

@@ -499,6 +499,7 @@ class semanticAnalyser {
         }
         i = i + 1
       }
+      arrayElem.st = Some(symbolTable)
       return Some(arrayTypeHolder)
     }
     errorLog += UnknownIdentifierError(arrayElem.pos, arrayElem.ident, Some("Unknown array identifier found"))
