@@ -72,7 +72,7 @@ class codeGenerator(program: Program) {
     if (widgets.contains("boundsCheck")) {
       irs.appendAll(boundsCheck())
     }
-    if (widgets.contains("errNUll")) irs.appendAll(errNull())
+    if (widgets.contains("errNull")) irs.appendAll(errNull())
 
     optimisePushPop(irs.toList)
     //    irs.toList
@@ -301,9 +301,41 @@ class codeGenerator(program: Program) {
     irs.toList
   }
 
+  def getLvalSize(lval : LValue) : Int = {
+    lval match {
+      case id@IdentValue(s) => {
+        assert(id.st.isDefined, "id does not have symbol table")
+        id.st.get.lookupAll(s).get match {
+          case ArraySemType(CharSemType) => 1
+          case _ => WORDSIZE
+        }
+      }
+      case ar: ArrayElem => getSizeFromArrElem(ar)
+      case elem: PairElem => {
+        if (elem match {
+          case f : Fst => f.ty == CharSemType
+          case s : Snd => s.ty == CharSemType
+        } ) 1 else WORDSIZE
+      }
+    }
+  }
+
   // writes instructions that calculate the value and place it on top of the stack
   def generateRvalue(rvalue: RValue, liveMap: SymbolTable[Location], localRegs: List[Reg], numParams: Int, lval: LValue): List[IR] = {
     rvalue match {
+      case elem: PairElem => {
+        val irs = ListBuffer.empty[IR]
+        irs.appendAll(getIRForPairElem(elem, liveMap))
+        irs.append(POP(scratchReg2))
+        val size = getLvalSize(lval)
+        if (size == 1) {
+          irs.append(LDR(scratchReg1, scratchReg2, 0, "sb"))
+        } else {
+          irs.append(LDR(scratchReg1, scratchReg2, 0, "Default"))
+        }
+        irs.append(PUSH(scratchReg1))
+        irs.toList
+      }
       case expr: Expr => generateExprIR(expr, liveMap)
       case NewPair(expr1, expr2) => {
         val irs = ListBuffer.empty[IR]
@@ -337,22 +369,7 @@ class codeGenerator(program: Program) {
         val exprLen = exprs.length
         val saveParamRegs = willClobber(localRegs, liveMap)
 
-        val size = lval match {
-          case id@IdentValue(s) => {
-            assert(id.st.isDefined, "id does not have symbol table")
-            id.st.get.lookupAll(s).get match {
-              case ArraySemType(CharSemType) => 1
-              case _ => WORDSIZE
-            }
-          }
-          case ar: ArrayElem => getSizeFromArrElem(ar)
-          case elem: PairElem => {
-            if (elem match {
-              case f : Fst => f.ty == CharSemType
-              case s : Snd => s.ty == CharSemType
-            } ) 1 else WORDSIZE
-          }
-        }
+        val size = getLvalSize(lval)
 
         if (saveParamRegs) {
           irs.append(PUSHMul(paramRegs))
@@ -552,9 +569,14 @@ class codeGenerator(program: Program) {
     irs.appendAll(getIntoTarget(s, scratchReg1, liveMap))
     irs.append(CMPImm(scratchReg1, 0))
     irs.append(BRANCH("_errNull", "LEQ"))
-    widgets("errNull") = collection.mutable.Set.empty
-    irs.append(LDR(scratchReg1, scratchReg1, 0, "Default"))
     irs.append(PUSH(scratchReg1))
+    widgets("errNull") = collection.mutable.Set.empty
+    if (widgets.contains("print")) {
+      widgets("print").add("s")
+    } else {
+      widgets("print") = collection.mutable.Set("s")
+    }
+//    irs.append(LDR(scratchReg2, scratchReg1, 0, "Default"))
   }
 
   // pushes the pointer to the pair elem on top of the stack
@@ -565,37 +587,35 @@ class codeGenerator(program: Program) {
       case Fst(lvalue) => {
         lvalue match {
           case insideElem: PairElem => irs.appendAll(getIRForPairElem(insideElem, liveMap))
-          case arrElem @ ArrayElem(ident, exprs) => {
-            getArrayElemIr(irs, liveMap, arrElem)
-          }
-          case IdentValue(s) => {
-            getIdentValueIr(irs, liveMap, s)
-          }
+          case arrElem : ArrayElem  => getArrayElemIr(irs, liveMap, arrElem)
+          case IdentValue(s) => getIdentValueIr(irs, liveMap, s)
         }
         isFst = true
       }
       case Snd(lvalue) => {
         lvalue match {
           case insideElem: PairElem => irs.appendAll(getIRForPairElem(insideElem, liveMap))
-          case arrElem @ ArrayElem(ident, exprs) => {
-            getArrayElemIr(irs, liveMap, arrElem)
-          }
-          case IdentValue(s) => {
-            getIdentValueIr(irs, liveMap, s)
-          }
+          case arrElem : ArrayElem  => getArrayElemIr(irs, liveMap, arrElem)
+          case IdentValue(s) => getIdentValueIr(irs, liveMap, s)
         }
       }
 
       irs.append(POP(scratchReg1))
       irs.append(CMPImm(scratchReg1, 0))
       irs.append(BRANCH("_errNull", "LEQ"))
-//          widgets("errNull") = collection.mutable.Set.empty
-      if (isFst) {
-        irs.append(LDR(scratchReg1, scratchReg1, 0, "Default"))
+      widgets("errNull") = collection.mutable.Set.empty
+      if (widgets.contains("print")) {
+        widgets("print").add("s")
       } else {
-        irs.append(LDR(scratchReg1, scratchReg1, WORDSIZE, "Default"))
+        widgets("print") = collection.mutable.Set("s")
       }
-      irs.append(PUSH(scratchReg1))
+
+      if (isFst) {
+        irs.append(LDR(scratchReg2, scratchReg1, 0, "Default"))
+      } else {
+        irs.append(LDR(scratchReg2, scratchReg1, WORDSIZE, "Default"))
+      }
+      irs.append(PUSH(scratchReg2))
     }
     irs.toList
   }
@@ -607,8 +627,13 @@ class codeGenerator(program: Program) {
 
       case Skip => List.empty[IR]
 
-      case varDec@VarDec(_, ident, rvalue) =>
-        generateRvalue(rvalue, liveMap, localRegs, numParams, IdentValue(ident)(varDec.symbolTable, (0, 0))) ++ assignLocal(ident, liveMap, localRegs, numParams)
+      case varDec@VarDec(_, ident, rvalue) => {
+        val irs = ListBuffer.empty[IR]
+        irs.appendAll(generateRvalue(rvalue, liveMap, localRegs, numParams, IdentValue(ident)(varDec.symbolTable, (0, 0))))
+        irs.appendAll(
+          assignLocal(ident, liveMap, localRegs, numParams, varDec.symbolTable.get.lookupAll(ident).get == CharSemType))
+        irs.toList
+      }
 
       case Assign(lvalue, rvalue) => {
         lvalue match {
@@ -618,6 +643,7 @@ class codeGenerator(program: Program) {
             irs.appendAll(generateRvalue(rvalue, liveMap, localRegs, numParams, lvalue))
             irs.append(POP(scratchReg1))
             irs.append(POP(scratchReg2))
+            val size = getLvalSize(elem)
             irs.append(STR(scratchReg1, scratchReg2, 0, "Default"))
             irs.toList
           }
@@ -1145,7 +1171,8 @@ class codeGenerator(program: Program) {
     }
   }
 
-  def assignLocal(ident: String, liveMap: SymbolTable[Location], localRegs: List[Reg], numParams: Int): List[IR] = {
+  def assignLocal(ident: String, liveMap: SymbolTable[Location], localRegs: List[Reg],
+                  numParams: Int, isChar : Boolean): List[IR] = {
     val localCount = liveMap.getNestedEntries()
     assert(liveMap.lookup(ident).isEmpty, "First assignment of " + ident + " in child scope")
     val realLocal = localCount - numParams
@@ -1155,7 +1182,12 @@ class codeGenerator(program: Program) {
     } else {
       val offset = (realLocal - localRegs.size + 1) * (-WORDSIZE)
       liveMap.add(ident, Stack(offset))
-      List(POP(scratchReg1), STR(scratchReg1, FP, offset, "Default"))
+      if (isChar) {
+        List(POP(scratchReg1), STR(scratchReg1, FP, offset, "b"))
+      } else {
+        List(POP(scratchReg1), STR(scratchReg1, FP, offset, "Default"))
+      }
+
     }
   }
 
