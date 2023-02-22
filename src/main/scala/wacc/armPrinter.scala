@@ -179,7 +179,7 @@ object armPrinter {
         sb.append(printIR(MOVImm(rd, 0, "NE")))
         sb.toString()
       }
-      case TRUNCATE(rd, rs, i) => printInstr("and", rs, rd, i)
+      case TRUNCATE(rd, rs, i) => printInstr("and ", rs, rd, i)
 
       // Misc Statements
       case LDR(rd, rs, offset, flag) => {

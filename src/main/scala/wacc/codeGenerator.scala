@@ -584,6 +584,7 @@ class codeGenerator(program: Program) {
   def getIRForPairElem(elem: PairElem, liveMap: SymbolTable[Location]) : List[IR] = {
     val irs = ListBuffer.empty[IR]
     var isFst = false
+
     elem match {
       case Fst(lvalue) =>
         lvalue match {
