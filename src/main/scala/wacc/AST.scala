@@ -4,6 +4,7 @@ import parsley.Parsley
 import parsley.genericbridges.ParserBridge0
 import parsley.implicits.zipped.{Zipped2, Zipped3, Zipped4}
 import parsley.position.pos
+import wacc.SemTypes.InternalPairSemType
 
 object AST {
 
@@ -251,13 +252,19 @@ object AST {
 
   sealed trait PairElem extends LValue with RValue
 
-  case class Fst(lvalue: LValue)(val pos: (Int, Int)) extends PairElem
+  case class Fst(lvalue: LValue)(val pos: (Int, Int))(var ty : SemTypes.SemType) extends PairElem
 
-  object Fst extends ParserBridgePos1[LValue, PairElem]
+  object Fst extends ParserBridgePos1[LValue, PairElem] {
+    override def apply(x: LValue)(pos: (Int, Int)): PairElem = {
+      new Fst(x)(pos)(InternalPairSemType)
+    }
+  }
 
-  case class Snd(lvalue: LValue)(val pos: (Int, Int)) extends PairElem
+  case class Snd(lvalue: LValue)(val pos: (Int, Int))(var ty : SemTypes.SemType) extends PairElem
 
-  object Snd extends ParserBridgePos1[LValue, PairElem]
+  object Snd extends ParserBridgePos1[LValue, PairElem] {
+    override def apply(x: LValue)(pos: (Int, Int)): PairElem = new Snd(x)(pos)(InternalPairSemType)
+  }
 
   // Statement branch of AST
   sealed trait Statement extends AST

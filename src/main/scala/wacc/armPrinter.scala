@@ -47,9 +47,11 @@ object armPrinter {
           case "NE"      => "bne " + label
           case "EQ"      => "beq " + label
           case "L"       => "bl "  + label
+          case "LEQ"       => "bleq "  + label
           case "LNE"     => "blne " + label
           case "LLT"     => "bllt " + label
           case "LGE"     => "blge " + label
+          case "LVS"     => "blvs " + label
           case _         => "WTH WRONG INSTRUCTION"
         }
       }
@@ -116,6 +118,8 @@ object armPrinter {
         }
         sb.append(printIR(MOV(R0, rd, "Default")) + NewLineChar)
         sb.append(printIR(MOV(R1, rs, "Default")) + NewLineChar)
+        sb.append(printIR(CMPImm(R1, 0)))
+        sb.append(printIR(BRANCH("_errDivZero", "EQ")))
         sb.append(printIR(BRANCH("__aeabi_idivmod", "L")) + NewLineChar)
         sb.append(printIR(PUSH(R0)) + NewLineChar)
 
@@ -128,8 +132,7 @@ object armPrinter {
       case MUL(rd, rs) => {
         val sb = new StringBuilder()
         sb.append(printInstr("smull ", List(rd, rs, rd, rs)) ) // rd - low, rs - high
-//        sb.append(printIR(CMP(rs, rd),cg) + "asr #31\n")
-//        sb.append(printIR(BLNE("_errOverflow"),cg)) // TODO overflow
+        sb.append(printIR(CMP(rs, rd)) + "asr #31\n")
         sb.toString()
       }
       case MOD(rd, rs, locals) => {
@@ -139,6 +142,8 @@ object armPrinter {
         }
         sb.append(printIR(MOV(R0, rd, "Default")) + NewLineChar)
         sb.append(printIR(MOV(R1, rs, "Default")) + NewLineChar)
+        sb.append(printIR(CMPImm(R1, 0)))
+        sb.append(printIR(BRANCH("_errDivZero", "EQ")))
         sb.append(printIR(BRANCH("__aeabi_idivmod", "L")) + NewLineChar)
         sb.append(printIR(PUSH(R1)) + NewLineChar)
 
@@ -174,6 +179,7 @@ object armPrinter {
         sb.append(printIR(MOVImm(rd, 0, "NE")))
         sb.toString()
       }
+      case TRUNCATE(rd, rs, i) => printInstr("and", rs, rd, i)
 
       // Misc Statements
       case LDR(rd, rs, offset, flag) => {

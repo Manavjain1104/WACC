@@ -3,6 +3,7 @@ package wacc.ASTTests
 import org.scalatest.Tag
 import org.scalatest.flatspec.AnyFlatSpec
 import wacc.AST.{ArrayElem, Fst, IdentValue, IntExpr, Snd}
+import wacc.SemTypes.InternalPairSemType
 import wacc.parser._
 
 object LValueTests extends Tag("LValueTests")
@@ -36,7 +37,7 @@ class LValueTests extends AnyFlatSpec {
   behavior of "ident pair-elem LValue"
   it should "generate the correct ident pair-elem LValue expression" taggedAs(LValueTests, SyntacticTests) in {
     val exp = "fst abcde"
-    val pair_elem_ident = Fst(IdentValue("abcde")(None, (0,0)))(0,0)
+    val pair_elem_ident = new Fst(IdentValue("abcde")(None, (0,0)))(0,0)(InternalPairSemType)
     val repr = lvalue.parse(exp).get
     assert(repr === pair_elem_ident)
   }
@@ -44,7 +45,7 @@ class LValueTests extends AnyFlatSpec {
   behavior of "array-elem pair-elem LValue"
   it should "generate the correct array-elem pair-elem LValue expression" taggedAs(LValueTests, SyntacticTests) in {
     val exp = "snd arr[1][2]"
-    val pair_elem_array_elem = Snd(ArrayElem("arr",List(IntExpr(1)(0,0), IntExpr(2)(0,0)))(None, (0,0)))(0,0)
+    val pair_elem_array_elem = new Snd(ArrayElem("arr",List(IntExpr(1)(0,0), IntExpr(2)(0,0)))(None, (0,0)))(0,0)(InternalPairSemType)
     val repr = lvalue.parse(exp).get
     assert(repr === pair_elem_array_elem)
   }
@@ -52,7 +53,7 @@ class LValueTests extends AnyFlatSpec {
   behavior of "nested pair-elem LValue"
   it should "generate the correct nested pair-elem LValue expression" taggedAs(LValueTests, SyntacticTests) in {
     val exp = "fst snd abcde"
-    val nested_pair_elem = Fst(Snd(IdentValue("abcde")(None, (0,0)))(0,0))(0,0)
+    val nested_pair_elem = new Fst(new Snd(IdentValue("abcde")(None, (0,0)))(0,0)(InternalPairSemType))(0,0)(InternalPairSemType)
     val repr = lvalue.parse(exp).get
     assert(repr === nested_pair_elem)
   }

@@ -506,6 +506,13 @@ class semanticAnalyser {
     Some(InternalPairSemType)
   }
 
+  def attachType(pe : PairElem, ty : SemType) : Unit = {
+    pe match {
+      case f : Fst => f.ty = ty
+      case s : Snd => s.ty = ty
+    }
+  }
+
   private def checkPairElem(pe: PairElem, symbolTable: SymbolTable[SemType]): Option[SemType] = {
     var is_fst: Boolean = false
     val insideLval: LValue = pe match {
@@ -514,6 +521,7 @@ class semanticAnalyser {
         lvalue
       case Snd(lvalue) => lvalue
     }
+
     insideLval match {
       case _: PairElem =>
         Some(InternalPairSemType)
@@ -523,8 +531,10 @@ class semanticAnalyser {
         opArrayItemType.get match {
           case PairSemType(pt1, pt2) =>
             if (is_fst) {
+              attachType(pe, pt1)
               Some(pt1)
             } else {
+              attachType(pe, pt2)
               Some(pt2)
             }
           case InternalPairSemType => Some(InternalPairSemType)
@@ -541,8 +551,10 @@ class semanticAnalyser {
           identType.get match {
             case PairSemType(pt1, pt2) =>
               if (is_fst) {
+                attachType(pe, pt1)
                 return Some(pt1)
               } else {
+                attachType(pe, pt2)
                 return Some(pt2)
               }
             case unexpectedType =>
