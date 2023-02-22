@@ -584,22 +584,20 @@ class codeGenerator(program: Program) {
     val irs = ListBuffer.empty[IR]
     var isFst = false
     elem match {
-      case Fst(lvalue) => {
+      case Fst(lvalue) =>
         lvalue match {
           case insideElem: PairElem => irs.appendAll(getIRForPairElem(insideElem, liveMap))
-          case arrElem : ArrayElem  => getArrayElemIr(irs, liveMap, arrElem)
+          case arrElem: ArrayElem => getArrayElemIr(irs, liveMap, arrElem)
           case IdentValue(s) => getIdentValueIr(irs, liveMap, s)
         }
         isFst = true
-      }
-      case Snd(lvalue) => {
+      case Snd(lvalue) =>
         lvalue match {
           case insideElem: PairElem => irs.appendAll(getIRForPairElem(insideElem, liveMap))
-          case arrElem : ArrayElem  => getArrayElemIr(irs, liveMap, arrElem)
+          case arrElem: ArrayElem => getArrayElemIr(irs, liveMap, arrElem)
           case IdentValue(s) => getIdentValueIr(irs, liveMap, s)
         }
       }
-
       irs.append(POP(scratchReg1))
       irs.append(CMPImm(scratchReg1, 0))
       irs.append(BRANCH("_errNull", "LEQ"))
@@ -616,7 +614,7 @@ class codeGenerator(program: Program) {
         irs.append(LDR(scratchReg2, scratchReg1, WORDSIZE, "Default"))
       }
       irs.append(PUSH(scratchReg2))
-    }
+
     irs.toList
   }
 
