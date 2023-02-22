@@ -48,7 +48,7 @@ class codeGenerator(program: Program) {
     irs.appendAll(generateStatIR(program.stat, liveMap, localRegs, 0))
 
     if (numLocalsInMain > numLocalRegs) {
-      irs.append(ADD(SP, SP, (numLocalsInMain - numLocalRegs) * WORDSIZE))
+      irs.append(ADD(SP, SP, (numLocalsInMain - numLocalRegs) * WORDSIZE, "Default"))
     }
     irs += MOVImm(R0, 0, "Default")
     irs += POPMul(List(FP, PC))
@@ -280,7 +280,7 @@ class codeGenerator(program: Program) {
           irs.append(POPMul(paramRegs))
         }
 
-        irs.append(ADD(R12, R12, WORDSIZE))
+        irs.append(ADD(R12, R12, WORDSIZE, "Default"))
 
         // store size of array
         irs.append(MOVImm(scratchReg1, exprLen, "Default"))
@@ -321,7 +321,7 @@ class codeGenerator(program: Program) {
         irs.append(BRANCH(FUNCTION_PREFIX + ident, "L"))
 
         if (lArgs.length > WORDSIZE) {
-          irs.append(ADD(SP, SP, (lArgs.length - WORDSIZE) * WORDSIZE))
+          irs.append(ADD(SP, SP, (lArgs.length - WORDSIZE) * WORDSIZE, "Default"))
         }
 
         irs.append(MOV(scratchReg1, R0, "Default"))
@@ -402,7 +402,7 @@ class codeGenerator(program: Program) {
     irs += POPMul(List(FP, PC))
 
     if (numLocalsInBody > numLocalRegs) {
-      irs.append(ADD(SP, SP, (numLocalsInBody - numLocalRegs) * WORDSIZE))
+      irs.append(ADD(SP, SP, (numLocalsInBody - numLocalRegs) * WORDSIZE, "Default"))
     }
     irs.append(LTORG)
     irs.toList
@@ -766,14 +766,14 @@ class codeGenerator(program: Program) {
     stringNum += 1
     ir.append(BRANCH("scanf", "L"))
     ir.append(LDR(R0, SP, 0, "sb"))
-    ir.append(ADD(SP, SP, 1))
+    ir.append(ADD(SP, SP, 1, "Default"))
     ir.append(POP(PC))
     ir.toList
   }
 
   def readInt(): List[IR] = {
     val ir = ListBuffer.empty[IR]
-    ir.append(Data(List(" %d"), stringNum))
+    ir.append(Data(List("%d"), stringNum))
     ir.append(Label("_readi"))
     ir.append(PUSH(LR))
     ir.append(PUSH(R0))
@@ -782,7 +782,7 @@ class codeGenerator(program: Program) {
     stringNum += 1
     ir.append(BRANCH("scanf", "L"))
     ir.append(LDR(R0, SP, 0, "Default"))
-    ir.append(ADD(SP, SP, WORDSIZE))
+    ir.append(ADD(SP, SP, WORDSIZE, "Default"))
     ir.append(POP(PC))
     ir.toList
   }

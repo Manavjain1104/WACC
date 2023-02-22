@@ -99,7 +99,13 @@ object armPrinter {
       }
 
       // Arithmetic Binary Operators
-      case ADD(rd, rn, i)     => printInstr("adds ", rd, rn, i)
+      case ADD(rd, rn, i, flag)     => {
+        flag match {
+          case "s" => printInstr("adds ", rd, rn, i)
+          case _ => printInstr("add ", rd, rn, i)
+        }
+
+      }
       case ADDREG(rd, rn, rm) => printInstr("adds ", List(rd, rn, rm))
       case SUB(rd, rn, i)     => printInstr("subs ", rd, rn, i)
       case SUBREG(rd, rn, rm) => printInstr("subs ", List(rd, rn, rm))
