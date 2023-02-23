@@ -562,7 +562,7 @@ class codeGenerator(program: Program) {
     // Now R3 contains the requred element --> which must be a pair
     irs.append(MOV(scratchReg1, R3, "Default"))
     irs.append(POP(R3))
-    irs.append(PUSH(scratchReg1))
+    irs.append(LDR(scratchReg1, scratchReg1, 0, "Default"))
   }
 
   def getIdentValueIr(irs: ListBuffer[IR], liveMap: SymbolTable[Location], s: String): Unit = {
@@ -576,7 +576,6 @@ class codeGenerator(program: Program) {
       widgets("print") = collection.mutable.Set("s")
     }
     irs.append(LDR(scratchReg1, scratchReg1, 0, "Default"))
-    irs.append(PUSH(scratchReg1))
   }
 
   // pushes the pointer to the pair elem on top of the stack
@@ -593,7 +592,6 @@ class codeGenerator(program: Program) {
             irs.append(CMPImm(scratchReg1, 0))
             irs.append(BRANCH("_errNull", "LEQ"))
             irs.append(LDR(scratchReg1, scratchReg1, 0, "Default"))
-            irs.append(PUSH(scratchReg1))
           }
           case arrElem: ArrayElem => getArrayElemIr(irs, liveMap, arrElem)
           case IdentValue(s) => getIdentValueIr(irs, liveMap, s)
@@ -601,21 +599,27 @@ class codeGenerator(program: Program) {
         isFst = true
       case Snd(lvalue) =>
         lvalue match {
-          case insideElem: PairElem => irs.appendAll(getIRForPairElem(insideElem, liveMap))
+          case insideElem: PairElem => {
+            irs.appendAll(getIRForPairElem(insideElem, liveMap))
+            irs.append(POP(scratchReg1))
+            irs.append(CMPImm(scratchReg1, 0))
+            irs.append(BRANCH("_errNull", "LEQ"))
+            irs.append(LDR(scratchReg1, scratchReg1, WORDSIZE, "Default"))
+          }
           case arrElem: ArrayElem => getArrayElemIr(irs, liveMap, arrElem)
           case IdentValue(s) => getIdentValueIr(irs, liveMap, s)
         }
       }
 
-    irs.append(POP(scratchReg1))
     irs.append(CMPImm(scratchReg1, 0))
     irs.append(BRANCH("_errNull", "LEQ"))
+    irs.append(LDR(scratchReg1, scratchReg1, 0, "Default"))
 
-    if (isFst) {
-      irs.append(LDR(scratchReg1, scratchReg1, 0, "Default"))
-    } else {
-      irs.append(LDR(scratchReg1, scratchReg1, WORDSIZE, "Default"))
-    }
+//    if (isFst) {
+//      irs.append(LDR(scratchReg1, scratchReg1, 0, "Default"))
+//    } else {
+//      irs.append(LDR(scratchReg1, scratchReg1, WORDSIZE, "Default"))
+//    }
     irs.append(PUSH(scratchReg1))
 
     widgets("errNull") = collection.mutable.Set.empty
