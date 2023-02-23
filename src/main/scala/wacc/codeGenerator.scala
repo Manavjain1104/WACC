@@ -353,7 +353,7 @@ class codeGenerator(program: Program) {
         irs.append(MOV(R12, R0, "Default"))
 
         if (saveParamRegs) {
-          irs.append(PUSHMul(paramRegs))
+          irs.append(POPMul(paramRegs))
         }
 
         irs.append(POP(scratchReg1))
@@ -558,6 +558,7 @@ class codeGenerator(program: Program) {
     } else {
       widgets("arrLoad") = collection.mutable.Set.empty
     }
+    widgets("boundsCheck") = collection.mutable.Set.empty
 
     // Now R3 contains the requred element --> which must be a pair
     irs.append(MOV(scratchReg1, R3, "Default"))
@@ -987,8 +988,9 @@ class codeGenerator(program: Program) {
         else "p"
       }
       case _ => {
-        assert(assertion = false, "not possible to print internal pair type")
-        "not possible"
+        "p"
+//        assert(assertion = false, "not possible to print internal pair type")
+//        "not possible"
       }
 
     }
@@ -1201,6 +1203,7 @@ class codeGenerator(program: Program) {
   def assignLocal(ident: String, liveMap: SymbolTable[Location], localRegs: List[Reg],
                   numParams: Int, isChar : Boolean): List[IR] = {
     val localCount = liveMap.getNestedEntries()
+    println(localCount)
     assert(liveMap.lookup(ident).isEmpty, "First assignment of " + ident + " in child scope")
     val realLocal = localCount - numParams
     if (realLocal < localRegs.size) {
