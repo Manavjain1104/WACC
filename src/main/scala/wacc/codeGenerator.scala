@@ -1203,7 +1203,6 @@ class codeGenerator(program: Program) {
   def assignLocal(ident: String, liveMap: SymbolTable[Location], localRegs: List[Reg],
                   numParams: Int, isChar : Boolean): List[IR] = {
     val localCount = liveMap.getNestedEntries()
-    println(localCount)
     assert(liveMap.lookup(ident).isEmpty, "First assignment of " + ident + " in child scope")
     val realLocal = localCount - numParams
     if (realLocal < localRegs.size) {
