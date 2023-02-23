@@ -326,14 +326,14 @@ class codeGenerator(program: Program) {
       case elem: PairElem => {
         val irs = ListBuffer.empty[IR]
         irs.appendAll(getIRForPairElem(elem, liveMap))
-//        irs.append(POP(scratchReg2))
-//        val size = getLvalSize(lval)
-//        if (size == 1) {
-//          irs.append(LDR(scratchReg1, scratchReg2, 0, "sb"))
-//        } else {
-//          irs.append(LDR(scratchReg1, scratchReg2, 0, "Default"))
-//        }
-//        irs.append(PUSH(scratchReg1))
+        irs.append(POP(scratchReg2))
+        val size = getLvalSize(lval)
+        if (size == 1) {
+          irs.append(LDR(scratchReg1, scratchReg2, 0, "sb"))
+        } else {
+          irs.append(LDR(scratchReg1, scratchReg2, 0, "Default"))
+        }
+        irs.append(PUSH(scratchReg1))
         irs.toList
       }
       case expr: Expr => generateExprIR(expr, liveMap)
@@ -562,7 +562,6 @@ class codeGenerator(program: Program) {
     // Now R3 contains the requred element --> which must be a pair
     irs.append(MOV(scratchReg1, R3, "Default"))
     irs.append(POP(R3))
-    irs.append(LDR(scratchReg1, scratchReg1, 0, "Default"))
     irs.toList
   }
 
@@ -591,12 +590,20 @@ class codeGenerator(program: Program) {
         lvalue match {
           case insideElem: PairElem => {
             irs.appendAll(getIRForPairElem(insideElem, liveMap))
+
             irs.append(POP(scratchReg1))
+            irs.append(CMPImm(scratchReg1, 0)) // this loads the value... we want to load the pointer
+            irs.append(BRANCH("_errNull", "LEQ"))
+            irs.append(LDR(scratchReg1, scratchReg1, 0, "Default"))
+
             irs.append(CMPImm(scratchReg1, 0))
             irs.append(BRANCH("_errNull", "LEQ"))
             irs.append(LDR(scratchReg1, scratchReg1, 0, "Default"))
           }
-          case arrElem: ArrayElem => irs.appendAll(getArrayElemIr(liveMap, arrElem))
+          case arrElem: ArrayElem => {
+            irs.appendAll(getArrayElemIr(liveMap, arrElem))
+            irs.append(LDR(scratchReg1, scratchReg1, 0, "Default"))
+          }
           case IdentValue(s) => {
             irs.appendAll(getIdentValueIr(irs, liveMap, s))
             irs.append(LDR(scratchReg1, scratchReg1, 0, "Default"))
@@ -607,22 +614,26 @@ class codeGenerator(program: Program) {
         lvalue match {
           case insideElem: PairElem => {
             irs.appendAll(getIRForPairElem(insideElem, liveMap))
+
             irs.append(POP(scratchReg1))
+            irs.append(CMPImm(scratchReg1, 0)) // this loads the value... we want to load the pointer
+            irs.append(BRANCH("_errNull", "LEQ"))
+            irs.append(LDR(scratchReg1, scratchReg1, 0, "Default"))
+
             irs.append(CMPImm(scratchReg1, 0))
             irs.append(BRANCH("_errNull", "LEQ"))
             irs.append(LDR(scratchReg1, scratchReg1, WORDSIZE, "Default"))
           }
-          case arrElem: ArrayElem => irs.appendAll(getArrayElemIr(liveMap, arrElem))
+          case arrElem: ArrayElem => {
+            irs.appendAll(getArrayElemIr(liveMap, arrElem))
+            irs.append(LDR(scratchReg1, scratchReg1, WORDSIZE, "Default"))
+          }
           case IdentValue(s) => {
             irs.appendAll(getIdentValueIr(irs, liveMap, s))
             irs.append(LDR(scratchReg1, scratchReg1, WORDSIZE, "Default"))
           }
         }
       }
-
-    irs.append(CMPImm(scratchReg1, 0))
-    irs.append(BRANCH("_errNull", "LEQ"))
-    irs.append(LDR(scratchReg1, scratchReg1, 0, "Default"))
 
     irs.append(PUSH(scratchReg1))
 
@@ -1251,7 +1262,7 @@ class codeGenerator(program: Program) {
 
   def boundsCheck(): List[IR] = {
     val ir = new ListBuffer[IR]
-    ir.append(Data(List("fatal error: array index %d out of bounds"), stringNum))
+    ir.append(Data(List("fatal error: array index %d out of bounds\n"), stringNum))
     ir.append(Label("_boundsCheck"))
     ir.append(StringInit(R0, stringNum))
     stringNum += 1
