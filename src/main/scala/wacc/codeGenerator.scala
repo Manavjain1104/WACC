@@ -531,8 +531,8 @@ class codeGenerator(program: Program) {
     }
   }
 
-  def getArrayElemIr(irs: ListBuffer[IR], liveMap: SymbolTable[Location], arrayElem: ArrayElem): Unit = {
-
+  def getArrayElemIr(liveMap: SymbolTable[Location], arrayElem: ArrayElem): List[IR] = {
+    val irs = ListBuffer.empty[IR]
     val ident = arrayElem.ident
     val exprs = arrayElem.exprs
 
@@ -563,9 +563,11 @@ class codeGenerator(program: Program) {
     irs.append(MOV(scratchReg1, R3, "Default"))
     irs.append(POP(R3))
     irs.append(LDR(scratchReg1, scratchReg1, 0, "Default"))
+    irs.toList
   }
 
-  def getIdentValueIr(irs: ListBuffer[IR], liveMap: SymbolTable[Location], s: String): Unit = {
+  def getIdentValueIr(irs: ListBuffer[IR], liveMap: SymbolTable[Location], s: String): List[IR] = {
+    val irs = ListBuffer.empty[IR]
     irs.appendAll(getIntoTarget(s, scratchReg1, liveMap))
     irs.append(CMPImm(scratchReg1, 0))
     irs.append(BRANCH("_errNull", "LEQ"))
@@ -575,7 +577,7 @@ class codeGenerator(program: Program) {
     } else {
       widgets("print") = collection.mutable.Set("s")
     }
-    irs.append(LDR(scratchReg1, scratchReg1, 0, "Default"))
+    irs.toList
   }
 
   // pushes the pointer to the pair elem on top of the stack
@@ -585,6 +587,7 @@ class codeGenerator(program: Program) {
 
     elem match {
       case Fst(lvalue) =>
+        isFst = true
         lvalue match {
           case insideElem: PairElem => {
             irs.appendAll(getIRForPairElem(insideElem, liveMap))
@@ -593,10 +596,13 @@ class codeGenerator(program: Program) {
             irs.append(BRANCH("_errNull", "LEQ"))
             irs.append(LDR(scratchReg1, scratchReg1, 0, "Default"))
           }
-          case arrElem: ArrayElem => getArrayElemIr(irs, liveMap, arrElem)
-          case IdentValue(s) => getIdentValueIr(irs, liveMap, s)
+          case arrElem: ArrayElem => irs.appendAll(getArrayElemIr(liveMap, arrElem))
+          case IdentValue(s) => {
+            irs.appendAll(getIdentValueIr(irs, liveMap, s))
+            irs.append(LDR(scratchReg1, scratchReg1, 0, "Default"))
+          }
         }
-        isFst = true
+
       case Snd(lvalue) =>
         lvalue match {
           case insideElem: PairElem => {
@@ -606,8 +612,11 @@ class codeGenerator(program: Program) {
             irs.append(BRANCH("_errNull", "LEQ"))
             irs.append(LDR(scratchReg1, scratchReg1, WORDSIZE, "Default"))
           }
-          case arrElem: ArrayElem => getArrayElemIr(irs, liveMap, arrElem)
-          case IdentValue(s) => getIdentValueIr(irs, liveMap, s)
+          case arrElem: ArrayElem => irs.appendAll(getArrayElemIr(liveMap, arrElem))
+          case IdentValue(s) => {
+            irs.appendAll(getIdentValueIr(irs, liveMap, s))
+            irs.append(LDR(scratchReg1, scratchReg1, WORDSIZE, "Default"))
+          }
         }
       }
 
@@ -615,11 +624,6 @@ class codeGenerator(program: Program) {
     irs.append(BRANCH("_errNull", "LEQ"))
     irs.append(LDR(scratchReg1, scratchReg1, 0, "Default"))
 
-//    if (isFst) {
-//      irs.append(LDR(scratchReg1, scratchReg1, 0, "Default"))
-//    } else {
-//      irs.append(LDR(scratchReg1, scratchReg1, WORDSIZE, "Default"))
-//    }
     irs.append(PUSH(scratchReg1))
 
     widgets("errNull") = collection.mutable.Set.empty
@@ -1247,7 +1251,7 @@ class codeGenerator(program: Program) {
 
   def boundsCheck(): List[IR] = {
     val ir = new ListBuffer[IR]
-    ir.append(Data(List("fatal error: array index %d out of bounds\n"), stringNum))
+    ir.append(Data(List("fatal error: array index %d out of bounds"), stringNum))
     ir.append(Label("_boundsCheck"))
     ir.append(StringInit(R0, stringNum))
     stringNum += 1
