@@ -27,7 +27,6 @@ class codeGenerator(program: Program) {
 
   def generateProgIR(): List[IR] = {
     val irs = ListBuffer.empty[IR]
-
     // assembly hygiene
     irs += Global(List("main"))
 
@@ -714,21 +713,21 @@ class codeGenerator(program: Program) {
             //            irs.append(MOV(FP, SP, "Default"))
 
             irs.appendAll(getIntoTarget(ident, R3, liveMap))
-            irs.append(PUSH(R3))
+//            irs.append(PUSH(R3))
 
             val isChar = getSizeFromArrElem(arrElem) == 1
 
             for (expr <- exprs.slice(0, exprs.length - 1)) {
               irs.appendAll(generateExprIR(expr, liveMap))
               irs.append(POP(R10))
-              irs.append(POP(R3))
+//              irs.append(POP(R3))
               if (isChar) {
                 irs.append(BRANCH("_arrLoadB", "L"))
               }
               else {
                 irs.append(BRANCH("_arrLoad", "L"))
               }
-              irs.append(PUSH(R3))
+//              irs.append(PUSH(R3))
             }
 
             // Now R3 contains the required array and last expr is what we want
@@ -736,7 +735,7 @@ class codeGenerator(program: Program) {
             irs.append(POP(R10))
             irs.appendAll(generateRvalue(rvalue, liveMap, localRegs, numParams, lvalue))
             irs.append(POP(scratchReg1))
-            irs.append(POP(R3))
+//            irs.append(POP(R3))
 
             if (isChar) {
               irs.append(BRANCH("_arrStoreB", "L"))
@@ -884,6 +883,8 @@ class codeGenerator(program: Program) {
 
             irs.toList
           }
+
+
           case ar@ArrayElem(ident, exprs) => {
             val irs = ListBuffer.empty[IR]
 
@@ -973,25 +974,77 @@ class codeGenerator(program: Program) {
           }
         }
       }
-//      case Free(e) => {
-//        e match {
-//          case id@IdentExpr(ident) =>  {
-//            val ir = ListBuffer.empty[IR]
-//            val stType = id.st.get.lookupAll(ident).get
-//            stType match {
-//              case ArraySemType => {
-//                // TODO Sub/ call free
-//                ir.toList
-//              }
-//            }
-//          }
-//          case ArrayElem(ident, exprs) => null
-//          case _ => {
-//          assert(false)
-//          return List.empty
-//        }
-//        }
-//      }
+      case Free(e) => {
+        e match {
+          case id@IdentExpr(ident) =>  {
+            val irs = ListBuffer.empty[IR]
+            val stType = id.st.get.lookupAll(ident).get
+            stType match {
+              case ArraySemType(_) => {
+                irs.appendAll(getIntoTarget(ident, scratchReg1, liveMap))
+                irs.append(SUB(scratchReg1, scratchReg1, 4))
+                val saveParams = willClobber(localRegs, liveMap)
+
+                if (saveParams) {
+                  irs.append(PUSHMul(paramRegs))
+                }
+
+                irs.append(MOV(R0, scratchReg1, "Default"))
+                irs.append(BRANCH("free","L"))
+
+                if (saveParams) {
+                  irs.append(POPMul(paramRegs))
+                }
+                irs.toList
+              }
+              case PairSemType(pt1, pt2) => {
+                null // TODO
+              }
+              case _ => throw new RuntimeException
+            }
+          }
+          case arrElem @ ArrayElem(ident, exprs) => {
+            val irs = ListBuffer.empty[IR]
+            irs.append(PUSH(R3)) // save R3
+
+            // place array on stack for first index
+            irs.appendAll(getIntoTarget(ident, R3, liveMap))
+
+            val isChar = getSizeFromArrElem(arrElem) == 1
+
+            for (expr <- exprs) {
+              irs.appendAll(generateExprIR(expr, liveMap))
+              irs.append(POP(R10))
+              irs.append(BRANCH("_arrLoad", "L"))
+            }
+
+            widgets("arrLoad") = collection.mutable.Set.empty
+            widgets("boundsCheck") = collection.mutable.Set.empty
+
+            // right now r3 hold ths array
+            irs.append(SUB(R3, R3, 4))
+
+            val saveParams = willClobber(localRegs, liveMap)
+
+            if (saveParams) {
+              irs.append(PUSHMul(paramRegs))
+            }
+
+            irs.append(MOV(R0, R3, "Default"))
+            irs.append(BRANCH("free","L"))
+
+            if (saveParams) {
+              irs.append(POPMul(paramRegs))
+            }
+
+            irs.append(POP(R3)) // save R3
+            irs.toList
+          }
+          case _ => {
+            throw new RuntimeException
+          }
+        }
+      }
 
       case Return(e) => generateExprIR(e, liveMap).appendedAll(List(POP(R0), POPMul(List(FP, PC))))
       case stat => {
