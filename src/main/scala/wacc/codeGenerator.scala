@@ -280,14 +280,9 @@ class codeGenerator(program: Program) {
       irs.append(PUSHMul(paramRegs))
     }
 
-    val isChar1 = exprIsChar(expr)
-    var size = -1
-    if (isChar1) {
-      size = 1
-    }
-    else {
-      size = WORDSIZE
-    }
+    val isChar = exprIsChar(expr)
+    val size = if (isChar) 1 else WORDSIZE
+
     irs.append(MOVImm(R0, size, "Default"))
     irs.append(BRANCH("malloc", "L"))
     irs.append(MOV(R12, R0, "Default"))
@@ -297,7 +292,11 @@ class codeGenerator(program: Program) {
     }
     irs.appendAll(generateExprIR(expr, liveMap))
     irs.append(POP(scratchReg1))
-    irs.append(STR(scratchReg1, R12, 0,"b"))
+    if (isChar) {
+      irs.append(STR(scratchReg1, R12, 0,"b"))
+    } else {
+      irs.append(STR(scratchReg1, R12, 0,"Default"))
+    }
     irs.append(PUSH(R12))
     irs.toList
   }
@@ -327,14 +326,14 @@ class codeGenerator(program: Program) {
       case elem: PairElem => {
         val irs = ListBuffer.empty[IR]
         irs.appendAll(getIRForPairElem(elem, liveMap))
-        irs.append(POP(scratchReg2))
-        val size = getLvalSize(lval)
-        if (size == 1) {
-          irs.append(LDR(scratchReg1, scratchReg2, 0, "sb"))
-        } else {
-          irs.append(LDR(scratchReg1, scratchReg2, 0, "Default"))
-        }
-        irs.append(PUSH(scratchReg1))
+//        irs.append(POP(scratchReg2))
+//        val size = getLvalSize(lval)
+//        if (size == 1) {
+//          irs.append(LDR(scratchReg1, scratchReg2, 0, "sb"))
+//        } else {
+//          irs.append(LDR(scratchReg1, scratchReg2, 0, "Default"))
+//        }
+//        irs.append(PUSH(scratchReg1))
         irs.toList
       }
       case expr: Expr => generateExprIR(expr, liveMap)
@@ -570,14 +569,14 @@ class codeGenerator(program: Program) {
     irs.appendAll(getIntoTarget(s, scratchReg1, liveMap))
     irs.append(CMPImm(scratchReg1, 0))
     irs.append(BRANCH("_errNull", "LEQ"))
-    irs.append(PUSH(scratchReg1))
     widgets("errNull") = collection.mutable.Set.empty
     if (widgets.contains("print")) {
       widgets("print").add("s")
     } else {
       widgets("print") = collection.mutable.Set("s")
     }
-//    irs.append(LDR(scratchReg2, scratchReg1, 0, "Default"))
+    irs.append(LDR(scratchReg1, scratchReg1, 0, "Default"))
+    irs.append(PUSH(scratchReg1))
   }
 
   // pushes the pointer to the pair elem on top of the stack
@@ -588,7 +587,14 @@ class codeGenerator(program: Program) {
     elem match {
       case Fst(lvalue) =>
         lvalue match {
-          case insideElem: PairElem => irs.appendAll(getIRForPairElem(insideElem, liveMap))
+          case insideElem: PairElem => {
+            irs.appendAll(getIRForPairElem(insideElem, liveMap))
+            irs.append(POP(scratchReg1))
+            irs.append(CMPImm(scratchReg1, 0))
+            irs.append(BRANCH("_errNull", "LEQ"))
+            irs.append(LDR(scratchReg1, scratchReg1, 0, "Default"))
+            irs.append(PUSH(scratchReg1))
+          }
           case arrElem: ArrayElem => getArrayElemIr(irs, liveMap, arrElem)
           case IdentValue(s) => getIdentValueIr(irs, liveMap, s)
         }
@@ -600,22 +606,24 @@ class codeGenerator(program: Program) {
           case IdentValue(s) => getIdentValueIr(irs, liveMap, s)
         }
       }
-      irs.append(POP(scratchReg1))
-      irs.append(CMPImm(scratchReg1, 0))
-      irs.append(BRANCH("_errNull", "LEQ"))
-      widgets("errNull") = collection.mutable.Set.empty
-      if (widgets.contains("print")) {
-        widgets("print").add("s")
-      } else {
-        widgets("print") = collection.mutable.Set("s")
-      }
 
-      if (isFst) {
-        irs.append(LDR(scratchReg2, scratchReg1, 0, "Default"))
-      } else {
-        irs.append(LDR(scratchReg2, scratchReg1, WORDSIZE, "Default"))
-      }
-      irs.append(PUSH(scratchReg2))
+    irs.append(POP(scratchReg1))
+    irs.append(CMPImm(scratchReg1, 0))
+    irs.append(BRANCH("_errNull", "LEQ"))
+
+    if (isFst) {
+      irs.append(LDR(scratchReg1, scratchReg1, 0, "Default"))
+    } else {
+      irs.append(LDR(scratchReg1, scratchReg1, WORDSIZE, "Default"))
+    }
+    irs.append(PUSH(scratchReg1))
+
+    widgets("errNull") = collection.mutable.Set.empty
+    if (widgets.contains("print")) {
+      widgets("print").add("s")
+    } else {
+      widgets("print") = collection.mutable.Set("s")
+    }
 
     irs.toList
   }
