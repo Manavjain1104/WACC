@@ -71,9 +71,10 @@ class codeGenerator(program: Program) {
     if (widgets.contains("boundsCheck")) {
       irs.appendAll(boundsCheck())
     }
+    if (widgets.contains("errDivZero")) irs.appendAll(errDivZero())
     if (widgets.contains("errNull")) irs.appendAll(errNull())
     if (widgets.contains("freepair")) irs.appendAll(freepair)
-
+    if (widgets.contains("errOverflow")) irs.appendAll(errOverflow())
     optimisePushPop(irs.toList)
 //        irs.toList
   }
@@ -166,16 +167,49 @@ class codeGenerator(program: Program) {
 
       case expr: BinopExpr => {
         expr match {
-          case AddExpr(e1, e2) =>
-            generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POP(scratchReg2), POP(scratchReg1), ADDREG(scratchReg1, scratchReg2, scratchReg1), PUSH(scratchReg1))  // TODO : check for overflow
+          case AddExpr(e1, e2) => {
+            val ir = new ListBuffer[IR]
+            ir.appendAll(generateExprIR(e1, liveMap))
+            ir.appendAll(generateExprIR(e2, liveMap))
+            ir.appendAll(List(POP(scratchReg2), POP(scratchReg1), ADDREG(scratchReg1, scratchReg2, scratchReg1), PUSH(scratchReg1)))
+            widgets("errOverflow") = collection.mutable.Set.empty
+            if (widgets.contains("print")) {
+              widgets("print").add("s")
+            } else {
+              widgets("print") = collection.mutable.Set("s")
+            }
+            ir.toList
+          }
           case SubExpr(e1, e2) =>
             generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POP(scratchReg2), POP(scratchReg1), SUBREG(scratchReg1, scratchReg1, scratchReg2), PUSH(scratchReg1))  // TODO : check for overflow
           case MulExpr(e1, e2) =>
             generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POP(scratchReg2), POP(scratchReg1), MUL(scratchReg1, scratchReg2), PUSH(scratchReg1)) // TODO : check for overflow
-          case DivExpr(e1, e2) =>
-            generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POP(scratchReg2), POP(scratchReg1), DIV(scratchReg1, scratchReg2, locals)) // TODO : check for division by zero
-          case ModExpr(e1, e2) =>
-            generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POP(scratchReg2), POP(scratchReg1), MOD(scratchReg1, scratchReg2, locals))
+          case DivExpr(e1, e2) =>{
+            val ir = new ListBuffer[IR]
+            ir.appendAll(generateExprIR(e1, liveMap))
+            ir.appendAll(generateExprIR(e2, liveMap))
+            ir.appendAll(List(POP(scratchReg2), POP(scratchReg1), DIV(scratchReg1, scratchReg2, locals)))
+            widgets("errDivZero") = collection.mutable.Set.empty
+            if (widgets.contains("print")) {
+              widgets("print").add("s")
+            } else {
+              widgets("print") = collection.mutable.Set("s")
+            }
+            ir.toList
+          }
+          case ModExpr(e1, e2) => {
+            val ir = new ListBuffer[IR]
+            ir.appendAll(generateExprIR(e1, liveMap))
+            ir.appendAll(generateExprIR(e2, liveMap))
+            ir.appendAll(List(POP(scratchReg2), POP(scratchReg1), MOD(scratchReg1, scratchReg2, locals)))
+            widgets("errDivZero") = collection.mutable.Set.empty
+            if (widgets.contains("print")) {
+              widgets("print").add("s")
+            } else {
+              widgets("print") = collection.mutable.Set("s")
+            }
+            ir.toList
+          }
           case GTExpr(e1, e2) =>
             generateExprIR(e1, liveMap) ++ generateExprIR(e2, liveMap) ++ List(POP(scratchReg2), POP(scratchReg1), CMP(scratchReg1, scratchReg2), MOVImm(scratchReg1, 1, "GT"), MOVImm(scratchReg1,0, "LE"), PUSH(scratchReg1))
           case LTExpr(e1, e2) =>
@@ -680,6 +714,26 @@ class codeGenerator(program: Program) {
     irs.toList
   }
 
+  def arrElemIsPair(arrElem: ArrayElem): Boolean = {
+    var arrType = arrElem.st.get.lookupAll(arrElem.ident).get
+    var depth = arrElem.exprs.length
+
+    while (depth > 0) {
+      arrType match {
+        case ArraySemType(t) => {
+          arrType = t
+        }
+        case _ => throw new RuntimeException("should not reach here")
+      }
+      depth -= 1
+    }
+
+    arrType match {
+      case _ : PairSemType => true
+      case _ => false
+    }
+  }
+
   def generateStatIR(stat: Statement, liveMap: SymbolTable[Location], localRegs: List[Reg], numParams: Int): List[IR] = {
     stat match {
 
@@ -1040,8 +1094,29 @@ class codeGenerator(program: Program) {
             widgets("arrLoad") = collection.mutable.Set.empty
             widgets("boundsCheck") = collection.mutable.Set.empty
 
-            // TODO handle pair here
+            // handles the case when array elem is pair
+            if (arrElemIsPair(arrElem)) {
+              val saveParams = willClobber(localRegs, liveMap)
+              if (saveParams) {
+                irs.append(PUSHMul(paramRegs.slice(0,3)))
+              }
 
+              irs.append(MOV(R0, R3, "Default"))
+
+              irs.append(BRANCH("_freepair", "L"))
+              widgets("freepair") = collection.mutable.Set.empty
+              widgets("errNull") = collection.mutable.Set.empty
+              if (widgets.contains("print")) {
+                widgets("print").add("s")
+              } else {
+                widgets("print") = collection.mutable.Set("s")
+              }
+
+              if (saveParams) {
+                irs.append(POPMul(paramRegs.slice(0,3)))
+              }
+              return irs.toList
+            }
 
 
             // right now r3 hold ths array
@@ -1474,7 +1549,7 @@ class codeGenerator(program: Program) {
 
   def errOverflow(): List[IR] = {
     val ir = new ListBuffer[IR]
-    ir.append(Data(List("fatal error: integer overflow or underflow occurred\n"),stringNum))
+    ir.append(Data(List("fatal error: integer overflow or underflow occurred\\n"),stringNum))
     ir.append(Label("_errOverflow"))
     ir.append(StringInit(R0, stringNum))
     stringNum += 1
@@ -1486,7 +1561,7 @@ class codeGenerator(program: Program) {
 
   def errDivZero(): List[IR] = {
     val ir = new ListBuffer[IR]
-    ir.append(Data(List("fatal error: division or modulo by zero\n"),stringNum))
+    ir.append(Data(List("fatal error: division or modulo by zero\\n"),stringNum))
     ir.append(Label("_errDivZero"))
     ir.append(StringInit(R0, stringNum))
     stringNum += 1

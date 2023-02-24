@@ -72,7 +72,9 @@ object armPrinter {
 
       case MOVImm(rd, i, flag) => {
         flag match {
-          case "Default" => printInstr("mov ", rd, i)
+          case "Default" => {
+            if (i > 255) ("ldr " + rd + ", =" + i) else printInstr("mov ", rd, i)
+          }
           case "GT"      => printInstr("movgt ", rd, i)
           case "LT"      => printInstr("movlt ", rd, i)
           case "GE"      => printInstr("movge ", rd, i)
@@ -108,7 +110,12 @@ object armPrinter {
         }
 
       }
-      case ADDREG(rd, rn, rm) => printInstr("adds ", List(rd, rn, rm))
+      case ADDREG(rd, rn, rm) => {
+        val sb = new StringBuilder
+        sb.append(printInstr("adds ", List(rd, rn, rm)) + NewLineChar)
+        sb.append(printIR(BRANCH("_errOverflow", "LVS")) + NewLineChar)
+        sb.toString()
+      }
       case SUB(rd, rn, i)     => printInstr("subs ", rd, rn, i)
       case SUBREG(rd, rn, rm) => printInstr("subs ", List(rd, rn, rm))
       case DIV(rd, rs, locals) => {
@@ -118,8 +125,8 @@ object armPrinter {
         }
         sb.append(printIR(MOV(R0, rd, "Default")) + NewLineChar)
         sb.append(printIR(MOV(R1, rs, "Default")) + NewLineChar)
-//        sb.append(printIR(CMPImm(R1, 0)))
-//        sb.append(printIR(BRANCH("_errDivZero", "EQ")))
+        sb.append(printIR(CMPImm(R1, 0)) + NewLineChar)
+        sb.append(printIR(BRANCH("_errDivZero", "EQ")) + NewLineChar)
         sb.append(printIR(BRANCH("__aeabi_idivmod", "L")) + NewLineChar)
         sb.append(printIR(PUSH(R0)) + NewLineChar)
 
@@ -142,8 +149,8 @@ object armPrinter {
         }
         sb.append(printIR(MOV(R0, rd, "Default")) + NewLineChar)
         sb.append(printIR(MOV(R1, rs, "Default")) + NewLineChar)
-//        sb.append(printIR(CMPImm(R1, 0)))
-//        sb.append(printIR(BRANCH("_errDivZero", "EQ")))
+        sb.append(printIR(CMPImm(R1, 0)) + NewLineChar)
+        sb.append(printIR(BRANCH("_errDivZero", "EQ")) + NewLineChar)
         sb.append(printIR(BRANCH("__aeabi_idivmod", "L")) + NewLineChar)
         sb.append(printIR(PUSH(R1)) + NewLineChar)
 
