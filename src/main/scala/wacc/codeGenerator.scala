@@ -1031,8 +1031,6 @@ class codeGenerator(program: Program) {
             // place array on stack for first index
             irs.appendAll(getIntoTarget(ident, R3, liveMap))
 
-            val isChar = getSizeFromArrElem(arrElem) == 1
-
             for (expr <- exprs) {
               irs.appendAll(generateExprIR(expr, liveMap))
               irs.append(POP(R10))
@@ -1041,6 +1039,10 @@ class codeGenerator(program: Program) {
 
             widgets("arrLoad") = collection.mutable.Set.empty
             widgets("boundsCheck") = collection.mutable.Set.empty
+
+            // TODO handle pair here
+
+
 
             // right now r3 hold ths array
             irs.append(SUB(R3, R3, 4))
@@ -1183,14 +1185,15 @@ class codeGenerator(program: Program) {
     ir.append(Data(List(" %c"), stringNum))
     ir.append(Label("_readc"))
     ir.append(PUSH(LR))
-    ir.append(STR(R0, SP, -1, "b"))
-    ir.append(SUB(SP, SP, 1))
+
+    ir.append(STR(R0, SP, -4, "b"))
+    ir.append(SUB(SP, SP, 4))
     ir.append(MOV(R1, SP, "Default"))
     ir.append(StringInit(R0, stringNum))
     stringNum += 1
     ir.append(BRANCH("scanf", "L"))
     ir.append(LDR(R0, SP, 0, "sb"))
-    ir.append(ADD(SP, SP, 1, "Default"))
+    ir.append(ADD(SP, SP, 4, "Default"))
     ir.append(POP(PC))
     ir.toList
   }
