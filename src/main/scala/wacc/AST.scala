@@ -283,9 +283,9 @@ object AST {
 
   object Read extends ParserBridgeSymPos1[LValue, Statement]
 
-  case class Free(e: Expr)(val pos: (Int, Int)) extends Statement
+  case class Free(e: Expr)(var symbolTable: Option[SymbolTable[SemTypes.SemType]], val pos: (Int, Int)) extends Statement
 
-  object Free extends ParserBridgePos1[Expr, Statement]
+  object Free extends ParserBridgeSymPos1[Expr, Statement]
 
   case class Return(e: Expr)(val pos: (Int, Int)) extends Statement
 

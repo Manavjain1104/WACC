@@ -59,7 +59,7 @@ class StatementTests extends AnyFlatSpec {
   behavior of "free statement"
   it should "generate the correct statement" taggedAs(StatementTests, SyntacticTests) in {
     val exp = "free 5"
-    val free_stmt = Free(IntExpr(5)(0,0))(0,0)
+    val free_stmt = Free(IntExpr(5)(0,0))(None,(0,0))
     val repr = statement.parse(exp).get
     assert(repr === free_stmt)
   }

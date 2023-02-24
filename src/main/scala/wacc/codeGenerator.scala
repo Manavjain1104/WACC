@@ -72,6 +72,7 @@ class codeGenerator(program: Program) {
       irs.appendAll(boundsCheck())
     }
     if (widgets.contains("errNull")) irs.appendAll(errNull())
+    if (widgets.contains("freepair")) irs.appendAll(freepair)
 
     optimisePushPop(irs.toList)
 //        irs.toList
@@ -997,8 +998,28 @@ class codeGenerator(program: Program) {
                 }
                 irs.toList
               }
-              case PairSemType(pt1, pt2) => {
-                null // TODO
+              case _ : PairSemType => {
+                val saveParams = willClobber(localRegs, liveMap)
+                val irs = ListBuffer.empty[IR]
+                if (saveParams) {
+                  irs.append(PUSHMul(paramRegs))
+                }
+
+                irs.appendAll(getIntoTarget(ident, R0, liveMap))
+                irs.append(BRANCH("_freepair", "L"))
+                widgets("freepair") = collection.mutable.Set.empty
+                widgets("errNull") = collection.mutable.Set.empty
+                if (widgets.contains("print")) {
+                  widgets("print").add("s")
+                } else {
+                  widgets("print") = collection.mutable.Set("s")
+                }
+
+                if (saveParams) {
+                  irs.append(POPMul(paramRegs))
+                }
+
+                irs.toList
               }
               case _ => throw new RuntimeException
             }
@@ -1482,6 +1503,23 @@ class codeGenerator(program: Program) {
     ir.append(BRANCH("_prints", "L"))
     ir.append(MOVImm(R0, 255, "Default"))
     ir.append(BRANCH("exit", "L"))
+    ir.toList
+  }
+
+  def freepair : List[IR] = {
+    val ir = new ListBuffer[IR]
+    ir.append(Label("_freepair"))
+    ir.append(PUSH(LR))
+    ir.append(MOV(scratchReg1, R0, "Default"))
+    ir.append(CMPImm(scratchReg1, 0))
+    ir.append(BRANCH("_errNull", "LEQ"))
+    ir.append(LDR(R0, scratchReg1, 0, "Default"))
+    ir.append(BRANCH("free", "L" ))
+    ir.append(LDR(R0, scratchReg1, WORDSIZE, "Default"))
+    ir.append(BRANCH("free", "L" ))
+    ir.append(MOV(R0, scratchReg1, "Default"))
+    ir.append(BRANCH("free", "L" ))
+    ir.append(POP(PC))
     ir.toList
   }
 
