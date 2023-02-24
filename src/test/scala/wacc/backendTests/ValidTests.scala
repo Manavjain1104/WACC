@@ -20,6 +20,7 @@ class ValidTests extends AnyFlatSpec {
       dir.listFiles match {
         case null => out.println("exception: dir cannot be listed: " + dir.getPath); List[File]()
         case files => files.toList.sortBy(_.getName).foreach(file => {
+          println(s"processing $file")
           fn(file)
           if (!java.nio.file.Files.isSymbolicLink(file.toPath) && file.isDirectory) listAndProcess(file)
         })
@@ -30,7 +31,7 @@ class ValidTests extends AnyFlatSpec {
 
 
   //want this to get expected output from .wacc file and compare it to output of our compiler.
-  def exampleFn(file: File): Unit = {
+  def exampleFn(file: File) = {
     val source = Source.fromFile(file)
     val lb = ListBuffer[String]()
     val out = ListBuffer[String]()
@@ -69,8 +70,11 @@ class ValidTests extends AnyFlatSpec {
     for (x <- out) {
       s ++= x
     }
-    //val bashOutput = s"./compile $file" !!
-    val bashOutput = "correct\n"
+    val bashOutput = s"./compile $file" !!
+    //val bashOutput = "correct\n"
+
+    //println(s.toString())
+    //println(s"bash output: $bashOutput")
     if (s.toString() != bashOutput) {
       fail("Wrong output")
     }
@@ -78,11 +82,72 @@ class ValidTests extends AnyFlatSpec {
 
   }
 
+  behavior of "valid advanced tests"
+  it should "succeed with exit code 0" in {
+    applyRecursively("src/test/scala/wacc/valid/advanced/", exampleFn)
+  }
 
+  behavior of "valid array tests"
+  it should "succeed with exit code 0" in {
+    applyRecursively("src/test/scala/wacc/valid/array/", exampleFn)
+  }
 
-  behavior of "a valid if test"
+  behavior of "valid basic tests"
+  it should "succeed with exit code 0" in {
+    applyRecursively("src/test/scala/wacc/valid/basic/", exampleFn)
+  }
+
+  behavior of "valid expressions tests"
+  it should "succeed with exit code 0" in {
+    applyRecursively("src/test/scala/wacc/valid/expressions/", exampleFn)
+  }
+
+  behavior of "valid function tests"
+  it should "succeed with exit code 0" in {
+    applyRecursively("src/test/scala/wacc/valid/function/", exampleFn)
+  }
+
+  behavior of "valid if tests"
   it should "succeed with exit code 0" in {
     applyRecursively("src/test/scala/wacc/valid/if/", exampleFn)
+  }
+
+  behavior of "valid IO tests"
+  it should "succeed with exit code 0" in {
+    applyRecursively("src/test/scala/wacc/valid/IO/", exampleFn)
+  }
+
+  behavior of "valid pairs tests"
+  it should "succeed with exit code 0" in {
+    applyRecursively("src/test/scala/wacc/valid/pairs/", exampleFn)
+  }
+
+  behavior of "valid runtimeErr tests"
+  it should "succeed with exit code 0" in {
+    applyRecursively("src/test/scala/wacc/valid/runtimeErr/", exampleFn)
+  }
+
+  behavior of "valid scope tests"
+  it should "succeed with exit code 0" in {
+    applyRecursively("src/test/scala/wacc/valid/scope/", exampleFn)
+  }
+
+  behavior of "valid sequence tests"
+  it should "succeed with exit code 0" in {
+    applyRecursively("src/test/scala/wacc/valid/sequence/", exampleFn)
+  }
+
+  behavior of "valid variables tests"
+  it should "succeed with exit code 0" in {
+    applyRecursively("src/test/scala/wacc/valid/variables/", exampleFn)
+  }
+
+  behavior of "valid while tests"
+  it should "succeed with exit code 0" in {
+    applyRecursively("src/test/scala/wacc/valid/while/", exampleFn)
+  }
+
+
     //    val f = "src/test/scala/wacc/valid/if/if1.wacc"
     //
     //    val s = exampleFn(new File(f))
@@ -172,7 +237,7 @@ class ValidTests extends AnyFlatSpec {
 
 
 
-  }
+
 
 
 
