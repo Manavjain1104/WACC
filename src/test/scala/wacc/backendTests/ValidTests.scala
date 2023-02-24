@@ -70,11 +70,11 @@ class ValidTests extends AnyFlatSpec {
     for (x <- out) {
       s ++= x
     }
-    val bashOutput = s"./compile $file" !!
+    val bashOutput = s"./compile_and_run $file" !!
     //val bashOutput = "correct\n"
 
-    //println(s.toString())
-    //println(s"bash output: $bashOutput")
+    println(s.toString())
+    println(s"bash output: $bashOutput")
     if (s.toString() != bashOutput) {
       fail("Wrong output")
     }
