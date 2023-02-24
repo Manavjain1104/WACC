@@ -1185,14 +1185,13 @@ class codeGenerator(program: Program) {
     ir.append(Data(List(" %c"), stringNum))
     ir.append(Label("_readc"))
     ir.append(PUSH(LR))
-
-    ir.append(STR(R0, SP, -4, "b"))
+    ir.append(STR(R0, SP, -4, "Default"))
     ir.append(SUB(SP, SP, 4))
     ir.append(MOV(R1, SP, "Default"))
     ir.append(StringInit(R0, stringNum))
     stringNum += 1
     ir.append(BRANCH("scanf", "L"))
-    ir.append(LDR(R0, SP, 0, "sb"))
+    ir.append(LDR(R0, SP, 0, "Default"))
     ir.append(ADD(SP, SP, 4, "Default"))
     ir.append(POP(PC))
     ir.toList
