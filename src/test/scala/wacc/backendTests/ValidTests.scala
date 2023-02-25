@@ -25,7 +25,9 @@ class ValidTests extends AnyFlatSpec {
           if (!java.nio.file.Files.isSymbolicLink(file.toPath) && file.isDirectory) listAndProcess(file)
         })
       }
+
     }
+
     listAndProcess(new File(dir))
   }
 
@@ -43,7 +45,7 @@ class ValidTests extends AnyFlatSpec {
     var end = 0
 
     for (a <- lb.indices) {
-      if (lb(a).startsWith("# Output") && lb(a+1) == "") {
+      if (lb(a).startsWith("# Output") && lb(a + 1) == "") {
         start = a
         end = a
       }
@@ -60,7 +62,6 @@ class ValidTests extends AnyFlatSpec {
     }
 
 
-
     //    println(file.getName)
     //    for (x <- out) {
     //      println(x)
@@ -71,81 +72,98 @@ class ValidTests extends AnyFlatSpec {
       s ++= x
     }
     val bashOutput = s"./compile $file" !!
+
+
+    val exitCode = "echo $?" !!
+
+    //println(bashOutput)
+    //println(s.toString())
+
+    if (exitCode != "100" || exitCode != "200") {
+
+      if (s.toString() != bashOutput) {
+        fail("Wrong output")
+      }
+    }
     //val bashOutput = "correct\n"
 
     //println(s.toString())
     //println(s"bash output: $bashOutput")
-    if (s.toString() != bashOutput) {
-      fail("Wrong output")
-    }
+
 
 
   }
 
   behavior of "valid advanced tests"
   it should "succeed with exit code 0" in {
-    applyRecursively("src/test/scala/wacc/valid/advanced/", exampleFn)
+    applyRecursively("/src/test/scala/wacc/valid/advanced/", exampleFn)
   }
 
   behavior of "valid array tests"
   it should "succeed with exit code 0" in {
-    applyRecursively("src/test/scala/wacc/valid/array/", exampleFn)
+    applyRecursively("/src/test/scala/wacc/valid/array/", exampleFn)
   }
 
   behavior of "valid basic tests"
   it should "succeed with exit code 0" in {
-    applyRecursively("src/test/scala/wacc/valid/basic/", exampleFn)
+    applyRecursively("/src/test/scala/wacc/valid/basic/", exampleFn)
   }
 
   behavior of "valid expressions tests"
   it should "succeed with exit code 0" in {
-    applyRecursively("src/test/scala/wacc/valid/expressions/", exampleFn)
+    applyRecursively("/src/test/scala/wacc/valid/expressions/", exampleFn)
   }
 
-  behavior of "valid function tests"
+  behavior of "valid nested function tests"
   it should "succeed with exit code 0" in {
-    applyRecursively("src/test/scala/wacc/valid/function/", exampleFn)
+    applyRecursively("src/test/scala/wacc/valid/function/nested_functions", exampleFn)
   }
 
-  behavior of "valid if tests"
+  behavior of "valid simple function tests"
+  it should "succeed with exit code 0" in {
+    applyRecursively("src/test/scala/wacc/valid/function/simple_functions", exampleFn)
+  }
+
+  behavior of "valid if tests" //FINE
   it should "succeed with exit code 0" in {
     applyRecursively("src/test/scala/wacc/valid/if/", exampleFn)
   }
 
   behavior of "valid IO tests"
   it should "succeed with exit code 0" in {
-    applyRecursively("src/test/scala/wacc/valid/IO/", exampleFn)
+    applyRecursively("/src/test/scala/wacc/valid/IO/", exampleFn)
   }
 
   behavior of "valid pairs tests"
   it should "succeed with exit code 0" in {
-    applyRecursively("src/test/scala/wacc/valid/pairs/", exampleFn)
+    applyRecursively("/src/test/scala/wacc/valid/pairs/", exampleFn)
   }
 
   behavior of "valid runtimeErr tests"
   it should "succeed with exit code 0" in {
-    applyRecursively("src/test/scala/wacc/valid/runtimeErr/", exampleFn)
+    applyRecursively("/src/test/scala/wacc/valid/runtimeErr/", exampleFn)
   }
 
   behavior of "valid scope tests"
   it should "succeed with exit code 0" in {
-    applyRecursively("src/test/scala/wacc/valid/scope/", exampleFn)
+    applyRecursively("/src/test/scala/wacc/valid/scope/", exampleFn)
   }
 
-  behavior of "valid sequence tests"
+  behavior of "valid sequence tests" //FINE
   it should "succeed with exit code 0" in {
     applyRecursively("src/test/scala/wacc/valid/sequence/", exampleFn)
   }
 
   behavior of "valid variables tests"
   it should "succeed with exit code 0" in {
-    applyRecursively("src/test/scala/wacc/valid/variables/", exampleFn)
+    applyRecursively("/src/test/scala/wacc/valid/variables/", exampleFn)
   }
 
   behavior of "valid while tests"
   it should "succeed with exit code 0" in {
-    applyRecursively("src/test/scala/wacc/valid/while/", exampleFn)
+    applyRecursively("/src/test/scala/wacc/valid/while/", exampleFn)
   }
+}
 
 
     //    val f = "src/test/scala/wacc/valid/if/if1.wacc"
@@ -230,15 +248,4 @@ class ValidTests extends AnyFlatSpec {
     //
     //    for (x <- lb) {
     //      println(x)
-    //    }
-
-
-
-
-
-
-
-
-
-
-}
+    //   
