@@ -34,9 +34,9 @@ object IR {
   case class ADDREG(rd: Reg, rn: Reg, rm: Reg)            extends IR
   case class SUB(rd: Reg, rn: Reg, i: Int )               extends IR
   case class SUBREG(rd: Reg, rn: Reg, rm: Reg)            extends IR
-  case class DIV(rd : Reg, rs : Reg, locals : Int)        extends IR
+  case class DIV(rd : Reg, rs : Reg, willClobber: Boolean)        extends IR
   case class MUL(rd : Reg, rs : Reg)                      extends IR
-  case class MOD(rd : Reg, rs : Reg, locals : Int)        extends IR
+  case class MOD(rd : Reg, rs : Reg, willClobber: Boolean)        extends IR
 
   // Comparison Binary Operators
   case class CMP(rd: Reg, rn: Reg)   extends IR

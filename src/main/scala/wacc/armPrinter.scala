@@ -47,7 +47,7 @@ object armPrinter {
           case "NE"      => "bne " + label
           case "EQ"      => "beq " + label
           case "L"       => "bl "  + label
-          case "LEQ"       => "bleq "  + label
+          case "LEQ"     => "bleq "  + label
           case "LNE"     => "blne " + label
           case "LLT"     => "bllt " + label
           case "LGE"     => "blge " + label
@@ -73,7 +73,7 @@ object armPrinter {
       case MOVImm(rd, i, flag) => {
         flag match {
           case "Default" => {
-            if (i > 255) ("ldr " + rd + ", =" + i) else printInstr("mov ", rd, i)
+            if (i > 127 || i < -128) ("ldr " + rd + ", =" + i) else printInstr("mov ", rd, i)
           }
           case "GT"      => printInstr("movgt ", rd, i)
           case "LT"      => printInstr("movlt ", rd, i)
@@ -92,7 +92,12 @@ object armPrinter {
       case POP(reg)      => "pop {" + reg + "}"
 
       // Unary Operators
-      case NEG(rd, rs) => printInstr("rsbs ", rd, rs, 0)
+      case NEG(rd, rs) => {
+        val sb = new StringBuilder()
+        sb.append(printInstr("rsbs ", rd, rs, 0) + NewLineChar)
+        sb.append(printIR(BRANCH("_errOverflow", "LVS")) + NewLineChar)
+        sb.toString()
+      }
       case NOT(rd, rs) => {
         val sb = new StringBuilder()
         sb.append(printIR(CMPImm(rs, 0)) + NewLineChar)
@@ -105,10 +110,14 @@ object armPrinter {
       // Arithmetic Binary Operators
       case ADD(rd, rn, i, flag)     => {
         flag match {
-          case "s" => printInstr("adds ", rd, rn, i)
+          case "s" => {
+            val sb = new StringBuilder
+            sb.append(printInstr("adds ", rd, rn, i) + NewLineChar)
+            sb.append(printIR(BRANCH("_errOverflow", "LVS")) + NewLineChar)
+            sb.toString()
+          }
           case _ => printInstr("add ", rd, rn, i)
         }
-
       }
       case ADDREG(rd, rn, rm) => {
         val sb = new StringBuilder
@@ -116,11 +125,21 @@ object armPrinter {
         sb.append(printIR(BRANCH("_errOverflow", "LVS")) + NewLineChar)
         sb.toString()
       }
-      case SUB(rd, rn, i)     => printInstr("subs ", rd, rn, i)
-      case SUBREG(rd, rn, rm) => printInstr("subs ", List(rd, rn, rm))
-      case DIV(rd, rs, locals) => {
+      case SUB(rd, rn, i)     => {
         val sb = new StringBuilder
-        if (locals > 4) {
+        sb.append(printInstr("subs ", rd, rn, i) + NewLineChar)
+        sb.append(printIR(BRANCH("_errOverflow", "LVS")) + NewLineChar)
+        sb.toString()
+      }
+      case SUBREG(rd, rn, rm) => {
+        val sb = new StringBuilder
+        sb.append(printInstr("subs ", List(rd, rn, rm)) + NewLineChar)
+        sb.append(printIR(BRANCH("_errOverflow", "LVS")) + NewLineChar)
+        sb.toString()
+      }
+      case DIV(rd, rs, willClobber) => {
+        val sb = new StringBuilder
+        if (willClobber) {
           sb.append(printIR(PUSHMul(List(R0, R1))) + NewLineChar)
         }
         sb.append(printIR(MOV(R0, rd, "Default")) + NewLineChar)
@@ -130,21 +149,22 @@ object armPrinter {
         sb.append(printIR(BRANCH("__aeabi_idivmod", "L")) + NewLineChar)
         sb.append(printIR(PUSH(R0)) + NewLineChar)
 
-        if (locals > 4) {
+        if (willClobber) {
           sb.append(printIR(POPMul(List(R0, R1))))
         }
-
         sb.toString()
       }
+
       case MUL(rd, rs) => {
         val sb = new StringBuilder()
-        sb.append(printInstr("smull ", List(rd, rs, rd, rs)) ) // rd - low, rs - high
-//        sb.append(printIR(CMP(rs, rd)) + "asr #31\n")
+        sb.append(printInstr("smull ", List(rd, rs, rd, rs)) + NewLineChar ) // rd - low, rs - high
+        sb.append(printIR(CMP(rs, rd)) + ", asr #31" + NewLineChar)
+        sb.append(printIR(BRANCH("_errOverflow", "LNE")) + NewLineChar)
         sb.toString()
       }
-      case MOD(rd, rs, locals) => {
+      case MOD(rd, rs, willClobber) => {
         val sb = new StringBuilder()
-        if (locals > 4) {
+        if (willClobber) {
           sb.append(printIR(PUSHMul(List(R0, R1))) + NewLineChar)
         }
         sb.append(printIR(MOV(R0, rd, "Default")) + NewLineChar)
@@ -154,7 +174,7 @@ object armPrinter {
         sb.append(printIR(BRANCH("__aeabi_idivmod", "L")) + NewLineChar)
         sb.append(printIR(PUSH(R1)) + NewLineChar)
 
-        if (locals > 4) {
+        if (willClobber) {
           sb.append(printIR(POPMul(List(R0, R1))))
         }
 
