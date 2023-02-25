@@ -1,4 +1,3 @@
-package wacc.backendTests
 
 import org.scalatest.Tag
 import org.scalatest.flatspec.AnyFlatSpec
@@ -71,17 +70,40 @@ class ValidTests extends AnyFlatSpec {
     for (x <- out) {
       s ++= x
     }
-    val bashOutput = s"./compile $file" !!
+    var bashOutput = s"./compile_and_run $file" !!
 
 
     val exitCode = "echo $?" !!
 
     //println(bashOutput)
+
+    /*
+    for (line <- s.toString().split("\n")) {
+      if (line.contains("#addrs#")) {
+        println(line)
+        val l = line.replaceAll("#addrs#", "0x")
+
+      }
+    }
+     */
+
+    /*var counter = 0
+    for (char <- s.toString()) {
+      if (char == '#') {
+        s.replace(counter, counter + 8, "0x...")
+      }
+      counter = counter + 1
+    }*/
+
+    val bashOutputNoAddr = bashOutput.replaceAll("\\b0x\\w*", "#addrs#")
+
+    //println(bashOutputNoAddr)
     //println(s.toString())
+
 
     if (exitCode != "100" || exitCode != "200") {
 
-      if (s.toString() != bashOutput) {
+      if (s.toString() != bashOutputNoAddr) {
         fail("Wrong output")
       }
     }
@@ -96,22 +118,27 @@ class ValidTests extends AnyFlatSpec {
 
   behavior of "valid advanced tests"
   it should "succeed with exit code 0" in {
-    applyRecursively("/src/test/scala/wacc/valid/advanced/", exampleFn)
+    applyRecursively("src/test/scala/wacc/valid/advanced/", exampleFn)
   }
 
-  behavior of "valid array tests"
+  behavior of "valid array tests" //FINE
   it should "succeed with exit code 0" in {
-    applyRecursively("/src/test/scala/wacc/valid/array/", exampleFn)
+    applyRecursively("src/test/scala/wacc/valid/array/", exampleFn)
   }
 
-  behavior of "valid basic tests"
+  behavior of "valid basic exit tests" //FINE
   it should "succeed with exit code 0" in {
-    applyRecursively("/src/test/scala/wacc/valid/basic/", exampleFn)
+    applyRecursively("src/test/scala/wacc/valid/basic/exit", exampleFn)
   }
 
-  behavior of "valid expressions tests"
+  behavior of "valid basic skip tests" //FINE
   it should "succeed with exit code 0" in {
-    applyRecursively("/src/test/scala/wacc/valid/expressions/", exampleFn)
+    applyRecursively("src/test/scala/wacc/valid/basic/skip", exampleFn)
+  }
+
+  behavior of "valid expressions tests" //FINE
+  it should "succeed with exit code 0" in {
+    applyRecursively("src/test/scala/wacc/valid/expressions/", exampleFn)
   }
 
   behavior of "valid nested function tests"
@@ -119,7 +146,7 @@ class ValidTests extends AnyFlatSpec {
     applyRecursively("src/test/scala/wacc/valid/function/nested_functions", exampleFn)
   }
 
-  behavior of "valid simple function tests"
+  behavior of "valid simple function tests" //FINE
   it should "succeed with exit code 0" in {
     applyRecursively("src/test/scala/wacc/valid/function/simple_functions", exampleFn)
   }
@@ -131,22 +158,37 @@ class ValidTests extends AnyFlatSpec {
 
   behavior of "valid IO tests"
   it should "succeed with exit code 0" in {
-    applyRecursively("/src/test/scala/wacc/valid/IO/", exampleFn)
+    applyRecursively("src/test/scala/wacc/valid/IO/", exampleFn)
   }
 
   behavior of "valid pairs tests"
   it should "succeed with exit code 0" in {
-    applyRecursively("/src/test/scala/wacc/valid/pairs/", exampleFn)
+    applyRecursively("src/test/scala/wacc/valid/pairs/", exampleFn)
   }
 
-  behavior of "valid runtimeErr tests"
+  behavior of "valid runtimeErr arrayOutOfBounds tests"
   it should "succeed with exit code 0" in {
-    applyRecursively("/src/test/scala/wacc/valid/runtimeErr/", exampleFn)
+    applyRecursively("src/test/scala/wacc/valid/runtimeErr/arrayOutOfBounds", exampleFn)
   }
 
-  behavior of "valid scope tests"
+  behavior of "valid runtimeErr divideByZero tests"
   it should "succeed with exit code 0" in {
-    applyRecursively("/src/test/scala/wacc/valid/scope/", exampleFn)
+    applyRecursively("src/test/scala/wacc/valid/runtimeErr/divideByZero", exampleFn)
+  }
+
+  behavior of "valid runtimeErr integerOverflow tests"
+  it should "succeed with exit code 0" in {
+    applyRecursively("src/test/scala/wacc/valid/runtimeErr/integerOverflow", exampleFn)
+  }
+
+  behavior of "valid runtimeErr nullDereference tests"
+  it should "succeed with exit code 0" in {
+    applyRecursively("src/test/scala/wacc/valid/runtimeErr/nullDereference", exampleFn)
+  }
+
+  behavior of "valid scope tests" //FINE
+  it should "succeed with exit code 0" in {
+    applyRecursively("src/test/scala/wacc/valid/scope/", exampleFn)
   }
 
   behavior of "valid sequence tests" //FINE
@@ -154,98 +196,18 @@ class ValidTests extends AnyFlatSpec {
     applyRecursively("src/test/scala/wacc/valid/sequence/", exampleFn)
   }
 
-  behavior of "valid variables tests"
+  behavior of "valid variables tests" //FINE
   it should "succeed with exit code 0" in {
-    applyRecursively("/src/test/scala/wacc/valid/variables/", exampleFn)
+    applyRecursively("src/test/scala/wacc/valid/variables/", exampleFn)
   }
 
   behavior of "valid while tests"
   it should "succeed with exit code 0" in {
-    applyRecursively("/src/test/scala/wacc/valid/while/", exampleFn)
+    applyRecursively("src/test/scala/wacc/valid/while/", exampleFn)
   }
 }
 
 
-    //    val f = "src/test/scala/wacc/valid/if/if1.wacc"
-    //
-    //    val s = exampleFn(new File(f))
-
-    //    println(s)
-//    val directory = new File("src/test/scala/wacc/valid/if/")
-//
-//
-//    if (directory.exists && directory.isDirectory) {
-//      for (file <- directory.listFiles()) {
-//        //val file = new File("/src/test/scala/wacc/valid/if/if6.wacc")
-//        val expectedOutput = exampleFn(file)
-//        println(expectedOutput)
-        //val bashOutput = s"./compile $file" !!
-
-        //println(file)
-        //println(expectedOutput)
-        //        println(s.toString)
-
-        //assert(expectedOutput == bashOutput)
-//      }
-//    }
+//    val f = "src/test/scala/wacc/valid/if/if1.wacc"    //    //    val s = exampleFn(new File(f))    //    println(s)//    val directory = new File("src/test/scala/wacc/valid/if/")//////    if (directory.exists && directory.isDirectory) {//      for (file <- directory.listFiles()) {//        //val file = new File("/src/test/scala/wacc/valid/if/if6.wacc")//        val expectedOutput = exampleFn(file)//        println(expectedOutput)        //val bashOutput = s"./compile $file" !!        //println(file)        //println(expectedOutput)        //        println(s.toString)        //assert(expectedOutput == bashOutput)//      }//    }    //    val source = Source.fromFile("src/test/scala/wacc/valid/advanced/binarySortTree.wacc")    ////    ////    val stringBuilder = new StringBuilder("")    //    val lb = ListBuffer[String]()    //    val out = ListBuffer[String]()    //    //    for (line <- source.getLines())    //      lb.append(line)    //    source.close()    //    var start = 0    //    var end = 0    //    //    for (a <- lb.indices) {    //      if (lb(a).startsWith("# Output")) {    //        start = a + 1    //      }    //      if (lb(a) == "#") {    //        end = a    //      }    //    }    //    for (a <- start until end) {    //      out.append(lb(a).drop(2))    //    }    //    for (x <- out) {    //      println(x)    //    }    //    lb.sliding(2).foreach(println)    //    println(lb)    //    var flag = false    //    //    val ite = io.Source.fromFile("src/test/scala/wacc/valid/if/ifTrue.wacc").getLines()    //    //    while (ite.hasNext) {    //      if (ite.next().startsWith("# Output:")) {    //        flag = true    //      }    //      ite.next()    //      if (flag && ite.hasNext) {    //        lb.append(ite.next())    //      }    //      if (ite.hasNext && ite.next() == "#") {    //        flag = false    //      }    //    //    }    //    //    for (x <- lb) {    //      println(x)    //
 
 
-
-
-
-
-
-    //    val source = Source.fromFile("src/test/scala/wacc/valid/advanced/binarySortTree.wacc")
-    ////
-    ////    val stringBuilder = new StringBuilder("")
-    //    val lb = ListBuffer[String]()
-    //    val out = ListBuffer[String]()
-    //
-    //    for (line <- source.getLines())
-    //      lb.append(line)
-    //    source.close()
-    //    var start = 0
-    //    var end = 0
-    //
-    //    for (a <- lb.indices) {
-    //      if (lb(a).startsWith("# Output")) {
-    //        start = a + 1
-    //      }
-    //      if (lb(a) == "#") {
-    //        end = a
-    //      }
-    //    }
-    //    for (a <- start until end) {
-    //      out.append(lb(a).drop(2))
-    //    }
-    //    for (x <- out) {
-    //      println(x)
-    //    }
-
-    //    lb.sliding(2).foreach(println)
-
-
-
-
-    //    println(lb)
-    //    var flag = false
-    //
-    //    val ite = io.Source.fromFile("src/test/scala/wacc/valid/if/ifTrue.wacc").getLines()
-    //
-    //    while (ite.hasNext) {
-    //      if (ite.next().startsWith("# Output:")) {
-    //        flag = true
-    //      }
-    //      ite.next()
-    //      if (flag && ite.hasNext) {
-    //        lb.append(ite.next())
-    //      }
-    //      if (ite.hasNext && ite.next() == "#") {
-    //        flag = false
-    //      }
-    //
-    //    }
-    //
-    //    for (x <- lb) {
-    //      println(x)
-    //   
