@@ -48,7 +48,8 @@ object Main {
               if (args.length > 1) {
                 val test = args(1)
                 if (test == "check") {
-                  println("returning 0")
+
+                  //println("recheckturning 0")
                   return
                 }
               }
