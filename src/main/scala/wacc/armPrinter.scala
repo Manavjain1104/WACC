@@ -7,17 +7,17 @@ object armPrinter {
   private val NewLineChar = "\n"
 
   def print(cg : codeGenerator) : String = {
-     val sb = new StringBuilder()
-     cg.generateProgIR().foreach(ir => sb.append(printIR(ir) + NewLineChar))
-     sb.toString()
+    val sb = new StringBuilder()
+    cg.generateProgIR().foreach(ir => sb.append(printIR(ir) + NewLineChar))
+    sb.toString()
   }
 
   def printInstr(Instr : String, regs : List[Reg]) : String = {
     Instr + regs.map(reg => reg.toString).mkString(", ")
   }
   def printInstr(Instr : String, reg1 : Reg, IntVal : Int) : String = {
-       Instr + reg1 + ", #" + IntVal
-     }
+    Instr + reg1 + ", #" + IntVal
+  }
   def printInstr(Instr : String, reg1 : Reg, reg2 : Reg,  IntVal : Int) : String = {
     Instr + reg1 + ", " + reg2 +", #" + IntVal
   }
@@ -110,11 +110,7 @@ object armPrinter {
       // Arithmetic Binary Operators
       case ADD(rd, rn, i, flag)     => {
         flag match {
-          case "s" => {
-            val sb = new StringBuilder
-            sb.append(printInstr("adds ", rd, rn, i) + NewLineChar)
-            sb.toString()
-          }
+          case "s" => printInstr("adds ", rd, rn, i) + NewLineChar
           case _ => printInstr("add ", rd, rn, i)
         }
       }
@@ -143,13 +139,14 @@ object armPrinter {
         sb.append(printIR(MOV(R0, rd, "Default")) + NewLineChar)
         sb.append(printIR(MOV(R1, rs, "Default")) + NewLineChar)
         sb.append(printIR(CMPImm(R1, 0)) + NewLineChar)
-        sb.append(printIR(BRANCH("_errDivZero", "EQ")) + NewLineChar)
+        sb.append(printIR(BRANCH("_errDivZero", "LEQ")) + NewLineChar)
         sb.append(printIR(BRANCH("__aeabi_idivmod", "L")) + NewLineChar)
-        sb.append(printIR(PUSH(R0)) + NewLineChar)
-
+        sb.append(printIR(MOV(scratchReg1, R0, "Default")) + NewLineChar)
         if (willClobber) {
-          sb.append(printIR(POPMul(List(R0, R1))))
+          sb.append(printIR(POPMul(List(R0, R1))) + NewLineChar)
+
         }
+        sb.append(printIR(PUSH(scratchReg1)))
         sb.toString()
       }
 
@@ -168,14 +165,13 @@ object armPrinter {
         sb.append(printIR(MOV(R0, rd, "Default")) + NewLineChar)
         sb.append(printIR(MOV(R1, rs, "Default")) + NewLineChar)
         sb.append(printIR(CMPImm(R1, 0)) + NewLineChar)
-        sb.append(printIR(BRANCH("_errDivZero", "EQ")) + NewLineChar)
+        sb.append(printIR(BRANCH("_errDivZero", "LEQ")) + NewLineChar)
         sb.append(printIR(BRANCH("__aeabi_idivmod", "L")) + NewLineChar)
-        sb.append(printIR(PUSH(R1)) + NewLineChar)
-
+        sb.append(printIR(MOV(scratchReg1, R1, "Default")) + NewLineChar)
         if (willClobber) {
-          sb.append(printIR(POPMul(List(R0, R1))))
+          sb.append(printIR(POPMul(List(R0, R1))) + NewLineChar)
         }
-
+        sb.append(printIR(PUSH(scratchReg1)))
         sb.toString()
       }
 
@@ -225,7 +221,7 @@ object armPrinter {
 
       }
       case STOREINDEX(rd : Reg, rb : Reg, ri : Reg, elemSize : Int)
-        => "str " + rd +", [" + rb + ", " + ri + ", lsl #" + elemSize + "]"
+      => "str " + rd +", [" + rb + ", " + ri + ", lsl #" + elemSize + "]"
       case STOREINDEXB(rd: Reg, rb: Reg, ri: Reg)
       => "strb " + rd + ", ["+ rb + ", " + ri + "]"
       case StringInit(reg, stringNum) => "ldr " + reg + ", " + "=.L.str" + stringNum

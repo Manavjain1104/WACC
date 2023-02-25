@@ -21,8 +21,8 @@ class codeGenerator(program: Program) {
 
   /*
   TODO - Back End
-  1) Free
-  ) Overflow, Div by 0, IntExpr large Int
+  1) Make Widget trait
+  2) Make Flag heirarchy trait - one type ne, eq and all other type index
    */
 
   def generateProgIR(): List[IR] = {

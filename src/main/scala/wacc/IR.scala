@@ -3,6 +3,13 @@ package wacc
 import wacc.Registers.Reg
 
 object IR {
+
+  // various flags that can be given to IR
+  sealed trait Flag
+  case object DEFAULT extends Flag
+
+
+
   sealed trait IR
 
   // Top level statements
@@ -54,7 +61,6 @@ object IR {
   case class STOREINDEX(rd: Reg, rb: Reg, ri: Reg, elemSize: Int) extends IR
   case class STOREINDEXB(rs: Reg, rb: Reg, ri: Reg) extends IR
   case class StringInit(reg: Reg, stringNum: Int)  extends IR
-
 }
 
 object Registers {
