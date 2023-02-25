@@ -36,6 +36,7 @@ class ValidTests extends AnyFlatSpec {
     val source = Source.fromFile(file)
     val lb = ListBuffer[String]()
     val out = ListBuffer[String]()
+    val input = ListBuffer[String]()
 
     for (line <- source.getLines())
       lb.append(line)
@@ -60,6 +61,18 @@ class ValidTests extends AnyFlatSpec {
       out.append("\n")
     }
 
+    var inputLine = 0
+
+    for (a <- lb.indices) {
+      if (lb(a).startsWith("# Input")) {
+        inputLine = a
+      }
+    }
+    input.append(lb(inputLine).drop(9))
+
+
+
+
 
     //    println(file.getName)
     //    for (x <- out) {
@@ -70,7 +83,15 @@ class ValidTests extends AnyFlatSpec {
     for (x <- out) {
       s ++= x
     }
-    var bashOutput = s"./compile_and_run $file" !!
+
+    val in = new StringBuilder()
+    for (x <- input) {
+      in ++= x
+    }
+
+
+
+    var bashOutput = s"./compile_and_run $file ${in}" !!
 
 
     val exitCode = "echo $?" !!
@@ -97,8 +118,10 @@ class ValidTests extends AnyFlatSpec {
 
     val bashOutputNoAddr = bashOutput.replaceAll("\\b0x\\w*", "#addrs#")
 
-    //println(bashOutputNoAddr)
-    //println(s.toString())
+    println(bashOutputNoAddr)
+    println(s.toString())
+
+
 
 
     if (exitCode != "100" || exitCode != "200") {
@@ -161,7 +184,17 @@ class ValidTests extends AnyFlatSpec {
     applyRecursively("src/test/scala/wacc/valid/IO/", exampleFn)
   }
 
-  behavior of "valid pairs tests"
+  behavior of "valid IO print tests"
+  it should "succeed with exit code 0" in {
+    applyRecursively("src/test/scala/wacc/valid/IO/print", exampleFn)
+  }
+
+  behavior of "valid IO read tests"
+  it should "succeed with exit code 0" in {
+    applyRecursively("src/test/scala/wacc/valid/IO/read", exampleFn)
+  }
+
+  behavior of "valid pairs tests" //FINE
   it should "succeed with exit code 0" in {
     applyRecursively("src/test/scala/wacc/valid/pairs/", exampleFn)
   }
@@ -208,6 +241,5 @@ class ValidTests extends AnyFlatSpec {
 }
 
 
-//    val f = "src/test/scala/wacc/valid/if/if1.wacc"    //    //    val s = exampleFn(new File(f))    //    println(s)//    val directory = new File("src/test/scala/wacc/valid/if/")//////    if (directory.exists && directory.isDirectory) {//      for (file <- directory.listFiles()) {//        //val file = new File("/src/test/scala/wacc/valid/if/if6.wacc")//        val expectedOutput = exampleFn(file)//        println(expectedOutput)        //val bashOutput = s"./compile $file" !!        //println(file)        //println(expectedOutput)        //        println(s.toString)        //assert(expectedOutput == bashOutput)//      }//    }    //    val source = Source.fromFile("src/test/scala/wacc/valid/advanced/binarySortTree.wacc")    ////    ////    val stringBuilder = new StringBuilder("")    //    val lb = ListBuffer[String]()    //    val out = ListBuffer[String]()    //    //    for (line <- source.getLines())    //      lb.append(line)    //    source.close()    //    var start = 0    //    var end = 0    //    //    for (a <- lb.indices) {    //      if (lb(a).startsWith("# Output")) {    //        start = a + 1    //      }    //      if (lb(a) == "#") {    //        end = a    //      }    //    }    //    for (a <- start until end) {    //      out.append(lb(a).drop(2))    //    }    //    for (x <- out) {    //      println(x)    //    }    //    lb.sliding(2).foreach(println)    //    println(lb)    //    var flag = false    //    //    val ite = io.Source.fromFile("src/test/scala/wacc/valid/if/ifTrue.wacc").getLines()    //    //    while (ite.hasNext) {    //      if (ite.next().startsWith("# Output:")) {    //        flag = true    //      }    //      ite.next()    //      if (flag && ite.hasNext) {    //        lb.append(ite.next())    //      }    //      if (ite.hasNext && ite.next() == "#") {    //        flag = false    //      }    //    //    }    //    //    for (x <- lb) {    //      println(x)    //
 
 
