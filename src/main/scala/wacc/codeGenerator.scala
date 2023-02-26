@@ -1264,8 +1264,8 @@ class codeGenerator(program: Program) {
   }
 
   private case object freepair extends Widget {
+    widgets.add(errNull)
     override def getIR(): List[IR] = {
-      widgets.add(errNull)
       val ir = new ListBuffer[IR]
       ir.append(Label("_freepair"))
       ir.append(PUSH(LR))
@@ -1398,8 +1398,8 @@ class codeGenerator(program: Program) {
   }
 
   private case object errNull extends Widget {
+    widgets.add(printString)
     override def getIR(): List[IR] = {
-      widgets.add(printString)
       val ir = new ListBuffer[IR]
       ir.append(Data(List("fatal error: null pair de-referenced or freed\n"), stringNum))
       ir.append(Label("_errNull"))
@@ -1413,8 +1413,8 @@ class codeGenerator(program: Program) {
   }
 
   private case object errOverflow extends Widget {
+    widgets.add(printString)
     override def getIR(): List[IR] = {
-      widgets.add(printString)
       val ir = new ListBuffer[IR]
       ir.append(Data(List("fatal error: integer overflow or underflow occurred\\n"), stringNum))
       ir.append(Label("_errOverflow"))
@@ -1428,8 +1428,8 @@ class codeGenerator(program: Program) {
   }
 
   private case object errDivZero extends Widget {
+    widgets.add(printString)
     override def getIR(): List[IR] = {
-      widgets.add(printString)
       val ir = new ListBuffer[IR]
       ir.append(Data(List("fatal error: division or modulo by zero\\n"), stringNum))
       ir.append(Label("_errDivZero"))
@@ -1444,7 +1444,6 @@ class codeGenerator(program: Program) {
 
   private case object arrLoad extends Widget {
     widgets.add(boundsCheck)
-
     override def getIR(): List[IR] = {
       val ir = new ListBuffer[IR]
       ir.append(Label("_arrLoad"))
@@ -1463,8 +1462,8 @@ class codeGenerator(program: Program) {
   }
 
   private case object arrLoadB extends Widget {
+    widgets.add(boundsCheck)
     override def getIR(): List[IR] = {
-      widgets.add(boundsCheck)
       val ir = new ListBuffer[IR]
       ir.append(Label("_arrLoadB"))
       ir.append(PUSH(LR))
@@ -1482,6 +1481,7 @@ class codeGenerator(program: Program) {
   }
 
   private case object arrStore extends Widget {
+    widgets.add(boundsCheck)
     override def getIR(): List[IR] = {
       val ir = new ListBuffer[IR]
       ir.append(Label("_arrStore"))
@@ -1500,6 +1500,7 @@ class codeGenerator(program: Program) {
   }
 
   private case object arrStoreB extends Widget {
+    widgets.add(boundsCheck)
     override def getIR(): List[IR] = {
       val ir = new ListBuffer[IR]
       ir.append(Label("_arrStoreB"))
