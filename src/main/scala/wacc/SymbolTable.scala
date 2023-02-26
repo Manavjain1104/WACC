@@ -3,11 +3,11 @@ package wacc
 import scala.collection.mutable
 
 class SymbolTable[A](val encSymTable: Option[SymbolTable[A]],
-                  val map: mutable.Map[String, A] = mutable.Map.empty[String, A]) {
+                     val map: mutable.Map[String, A] = mutable.Map.empty[String, A]) {
 
   var topLevelEntryCount = 0
 
-  def add(name: String, ty: A) : Unit = {
+  def add(name: String, ty: A): Unit = {
     map.addOne(name, ty)
     incrementTopLevelCount()
   }
@@ -27,7 +27,7 @@ class SymbolTable[A](val encSymTable: Option[SymbolTable[A]],
     None
   }
 
-  def incrementTopLevelCount() : Unit = {
+  def incrementTopLevelCount(): Unit = {
     var liveMap = Option(this)
     while (liveMap.get.encSymTable.isDefined) {
       liveMap = liveMap.get.encSymTable
