@@ -34,9 +34,6 @@ all-backend-tests:
     - sbt "testOnly -- -n ValidTests"
 
 
-
-
-
 # Don't test everything
 # Tag tests and use "PENDING" using scala test
 # test pass rate and coverage

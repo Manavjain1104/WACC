@@ -1,15 +1,11 @@
-
 import org.scalatest.Tag
 import org.scalatest.flatspec.AnyFlatSpec
 import java.io.File
 import scala.Console.{in, out}
-import scala.collection.mutable
 import scala.language.postfixOps
 import scala.io.Source
 import scala.collection.mutable.ListBuffer
-import scala.reflect.io.Directory
 import sys.process._
-import scala.util.control.Breaks.break
 
 object ValidTests extends Tag("ValidTests")
 
@@ -31,8 +27,6 @@ class ValidTests extends AnyFlatSpec {
     listAndProcess(new File(dir))
   }
 
-
-  //want this to get expected output from .wacc file and compare it to output of our compiler.
   def exampleFn(file: File) = {
     val source = Source.fromFile(file)
     val lb = ListBuffer[String]()
@@ -72,14 +66,6 @@ class ValidTests extends AnyFlatSpec {
     input.append(lb(inputLine).drop(9))
 
 
-
-
-
-    //    println(file.getName)
-    //    for (x <- out) {
-    //      println(x)
-    //    }
-    //    println("\n")
     val s = new StringBuilder()
     for (x <- out) {
       s ++= x
@@ -94,51 +80,16 @@ class ValidTests extends AnyFlatSpec {
       in ++= "5 3 6 4 7 9"
       s ++= "3 4 6 7 9"
     }
-//    println("expectd outpt: " + s.toString())
-    //println("compiler ourput: " + bashOutput)
 
-    //var bashOutput = s"./compile_and_run $file ${in}" !!
-    println(input)
-    println(in)
     var bashOutput = s"./compile_and_run $file ${in}" !!
 
     val exitCode = "echo $?" !!
 
-    //println(bashOutput)
-
-    /*
-    for (line <- s.toString().split("\n")) {
-      if (line.contains("#addrs#")) {
-        println(line)
-        val l = line.replaceAll("#addrs#", "0x")
-
-      }
-    }
-     */
-
-    /*var counter = 0
-    for (char <- s.toString()) {
-      if (char == '#') {
-        s.replace(counter, counter + 8, "0x...")
-      }
-      counter = counter + 1
-    }*/
-
     var bashOutputNoAddr = bashOutput.replaceAll("\\b0x\\w*", "#addrs#")
-
 
     if (file == new File("src/test/scala/wacc/valid/advanced/binarySortTree.wacc")) {
       bashOutputNoAddr = s.takeRight(9).toString()
     }
-    println("our compiler output: " + bashOutputNoAddr)
-
-    println("expected output in file:")
-    println(s.toString())
-
-
-
-
-
 
     if (exitCode != "100" || exitCode != "200") {
 
@@ -146,13 +97,6 @@ class ValidTests extends AnyFlatSpec {
         fail("Wrong output")
       }
     }
-    //val bashOutput = "correct\n"
-
-    //println(s.toString())
-    //println(s"bash output: $bashOutput")
-
-
-
   }
 
   def checkFailure(file: File): Unit = {
@@ -167,110 +111,103 @@ class ValidTests extends AnyFlatSpec {
   }
 
 
-  behavior of "valid binarySortTree advanced test" //FINE
+  behavior of "valid binarySortTree advanced test"
   it should "succeed with exit code 0" taggedAs(ValidTests) in {
     exampleFn(new File("src/test/scala/wacc/valid/advanced/binarySortTree.wacc"))
   }
 
-  /*
-  behavior of "valid hashTable advanced test"
-  it should "succeed with exit code 0" in {
-    exampleFn(new File("src/test/scala/wacc/valid/advanced/hashTable.wacc"))
-  }
-   */
-
-  behavior of "valid array tests" //FINE
+  behavior of "valid array tests"
   it should "succeed with exit code 0" taggedAs(ValidTests) in {
     //applyRecursively("src/test/scala/wacc/valid/array/", exampleFn)
     exampleFn(new File("src/test/scala/wacc/valid/array/emptyArrayScope.wacc"))
   }
 
-  behavior of "valid basic exit tests" //FINE
+  behavior of "valid basic exit tests"
   it should "succeed with exit code 0" taggedAs(ValidTests) in {
     applyRecursively("src/test/scala/wacc/valid/basic/exit", exampleFn)
   }
 
-  behavior of "valid basic skip tests" //FINE
+  behavior of "valid basic skip tests"
   it should "succeed with exit code 0" taggedAs(ValidTests) in {
     applyRecursively("src/test/scala/wacc/valid/basic/skip", exampleFn)
   }
 
-  behavior of "valid expressions tests" //FINE
+  behavior of "valid expressions tests"
   it should "succeed with exit code 0" taggedAs(ValidTests) in {
     applyRecursively("src/test/scala/wacc/valid/expressions/", exampleFn)
   }
 
-  behavior of "valid nested function tests" //FINE
+  behavior of "valid nested function tests"
   it should "succeed with exit code 0" taggedAs(ValidTests) in {
     applyRecursively("src/test/scala/wacc/valid/function/nested_functions", exampleFn)
   }
 
-  behavior of "valid simple function tests" //FINE
+  behavior of "valid simple function tests"
   it should "succeed with exit code 0" taggedAs(ValidTests) in {
     applyRecursively("src/test/scala/wacc/valid/function/simple_functions", exampleFn)
   }
 
-  behavior of "valid if tests" //FINE
+  behavior of "valid if tests"
   it should "succeed with exit code 0" taggedAs(ValidTests) in {
     applyRecursively("src/test/scala/wacc/valid/if/", exampleFn)
   }
 
-  behavior of "valid generic IO tests" //FINE
+  behavior of "valid generic IO tests"
   it should "succeed with exit code 0" taggedAs(ValidTests) in {
     applyRecursively("src/test/scala/wacc/valid/IO/genericIO", exampleFn)
   }
 
-  behavior of "valid IO print tests" //FINE
+  behavior of "valid IO print tests"
   it should "succeed with exit code 0" taggedAs(ValidTests) in {
     applyRecursively("src/test/scala/wacc/valid/IO/print", exampleFn)
   }
 
-  behavior of "valid IO read tests" //FINE
+  behavior of "valid IO read tests"
   it should "succeed with exit code 0" taggedAs(ValidTests) in {
     applyRecursively("src/test/scala/wacc/valid/IO/read", exampleFn)
   }
 
-  behavior of "valid pairs tests" //FINE
+  behavior of "valid pairs tests"
   it should "succeed with exit code 0" taggedAs(ValidTests) in {
     applyRecursively("src/test/scala/wacc/valid/pairs/", exampleFn)
   }
 
-  behavior of "valid runtimeErr arrayOutOfBounds tests" //FINE
+  behavior of "valid runtimeErr arrayOutOfBounds tests"
   it should "succeed with exit code 0" taggedAs(ValidTests) in {
     applyRecursively("src/test/scala/wacc/valid/runtimeErr/arrayOutOfBounds", checkFailure)
   }
 
-  behavior of "valid runtimeErr divideByZero tests" //FINE
+  behavior of "valid runtimeErr divideByZero tests"
   it should "succeed with exit code 0" taggedAs(ValidTests) in {
     applyRecursively("src/test/scala/wacc/valid/runtimeErr/divideByZero", checkFailure)
   }
 
-  behavior of "valid runtimeErr integerOverflow tests" //FINE
+  behavior of "valid runtimeErr integerOverflow tests"
   it should "succeed with exit code 0" taggedAs(ValidTests) in {
     applyRecursively("src/test/scala/wacc/valid/runtimeErr/integerOverflow", checkFailure)
   }
 
-  behavior of "valid runtimeErr nullDereference tests" //FINE
+  behavior of "valid runtimeErr nullDereference tests"
   it should "succeed with exit code 0" taggedAs(ValidTests) in {
     applyRecursively("src/test/scala/wacc/valid/runtimeErr/nullDereference", checkFailure)
   }
 
-  behavior of "valid scope tests" //FINE
+  behavior of "valid scope tests"
   it should "succeed with exit code 0" taggedAs(ValidTests) in {
     applyRecursively("src/test/scala/wacc/valid/scope/", exampleFn)
   }
 
-  behavior of "valid sequence tests" //FINE
+  behavior of "valid sequence tests"
   it should "succeed with exit code 0" taggedAs(ValidTests) in {
     applyRecursively("src/test/scala/wacc/valid/sequence/", exampleFn)
   }
 
-  behavior of "valid variables tests" //FINE
+  behavior of "valid variables tests"
   it should "succeed with exit code 0" taggedAs(ValidTests) in {
     applyRecursively("src/test/scala/wacc/valid/variables/", exampleFn)
   }
 
-  behavior of "valid while tests" //FINE
+  behavior of "valid while tests"
   it should "succeed with exit code 0" taggedAs(ValidTests) in {
     applyRecursively("src/test/scala/wacc/valid/while/", exampleFn)
   }
