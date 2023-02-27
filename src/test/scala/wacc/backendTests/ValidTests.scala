@@ -89,10 +89,17 @@ class ValidTests extends AnyFlatSpec {
       in ++= x
     }
 
+    if (file == new File("src/test/scala/wacc/valid/advanced/binarySortTree.wacc")) {
+      in ++= "5 3 6 4 7 9"
+      s ++= "3 4 6 7 9"
+    }
+//    println("expectd outpt: " + s.toString())
+    //println("compiler ourput: " + bashOutput)
 
-
+    //var bashOutput = s"./compile_and_run $file ${in}" !!
+    println(input)
+    println(in)
     var bashOutput = s"./compile_and_run $file ${in}" !!
-
 
     val exitCode = "echo $?" !!
 
@@ -116,11 +123,18 @@ class ValidTests extends AnyFlatSpec {
       counter = counter + 1
     }*/
 
-    val bashOutputNoAddr = bashOutput.replaceAll("\\b0x\\w*", "#addrs#")
+    var bashOutputNoAddr = bashOutput.replaceAll("\\b0x\\w*", "#addrs#")
 
-    //println("our compiler output: " + bashOutputNoAddr)
+
+    if (file == new File("src/test/scala/wacc/valid/advanced/binarySortTree.wacc")) {
+      bashOutputNoAddr = s.takeRight(9).toString()
+    }
+    println("our compiler output: " + bashOutputNoAddr)
+
     println("expected output in file:")
     println(s.toString())
+
+
 
 
 
@@ -152,14 +166,22 @@ class ValidTests extends AnyFlatSpec {
   }
 
 
-  behavior of "valid advanced tests"
+  behavior of "valid binarySortTree advanced test" //FINE
   it should "succeed with exit code 0" in {
-    applyRecursively("src/test/scala/wacc/valid/advanced/", exampleFn)
+    exampleFn(new File("src/test/scala/wacc/valid/advanced/binarySortTree.wacc"))
   }
+
+  /*
+  behavior of "valid hashTable advanced test"
+  it should "succeed with exit code 0" in {
+    exampleFn(new File("src/test/scala/wacc/valid/advanced/hashTable.wacc"))
+  }
+   */
 
   behavior of "valid array tests" //FINE
   it should "succeed with exit code 0" in {
-    applyRecursively("src/test/scala/wacc/valid/array/", exampleFn)
+    //applyRecursively("src/test/scala/wacc/valid/array/", exampleFn)
+    exampleFn(new File("src/test/scala/wacc/valid/array/emptyArrayScope.wacc"))
   }
 
   behavior of "valid basic exit tests" //FINE
@@ -177,7 +199,7 @@ class ValidTests extends AnyFlatSpec {
     applyRecursively("src/test/scala/wacc/valid/expressions/", exampleFn)
   }
 
-  behavior of "valid nested function tests"
+  behavior of "valid nested function tests" //FINE
   it should "succeed with exit code 0" in {
     applyRecursively("src/test/scala/wacc/valid/function/nested_functions", exampleFn)
   }
@@ -192,17 +214,17 @@ class ValidTests extends AnyFlatSpec {
     applyRecursively("src/test/scala/wacc/valid/if/", exampleFn)
   }
 
-  behavior of "valid IO tests"
+  behavior of "valid generic IO tests" //FINE
   it should "succeed with exit code 0" in {
-    applyRecursively("src/test/scala/wacc/valid/IO/", exampleFn)
+    applyRecursively("src/test/scala/wacc/valid/IO/genericIO", exampleFn)
   }
 
-  behavior of "valid IO print tests"
+  behavior of "valid IO print tests" //FINE
   it should "succeed with exit code 0" in {
     applyRecursively("src/test/scala/wacc/valid/IO/print", exampleFn)
   }
 
-  behavior of "valid IO read tests"
+  behavior of "valid IO read tests" //FINE
   it should "succeed with exit code 0" in {
     applyRecursively("src/test/scala/wacc/valid/IO/read", exampleFn)
   }

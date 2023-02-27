@@ -18,10 +18,13 @@ fname=$(basename "$1" .wacc)
 arm-linux-gnueabi-gcc -o "${fname}" -mcpu=arm1176jzf-s -mtune=arm1176jzf-s "${fname}.s"
 
 #grab input from wacc file. put it in the speech marks.
-echo "$input" | qemu-arm -L /usr/arm-linux-gnueabi/ "${fname}"
+echo $input | qemu-arm -L /usr/arm-linux-gnueabi/ "${fname}"
 
 if [ $ecode == 100 ] || [ $ecode == 200 ]
 then
   exit $?
 fi
+
+mv ${fname} build
+
 exit 0
