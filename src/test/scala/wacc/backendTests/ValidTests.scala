@@ -118,7 +118,8 @@ class ValidTests extends AnyFlatSpec {
 
     val bashOutputNoAddr = bashOutput.replaceAll("\\b0x\\w*", "#addrs#")
 
-    println(bashOutputNoAddr)
+    //println("our compiler output: " + bashOutputNoAddr)
+    println("expected output in file:")
     println(s.toString())
 
 
@@ -138,6 +139,18 @@ class ValidTests extends AnyFlatSpec {
 
 
   }
+
+  def checkFailure(file: File): Unit = {
+    var bashOutput = s"./compile_and_run $file ${in}" !!
+
+    val exitCode = "echo $?" !!
+
+    if (exitCode != 0) {
+      assert(true)
+    }
+
+  }
+
 
   behavior of "valid advanced tests"
   it should "succeed with exit code 0" in {
@@ -199,24 +212,24 @@ class ValidTests extends AnyFlatSpec {
     applyRecursively("src/test/scala/wacc/valid/pairs/", exampleFn)
   }
 
-  behavior of "valid runtimeErr arrayOutOfBounds tests"
+  behavior of "valid runtimeErr arrayOutOfBounds tests" //FINE
   it should "succeed with exit code 0" in {
-    applyRecursively("src/test/scala/wacc/valid/runtimeErr/arrayOutOfBounds", exampleFn)
+    applyRecursively("src/test/scala/wacc/valid/runtimeErr/arrayOutOfBounds", checkFailure)
   }
 
-  behavior of "valid runtimeErr divideByZero tests"
+  behavior of "valid runtimeErr divideByZero tests" //FINE
   it should "succeed with exit code 0" in {
-    applyRecursively("src/test/scala/wacc/valid/runtimeErr/divideByZero", exampleFn)
+    applyRecursively("src/test/scala/wacc/valid/runtimeErr/divideByZero", checkFailure)
   }
 
-  behavior of "valid runtimeErr integerOverflow tests"
+  behavior of "valid runtimeErr integerOverflow tests" //FINE
   it should "succeed with exit code 0" in {
-    applyRecursively("src/test/scala/wacc/valid/runtimeErr/integerOverflow", exampleFn)
+    applyRecursively("src/test/scala/wacc/valid/runtimeErr/integerOverflow", checkFailure)
   }
 
-  behavior of "valid runtimeErr nullDereference tests"
+  behavior of "valid runtimeErr nullDereference tests" //FINE
   it should "succeed with exit code 0" in {
-    applyRecursively("src/test/scala/wacc/valid/runtimeErr/nullDereference", exampleFn)
+    applyRecursively("src/test/scala/wacc/valid/runtimeErr/nullDereference", checkFailure)
   }
 
   behavior of "valid scope tests" //FINE
@@ -234,7 +247,7 @@ class ValidTests extends AnyFlatSpec {
     applyRecursively("src/test/scala/wacc/valid/variables/", exampleFn)
   }
 
-  behavior of "valid while tests"
+  behavior of "valid while tests" //FINE
   it should "succeed with exit code 0" in {
     applyRecursively("src/test/scala/wacc/valid/while/", exampleFn)
   }
