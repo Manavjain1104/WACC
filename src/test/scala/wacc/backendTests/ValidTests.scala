@@ -1,7 +1,6 @@
 
 import org.scalatest.Tag
 import org.scalatest.flatspec.AnyFlatSpec
-
 import java.io.File
 import scala.Console.{in, out}
 import scala.collection.mutable
@@ -11,6 +10,8 @@ import scala.collection.mutable.ListBuffer
 import scala.reflect.io.Directory
 import sys.process._
 import scala.util.control.Breaks.break
+
+object ValidTests extends Tag("ValidTests")
 
 class ValidTests extends AnyFlatSpec {
 
@@ -167,7 +168,7 @@ class ValidTests extends AnyFlatSpec {
 
 
   behavior of "valid binarySortTree advanced test" //FINE
-  it should "succeed with exit code 0" in {
+  it should "succeed with exit code 0" taggedAs(ValidTests) in {
     exampleFn(new File("src/test/scala/wacc/valid/advanced/binarySortTree.wacc"))
   }
 
@@ -179,98 +180,98 @@ class ValidTests extends AnyFlatSpec {
    */
 
   behavior of "valid array tests" //FINE
-  it should "succeed with exit code 0" in {
+  it should "succeed with exit code 0" taggedAs(ValidTests) in {
     //applyRecursively("src/test/scala/wacc/valid/array/", exampleFn)
     exampleFn(new File("src/test/scala/wacc/valid/array/emptyArrayScope.wacc"))
   }
 
   behavior of "valid basic exit tests" //FINE
-  it should "succeed with exit code 0" in {
+  it should "succeed with exit code 0" taggedAs(ValidTests) in {
     applyRecursively("src/test/scala/wacc/valid/basic/exit", exampleFn)
   }
 
   behavior of "valid basic skip tests" //FINE
-  it should "succeed with exit code 0" in {
+  it should "succeed with exit code 0" taggedAs(ValidTests) in {
     applyRecursively("src/test/scala/wacc/valid/basic/skip", exampleFn)
   }
 
   behavior of "valid expressions tests" //FINE
-  it should "succeed with exit code 0" in {
+  it should "succeed with exit code 0" taggedAs(ValidTests) in {
     applyRecursively("src/test/scala/wacc/valid/expressions/", exampleFn)
   }
 
   behavior of "valid nested function tests" //FINE
-  it should "succeed with exit code 0" in {
+  it should "succeed with exit code 0" taggedAs(ValidTests) in {
     applyRecursively("src/test/scala/wacc/valid/function/nested_functions", exampleFn)
   }
 
   behavior of "valid simple function tests" //FINE
-  it should "succeed with exit code 0" in {
+  it should "succeed with exit code 0" taggedAs(ValidTests) in {
     applyRecursively("src/test/scala/wacc/valid/function/simple_functions", exampleFn)
   }
 
   behavior of "valid if tests" //FINE
-  it should "succeed with exit code 0" in {
+  it should "succeed with exit code 0" taggedAs(ValidTests) in {
     applyRecursively("src/test/scala/wacc/valid/if/", exampleFn)
   }
 
   behavior of "valid generic IO tests" //FINE
-  it should "succeed with exit code 0" in {
+  it should "succeed with exit code 0" taggedAs(ValidTests) in {
     applyRecursively("src/test/scala/wacc/valid/IO/genericIO", exampleFn)
   }
 
   behavior of "valid IO print tests" //FINE
-  it should "succeed with exit code 0" in {
+  it should "succeed with exit code 0" taggedAs(ValidTests) in {
     applyRecursively("src/test/scala/wacc/valid/IO/print", exampleFn)
   }
 
   behavior of "valid IO read tests" //FINE
-  it should "succeed with exit code 0" in {
+  it should "succeed with exit code 0" taggedAs(ValidTests) in {
     applyRecursively("src/test/scala/wacc/valid/IO/read", exampleFn)
   }
 
   behavior of "valid pairs tests" //FINE
-  it should "succeed with exit code 0" in {
+  it should "succeed with exit code 0" taggedAs(ValidTests) in {
     applyRecursively("src/test/scala/wacc/valid/pairs/", exampleFn)
   }
 
   behavior of "valid runtimeErr arrayOutOfBounds tests" //FINE
-  it should "succeed with exit code 0" in {
+  it should "succeed with exit code 0" taggedAs(ValidTests) in {
     applyRecursively("src/test/scala/wacc/valid/runtimeErr/arrayOutOfBounds", checkFailure)
   }
 
   behavior of "valid runtimeErr divideByZero tests" //FINE
-  it should "succeed with exit code 0" in {
+  it should "succeed with exit code 0" taggedAs(ValidTests) in {
     applyRecursively("src/test/scala/wacc/valid/runtimeErr/divideByZero", checkFailure)
   }
 
   behavior of "valid runtimeErr integerOverflow tests" //FINE
-  it should "succeed with exit code 0" in {
+  it should "succeed with exit code 0" taggedAs(ValidTests) in {
     applyRecursively("src/test/scala/wacc/valid/runtimeErr/integerOverflow", checkFailure)
   }
 
   behavior of "valid runtimeErr nullDereference tests" //FINE
-  it should "succeed with exit code 0" in {
+  it should "succeed with exit code 0" taggedAs(ValidTests) in {
     applyRecursively("src/test/scala/wacc/valid/runtimeErr/nullDereference", checkFailure)
   }
 
   behavior of "valid scope tests" //FINE
-  it should "succeed with exit code 0" in {
+  it should "succeed with exit code 0" taggedAs(ValidTests) in {
     applyRecursively("src/test/scala/wacc/valid/scope/", exampleFn)
   }
 
   behavior of "valid sequence tests" //FINE
-  it should "succeed with exit code 0" in {
+  it should "succeed with exit code 0" taggedAs(ValidTests) in {
     applyRecursively("src/test/scala/wacc/valid/sequence/", exampleFn)
   }
 
   behavior of "valid variables tests" //FINE
-  it should "succeed with exit code 0" in {
+  it should "succeed with exit code 0" taggedAs(ValidTests) in {
     applyRecursively("src/test/scala/wacc/valid/variables/", exampleFn)
   }
 
   behavior of "valid while tests" //FINE
-  it should "succeed with exit code 0" in {
+  it should "succeed with exit code 0" taggedAs(ValidTests) in {
     applyRecursively("src/test/scala/wacc/valid/while/", exampleFn)
   }
 }

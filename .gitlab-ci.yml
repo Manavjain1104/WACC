@@ -27,6 +27,11 @@ all-semantic-invalid-tests:
   script:
     - sbt "testOnly -- -n ChecksAllSemanticInvalid"
 
+all-backend-tests:
+  stage: test
+  script:
+    - sbt "testOnly -- -n ValidTests"
+
 
 
 
