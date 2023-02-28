@@ -6,34 +6,51 @@ object IR {
 
   // various flags that can be given to IR
   sealed trait Flag
-  sealed trait MemoryFlags extends Flag
-  sealed trait BranchFlags extends Flag
-  sealed trait LogicalFlags extends BranchFlags
-  sealed trait LinkFlags extends BranchFlags
-  sealed trait OperatorFlags extends BranchFlags
 
-  case object S extends OperatorFlags
+  sealed trait MemoryFlag extends Flag
+
+  sealed trait BranchFlag extends Flag
+
+  sealed trait LogicalFlag extends BranchFlag
+
+  sealed trait LinkFlag extends BranchFlag
+
+  sealed trait SignFlag extends BranchFlag
+
+  case object S extends SignFlag
 
 
-  case object BYTE extends MemoryFlags
-  case object BYTEALT extends MemoryFlags
-  case object INDEX extends MemoryFlags
+  case object BYTECONSTOFFSET extends MemoryFlag
 
-  case object DEFAULT extends LogicalFlags with LinkFlags with MemoryFlags with OperatorFlags
+  case object BYTEREGOFFSET extends MemoryFlag
 
-  case object GT extends LogicalFlags
-  case object LT extends LogicalFlags
-  case object GE extends LogicalFlags
-  case object LE extends LogicalFlags
-  case object EQ extends LogicalFlags
-  case object NE extends LogicalFlags
+  case object INDEX extends MemoryFlag
 
-  case object L extends BranchFlags
-  case object LEQ extends BranchFlags
-  case object LNE extends BranchFlags
-  case object LLT extends BranchFlags
-  case object LGE extends BranchFlags
-  case object LVS extends BranchFlags
+  case object DEFAULT extends LogicalFlag with LinkFlag with MemoryFlag with SignFlag
+
+  case object GT extends LogicalFlag
+
+  case object LT extends LogicalFlag
+
+  case object GE extends LogicalFlag
+
+  case object LE extends LogicalFlag
+
+  case object EQ extends LogicalFlag
+
+  case object NE extends LogicalFlag
+
+  case object L extends BranchFlag
+
+  case object LEQ extends BranchFlag
+
+  case object LNE extends BranchFlag
+
+  case object LLT extends BranchFlag
+
+  case object LGE extends BranchFlag
+
+  case object LVS extends BranchFlag
 
   sealed trait IR
 
@@ -47,13 +64,13 @@ object IR {
   // Label and Branch Statements
   case class Label(label: String) extends IR
 
-  case class BRANCH(label: String, Suffix: BranchFlags) extends IR
+  case class BRANCH(label: String, Suffix: BranchFlag) extends IR
 
 
   // Move statements
-  case class MOV(rd: Reg, rs: Reg, Suffix: LogicalFlags) extends IR
+  case class MOV(rd: Reg, rs: Reg, Suffix: LogicalFlag) extends IR
 
-  case class MOVImm(rd: Reg, i: Int, Suffix: LogicalFlags) extends IR
+  case class MOVImm(rd: Reg, i: Int, Suffix: LogicalFlag) extends IR
 
   // Push and Pop Statements
   case class PUSHMul(regs: List[Reg]) extends IR
@@ -70,7 +87,7 @@ object IR {
   case class NOT(rd: Reg, rs: Reg) extends IR
 
   // Arithmetic Binary Operators
-  case class ADD(rd: Reg, rn: Reg, i: Int, flag: OperatorFlags) extends IR
+  case class ADD(rd: Reg, rn: Reg, i: Int, flag: SignFlag) extends IR
 
   case class ADDREG(rd: Reg, rn: Reg, rm: Reg) extends IR
 
@@ -98,9 +115,9 @@ object IR {
 
 
   // Misc Statements
-  case class LDR(rd: Reg, rs: Reg, offset: Int, flag: MemoryFlags) extends IR
+  case class LDR(rd: Reg, rs: Reg, offset: Int, flag: MemoryFlag) extends IR
 
-  case class STR(rd: Reg, rs: Reg, offset: Int, flag: MemoryFlags) extends IR
+  case class STR(rd: Reg, rs: Reg, offset: Int, flag: MemoryFlag) extends IR
 
   case class STOREINDEX(rd: Reg, rb: Reg, ri: Reg, elemSize: Int) extends IR
 

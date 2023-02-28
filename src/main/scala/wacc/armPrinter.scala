@@ -205,21 +205,20 @@ object armPrinter {
       }
       case TRUNCATE(rd, rs, i) => printInstr("and ", rs, rd, i)
 
-      // Misc Statements
+      // Mem access Statements
       case LDR(rd, rs, offset, flag) => {
         flag match {
           case DEFAULT => "ldr " + rd + ", [" + rs + ", #" + offset + "]"
-          case BYTE => "ldrsb " + rd + ", [" + rs + ", #" + offset + "]"
-          case BYTEALT => "ldrsb " + rd + ", [" + rd + ", " + rs + "]"
+          case BYTECONSTOFFSET => "ldrsb " + rd + ", [" + rs + ", #" + offset + "]"
+          case BYTEREGOFFSET => "ldrsb " + rd + ", [" + rd + ", " + rs + "]"
           case INDEX => "ldr " + rd + ", [" + rd + ", " + rs + ", lsl #" + offset + "]"
         }
       }
 
-
       case STR(rd, rs, offset, flag) => {
         flag match {
           case DEFAULT => "str " + rd + ", [" + rs + ", #" + offset + "]"
-          case BYTE => "strb " + rd + ", [" + rs + ", #" + offset + "]"
+          case BYTECONSTOFFSET => "strb " + rd + ", [" + rs + ", #" + offset + "]"
           case _ => ""
         }
 
