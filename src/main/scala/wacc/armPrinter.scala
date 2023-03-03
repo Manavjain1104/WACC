@@ -39,7 +39,7 @@ object armPrinter {
         s.toString()
       }
       case Global(globals) => ".global" + globals.foldLeft("")((x, y) => x + " " + y)
-      case LTORG => "   .ltorg\n"
+      case LOCALCOLLECT => "   .ltorg\n"
 
 
       // Label and Branch Statements

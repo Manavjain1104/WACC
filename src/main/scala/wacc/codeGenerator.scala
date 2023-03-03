@@ -536,7 +536,7 @@ class codeGenerator(program: Program) {
     if (numLocalsInBody > numLocalRegs) {
       irs.append(ADD(SP, SP, (numLocalsInBody - numLocalRegs) * WORDSIZE, DEFAULT))
     }
-    irs.append(LTORG)
+    irs.append(LOCALCOLLECT)
     irs.toList
   }
 

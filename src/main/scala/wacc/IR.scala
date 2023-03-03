@@ -59,7 +59,7 @@ object IR {
 
   case class Global(globals: List[String]) extends IR
 
-  case object LTORG extends IR
+  case object LOCALCOLLECT extends IR
 
   // Label and Branch Statements
   case class Label(label: String) extends IR
