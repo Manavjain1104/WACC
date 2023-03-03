@@ -616,7 +616,6 @@ class semanticAnalyser {
           Some(InternalPairSemType)
         } else {
           val rvalType: Option[SemType] = checkRvalue(rvalue, symbolTable)
-          println(rvalType.get)
           val assignSemType = convertToSem(assignType)
           if (!matchTypes(assignSemType, rvalType.get)) {
             errorLog += TypeError(varDec.pos,
