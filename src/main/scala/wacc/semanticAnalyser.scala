@@ -86,6 +86,7 @@ class semanticAnalyser {
       case StringType() => StringSemType
       case ArrayType(t: Type) => ArraySemType(convertToSem(t))
       case DummyPair => PairSemType(InternalPairSemType, InternalPairSemType)
+      case PairType(pt1, pt2) => PairSemType(convertToSem(pt1), convertToSem(pt2))
       case _ => throw new RuntimeException("Should not reach here")
     }
   }
@@ -523,8 +524,32 @@ class semanticAnalyser {
     }
 
     insideLval match {
-      case _: PairElem =>
-        Some(InternalPairSemType)
+      case insideElem: PairElem => {
+        val insidePos = insideElem match {
+          case f : Fst => f.pos
+          case s : Snd => s.pos
+        }
+        val insideType = checkPairElem(insideElem, symbolTable)
+        assert(insideType.isDefined, "check pair elem on inside type failed")
+        insideType.get match {
+          case PairSemType(pt1, pt2) => {
+            if (is_fst) {
+              attachType(pe, pt1)
+              Some(pt1)
+            } else {
+              attachType(pe, pt2)
+              Some(pt2)
+            }
+          }
+          case unexpectedType => {
+            errorLog += TypeError(insidePos,
+              Set(PairSemType(InternalPairSemType, InternalPairSemType)), unexpectedType,
+              Some("can only call fst or snd on pairs"))
+            Some(InternalPairSemType)
+          }
+        }
+      }
+//        Some(InternalPairSemType)
 
       case arrayElem: ArrayElem =>
         val opArrayItemType = checkArrayElem(arrayElem, symbolTable)
@@ -591,6 +616,7 @@ class semanticAnalyser {
           Some(InternalPairSemType)
         } else {
           val rvalType: Option[SemType] = checkRvalue(rvalue, symbolTable)
+          println(rvalType.get)
           val assignSemType = convertToSem(assignType)
           if (!matchTypes(assignSemType, rvalType.get)) {
             errorLog += TypeError(varDec.pos,
