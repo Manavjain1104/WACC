@@ -30,7 +30,6 @@ all-semantic-invalid-tests:
 all-backend-tests:
   stage: test
   script:
-    - make
     - sbt "testOnly -- -n ValidTests"
 
 
