@@ -1381,7 +1381,7 @@ class codeGenerator(program: Program) {
 
     override def getIR(): List[IR] = {
       val ir = new ListBuffer[IR]
-      ir.append(Data(List("fatal error: null pair de-referenced or freed\\n"), stringNum))
+      ir.append(Data(List("fatal error: null pair de-referenced or freed\n"), stringNum))
       ir.append(Label("_errNull"))
       ir.append(StringInit(R0, stringNum))
       stringNum += 1
@@ -1397,7 +1397,7 @@ class codeGenerator(program: Program) {
 
     override def getIR(): List[IR] = {
       val ir = new ListBuffer[IR]
-      ir.append(Data(List("fatal error: integer overflow or underflow occurred\\n"), stringNum))
+      ir.append(Data(List("fatal error: integer overflow or underflow occurred\n"), stringNum))
       ir.append(Label("_errOverflow"))
       ir.append(StringInit(R0, stringNum))
       stringNum += 1
@@ -1413,7 +1413,7 @@ class codeGenerator(program: Program) {
 
     override def getIR(): List[IR] = {
       val ir = new ListBuffer[IR]
-      ir.append(Data(List("fatal error: division or modulo by zero\\n"), stringNum))
+      ir.append(Data(List("fatal error: division or modulo by zero\n"), stringNum))
       ir.append(Label("_errDivZero"))
       ir.append(StringInit(R0, stringNum))
       stringNum += 1
@@ -1507,7 +1507,7 @@ class codeGenerator(program: Program) {
   private case object boundsCheck extends Widget {
     override def getIR(): List[IR] = {
       val ir = new ListBuffer[IR]
-      ir.append(Data(List("fatal error: array index %d out of bounds\\n"), stringNum))
+      ir.append(Data(List("fatal error: array index %d out of bounds\n"), stringNum))
       ir.append(Label("_boundsCheck"))
       ir.append(StringInit(R0, stringNum))
       stringNum += 1

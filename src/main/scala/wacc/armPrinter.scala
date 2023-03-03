@@ -33,7 +33,7 @@ object armPrinter {
           s ++= "   .word " + strings(i).length.toString + NewLineChar
           val count = i + startIndex
           s ++= s".L.str$count:\n"
-          s ++= "   .asciz \"" + strings(i).replace("\\", "\\\\") + "\"\n"
+          s ++= "   .asciz \"" + strings(i).replace("\"", "\\\"").replace("\n", "\\n") + "\"\n"
         }
         s ++= ".text"
         s.toString()
