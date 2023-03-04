@@ -413,7 +413,7 @@ class semanticAnalyser {
         val e2Type: Option[SemType] = checkExpr(e2, symbolTable)
         Some(PairSemType(e1Type.get, e2Type.get))
 
-      case call@Call(ident, args) =>
+      case call@Call(ident, args) => {
         // valid function in symbol table
         val identSemType = symbolTable.lookupAll(FUNCTION_PREFIX + ident)
         if (identSemType.isEmpty) {
@@ -450,6 +450,7 @@ class semanticAnalyser {
               Some("Cannot call a non function identifier"))
             Some(InternalPairSemType)
         }
+      }
 
       case elem: PairElem => checkPairElem(elem, symbolTable)
     }
@@ -825,6 +826,45 @@ class semanticAnalyser {
         checkStatement(first, symbolTable)
         val statType = checkStatement(next, symbolTable)
         statType
+
+      case cs@Call(ident, args) => {
+        // valid function in symbol table
+        val identSemType = symbolTable.lookupAll(FUNCTION_PREFIX + ident)
+        if (identSemType.isEmpty) {
+          errorLog += UnknownIdentifierError(cs.pos, ident, Some("Unknown function identifier found"))
+          return Some(InternalPairSemType)
+        }
+
+        identSemType.get match {
+          case funcType: FuncSemType =>
+            // parameters length match
+            if (funcType.numParams != args.length) {
+              errorLog += ArityMismatch(cs.pos,
+                funcType.numParams,
+                args.length,
+                Some("Wrong number of function arguments"))
+              return Some(InternalPairSemType)
+            }
+
+            // parameters and arguments type match
+            for (i <- args.indices) {
+              val expType = checkExpr(args(i), symbolTable)
+              if (!matchTypes(expType.get, funcType.paramTypes(i))) {
+                val argPos = getExprPos(cs.args(i))
+                errorLog += new TypeError(argPos._1,
+                  Set(funcType.paramTypes(i)), expType.get,
+                  Some("Argument type does not match with parameter"))(argPos._2)
+                return Some(InternalPairSemType)
+              }
+            }
+            Some(funcType.retType)
+          case unexpectedType =>
+            errorLog += TypeError(cs.pos,
+              Set(FuncSemType(InternalPairSemType, List.empty, 0)), unexpectedType,
+              Some("Cannot call a non function identifier"))
+            Some(InternalPairSemType)
+        }
+      }
     }
   }
 
