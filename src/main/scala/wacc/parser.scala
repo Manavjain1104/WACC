@@ -67,7 +67,7 @@ object parser {
     (StringType <# "string")).label("primitive_base_type")
   lazy val arrayType: Parsley[ArrayType] = chain.postfix1((baseType <|> pairType), (OPENSQUAREBRAC ~> CLOSESQUAREBRAC) #> ArrayType)
   val pairType: Parsley[Type] = PairType(PAIR ~> OPENPAREN ~> pairelemType, COMMA ~> pairelemType <~ CLOSEDPAREN)
-  lazy val pairelemType: Parsley[PairElemType] = attempt(arrayType) <|> baseType <|> (DummyPair <# PAIR)
+  lazy val pairelemType: Parsley[PairElemType] = attempt(arrayType) <|> baseType <|> attempt(waccType) <|> (DummyPair <# PAIR) // here attempt something - pair(wacc, wacc)
 
   // Statement Parsers
   val skip: Parsley[Statement] = Skip <# "skip".label("Statement_beginning")

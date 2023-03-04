@@ -116,7 +116,7 @@ object AST {
 
   // WACC Type hierarchy
 
-  sealed trait Type extends AST
+  sealed trait Type extends PairElemType
 
   sealed trait BaseType extends Type with PairElemType
 
