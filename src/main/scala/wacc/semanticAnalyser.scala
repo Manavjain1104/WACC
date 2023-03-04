@@ -68,6 +68,7 @@ class semanticAnalyser {
 
   private def convertToSem(ty: Type): SemType = {
     ty match {
+      case VoidType() => VoidSemType
       case IntType() => IntSemType
       case BoolType() => BoolSemType
       case CharType() => CharSemType

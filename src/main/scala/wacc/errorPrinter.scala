@@ -164,6 +164,8 @@ object errorPrinter {
         case BoolSemType => "bool"
         case CharSemType => "char"
         case StringSemType => "string"
+        case VoidSemType => "void"
+
         case PairSemType(pt1, pt2) => {
           if (pt1 == InternalPairSemType && pt2 == InternalPairSemType) {
             "pair type"

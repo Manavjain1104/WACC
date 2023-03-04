@@ -41,7 +41,7 @@ object lexer {
     symbolDesc = SymbolDesc.plain.copy(
       hardKeywords = Set[String]("begin", "end", "is", "skip", "free", "read",
         "return", "exit", "print", "println", "if", "then", "else", "fi", "while", "do", "done",
-        "snd", "fst", "newpair", "call", "int", "bool", "char", "string", "pair", "true", "false",
+        "snd", "fst", "newpair", "call", "int", "bool", "char", "string", "pair","void", "true", "false",
         "null"
       ),
       hardOperators = Set[String]("!", "-", "len", "ord", "chr", "*", "/", "%", "+", ">", ">=",
@@ -101,6 +101,8 @@ object lexer {
   val STRING: Parsley[String] = lexer.lexeme.text.string.ascii
   val IDENT: Parsley[String] = lexer.lexeme.names.identifier
   val PAIR_LITER: Parsley[Unit] = symbol("null")
+  val VOID: Parsley[Unit] = symbol("void")
+
 
   val OPENSQUAREBRAC: Parsley[Unit] = lexer.lexeme.symbol.openSquare.label("\'[\'")
   val CLOSESQUAREBRAC: Parsley[Unit] = lexer.lexeme.symbol.closingSquare.label("\']\'")
