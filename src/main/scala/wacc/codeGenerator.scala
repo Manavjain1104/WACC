@@ -113,6 +113,7 @@ class codeGenerator(program: Program) {
           case ChrExpr(e) => generateExprIR(e, liveMap)
           case OrdExpr(e) => generateExprIR(e, liveMap)
           case NegExpr(e) => generateExprIR(e, liveMap) ++ List(POP(scratchReg1), NEG(scratchReg1, scratchReg1), PUSH(scratchReg1))
+          case NegExpr(e) => generateExprIR(e, liveMap) ++ List(POP(scratchReg1), NEG(scratchReg1, scratchReg1), PUSH(scratchReg1))
           case NotExpr(e) => generateExprIR(e, liveMap) ++ List(POP(scratchReg1), NOT(scratchReg1, scratchReg1), PUSH(scratchReg1))
           case LenExpr(e) => {
             val irs = ListBuffer.empty[IR]
@@ -355,6 +356,47 @@ class codeGenerator(program: Program) {
 
   def generateStatIR(stat: Statement, liveMap : SymbolTable[Location], localRegs : List[Reg], numParams : Int): List[IR] = {
     stat match {
+      case CallStat(ident, lArgs) => {
+        val localCount = liveMap.getNestedEntries()
+        val irs = ListBuffer.empty[IR]
+
+
+        // caller saved
+        if (numParams > 0) {
+          irs.append(PUSHMul(paramRegs.slice(0, numParams)))
+        }
+        val realCount = localCount - numParams
+        if (realCount > 0) {
+          irs.append(PUSHMul(localRegs.slice(0, realCount)))
+        }
+
+        for (i <- lArgs.length - 1 to 0 by -1) {
+          irs.appendAll(generateExprIR(lArgs(i), liveMap)) // this leaves the value on top of stack for function call
+        }
+
+        for (i <- 0 until math.min(WORDSIZE, lArgs.length)) {
+          irs.append(POP(paramRegs(i)))
+        }
+
+        irs.append(BRANCH(FUNCTION_PREFIX + ident, "L"))
+
+        if (lArgs.length > WORDSIZE) {
+          irs.append(ADD(SP, SP, (lArgs.length - WORDSIZE) * WORDSIZE))
+        }
+
+        irs.append(MOV(scratchReg1, R0, "Default"))
+
+        // caller saved
+        if (realCount > 0) {
+          irs.append(POPMul(localRegs.slice(0, realCount)))
+        }
+        if (numParams > 0) {
+          irs.append(POPMul(paramRegs.slice(0, numParams)))
+        }
+
+        irs.append(PUSH(scratchReg1))
+        irs.toList
+      }
 
       case Exit(e) => generateExprIR(e, liveMap) ++ List(POP(R0), BRANCH("exit", "L"))
 

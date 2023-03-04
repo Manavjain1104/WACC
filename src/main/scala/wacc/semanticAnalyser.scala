@@ -68,6 +68,7 @@ class semanticAnalyser {
 
   private def convertToSem(ty: Type): SemType = {
     ty match {
+      case VoidType() => VoidSemType
       case IntType() => IntSemType
       case BoolType() => BoolSemType
       case CharType() => CharSemType
@@ -558,14 +559,14 @@ class semanticAnalyser {
   }
 
   private def checkFunction(func: Func, symbolTable: SymbolTable[SemType]): Unit = {
-    val intermediateTable = new SymbolTable(Some(symbolTable))
-    if (checkParams(func.params, intermediateTable, mutable.Set.empty[String])) {
-      val funcSemType: SemType = convertToSem(func.retType)
-      intermediateTable.add(ENCLOSING_FUNC_RETURN_TYPE, funcSemType)
-      val childSym = new SymbolTable(Some(intermediateTable))
-      if (checkStatement(func.stat, childSym).isDefined) {
-        func.st = Some(childSym)
-      }
+      val intermediateTable = new SymbolTable(Some(symbolTable))
+      if (checkParams(func.params, intermediateTable, mutable.Set.empty[String])) {
+        val funcSemType: SemType = convertToSem(func.retType)
+        intermediateTable.add(ENCLOSING_FUNC_RETURN_TYPE, funcSemType)
+        val childSym = new SymbolTable(Some(intermediateTable))
+        if (checkStatement(func.stat, childSym).isDefined) {
+          func.st = Some(childSym)
+        }
     }
   }
 
@@ -744,12 +745,12 @@ class semanticAnalyser {
             Some(InternalPairSemType)
         }
 
-      case printStat : Print =>
+      case printStat: Print =>
         printStat.symbolTable = Some(symbolTable)
         printStat.expType = checkExpr(printStat.e, symbolTable)
         printStat.expType
 
-      case printlnStat : Println =>
+      case printlnStat: Println =>
         printlnStat.symbolTable = Some(symbolTable)
         printlnStat.expType = checkExpr(printlnStat.e, symbolTable)
         printlnStat.expType
@@ -786,6 +787,44 @@ class semanticAnalyser {
         checkStatement(first, symbolTable)
         val statType = checkStatement(next, symbolTable)
         statType
+
+      case cs@CallStat(ident, args) =>{
+        val identSemType = symbolTable.lookupAll(FUNCTION_PREFIX + ident)
+        if (identSemType.isEmpty) {
+          errorLog += UnknownIdentifierError(cs.pos, ident, Some("Unknown function identifier found"))
+          return Some(InternalPairSemType)
+        }
+
+        identSemType.get match {
+          case funcType: FuncSemType =>
+            // parameters length match
+            if (funcType.numParams != args.length) {
+              errorLog += ArityMismatch(cs.pos,
+                funcType.numParams,
+                args.length,
+                Some("Wrong number of function arguments"))
+              return Some(InternalPairSemType)
+            }
+
+            // parameters and arguments type match
+            for (i <- args.indices) {
+              val expType = checkExpr(args(i), symbolTable)
+              if (!matchTypes(expType.get, funcType.paramTypes(i))) {
+                val argPos = getExprPos(cs.args(i))
+                errorLog += new TypeError(argPos._1,
+                  Set(funcType.paramTypes(i)), expType.get,
+                  Some("Argument type does not match with parameter"))(argPos._2)
+                return Some(InternalPairSemType)
+              }
+            }
+            Some(funcType.retType)
+          case unexpectedType =>
+            errorLog += TypeError(cs.pos,
+              Set(FuncSemType(InternalPairSemType, List.empty, 0)), unexpectedType,
+              Some("Cannot call a non function identifier"))
+            Some(InternalPairSemType)
+        }
+      }
     }
   }
 
