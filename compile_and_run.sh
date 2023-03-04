@@ -1,7 +1,29 @@
-#!bin/bash
+#!/bin/bash
+# shellcheck disable=SC2068
+java -jar wacc-25-compiler.jar $@
+
+ecode=$?
+if [ $ecode == 100 ] || [ $ecode == 200 ]
+then
+    exit $ecode
+fi
+
+# shellcheck disable=SC2037
+# shellcheck disable=SC2209
+input=$(echo "$*" | awk '{for (i=2; i<NF; i++) printf $i " "; print $NF}')
+
 
 fname=$(basename "$1" .wacc)
-
-[ ! -e ${fname}.s ] && exit 1
 arm-linux-gnueabi-gcc -o "${fname}" -mcpu=arm1176jzf-s -mtune=arm1176jzf-s "${fname}.s"
-qemu-arm -L /usr/arm-linux-gnueabi/ "${fname}"
+
+#grab input from wacc file. put it in the speech marks.
+echo $input | qemu-arm-static -L /usr/arm-linux-gnueabi/ "${fname}"
+
+if [ $ecode == 100 ] || [ $ecode == 200 ]
+then
+  exit $?
+fi
+
+mv ${fname} build
+
+exit 0

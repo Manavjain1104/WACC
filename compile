@@ -4,20 +4,3 @@
 # but do *not* change its name.
 # shellcheck disable=SC2068
 java -jar wacc-25-compiler.jar $@
-
-ecode=$?
-if [ $ecode == 100 ] || [ $ecode == 200 ]
-then
-    exit $ecode
-fi
-#echo $ecode
-
-fname=$(basename "$1" .wacc)
-arm-linux-gnueabi-gcc -o "${fname}" -mcpu=arm1176jzf-s -mtune=arm1176jzf-s "${fname}.s"
-qemu-arm -L /usr/arm-linux-gnueabi/ "${fname}"
-
-if [ $ecode == 100 ] || [ $ecode == 200 ]
-then
-  exit $?
-fi
-exit 0
