@@ -4,6 +4,7 @@ import parsley.Parsley
 import parsley.genericbridges.ParserBridge0
 import parsley.implicits.zipped.{Zipped2, Zipped3, Zipped4}
 import parsley.position.pos
+import wacc.SemTypes.InternalPairSemType
 
 object AST {
 
@@ -11,7 +12,7 @@ object AST {
 
   // * Symbol Table and Position Aware Bridges * //
 
-  trait ParserBridgeSymPos1[-A, +B] extends ParserSingletonPosBridge[A => B]{
+  trait ParserBridgeSymPos1[-A, +B] extends ParserSingletonPosBridge[A => B] {
     def apply(x: A)(symbolTable: Option[SymbolTable[SemTypes.SemType]], pos: (Int, Int)): B
 
     def apply(x: Parsley[A]): Parsley[B] = pos <**> x.map(x => (p: (Int, Int)) => this.apply(x)(None, p))
@@ -19,7 +20,7 @@ object AST {
     override final def con(pos: (Int, Int)): A => B = this.apply(_)(None, pos)
   }
 
-  trait ParserBridgeSymPos2[-A, -B, +C] extends ParserSingletonPosBridge[(A,B) => C]{
+  trait ParserBridgeSymPos2[-A, -B, +C] extends ParserSingletonPosBridge[(A, B) => C] {
     def apply(x: A, y: B)(st: Option[SymbolTable[SemTypes.SemType]], pos: (Int, Int)): C
 
     def apply(x: Parsley[A], y: Parsley[B]): Parsley[C]
@@ -103,7 +104,7 @@ object AST {
   Func(retType: Type, ident: String, params: List[Param], stat: Statement)(var st: Option[SymbolTable[SemTypes.SemType]], val pos: (Int, Int))
     extends AST
 
-  object Func extends ParserBridgeSymPos3[(Type, String) , List[Param], Statement, Func] {
+  object Func extends ParserBridgeSymPos3[(Type, String), List[Param], Statement, Func] {
     override def apply(x: (Type, String), y: List[Param], z: Statement)(st: Option[SymbolTable[SemTypes.SemType]], pos: (Int, Int)): Func = {
       Func(x._1, x._2, y, z)(st, pos)
     }
@@ -115,7 +116,7 @@ object AST {
 
   // WACC Type hierarchy
 
-  sealed trait Type extends AST
+  sealed trait Type extends PairElemType
 
   sealed trait BaseType extends Type with PairElemType
 
@@ -172,21 +173,21 @@ object AST {
 
   object PairExpr extends ParserBridgePos0[Expr]
 
-  case class IdentExpr(ident: String)(var st : Option[SymbolTable[SemTypes.SemType]], val pos: (Int, Int)) extends Expr
+  case class IdentExpr(ident: String)(var st: Option[SymbolTable[SemTypes.SemType]], val pos: (Int, Int)) extends Expr
 
   object IdentExpr extends ParserBridgeSymPos1[String, Expr]
 
   sealed trait UnopExpr extends Expr
 
-  case class NotExpr(e: Expr)(var st : Option[SymbolTable[SemTypes.SemType]], val pos: (Int, Int)) extends UnopExpr
+  case class NotExpr(e: Expr)(var st: Option[SymbolTable[SemTypes.SemType]], val pos: (Int, Int)) extends UnopExpr
 
   object NotExpr extends ParserBridgeSymPos1[Expr, UnopExpr]
 
-  case class NegExpr(e: Expr)(var st : Option[SymbolTable[SemTypes.SemType]], val pos: (Int, Int)) extends UnopExpr
+  case class NegExpr(e: Expr)(var st: Option[SymbolTable[SemTypes.SemType]], val pos: (Int, Int)) extends UnopExpr
 
   object NegExpr extends ParserBridgeSymPos1[Expr, UnopExpr]
 
-  case class LenExpr(e: Expr)(var st : Option[SymbolTable[SemTypes.SemType]], val pos: (Int, Int)) extends UnopExpr
+  case class LenExpr(e: Expr)(var st: Option[SymbolTable[SemTypes.SemType]], val pos: (Int, Int)) extends UnopExpr
 
   object LenExpr extends ParserBridgeSymPos1[Expr, UnopExpr]
 
@@ -200,77 +201,83 @@ object AST {
 
   sealed trait BinopExpr extends Expr
 
-  case class MulExpr(e1: Expr, e2: Expr)(var st : Option[SymbolTable[SemTypes.SemType]], val pos: (Int, Int)) extends BinopExpr
+  case class MulExpr(e1: Expr, e2: Expr)(var st: Option[SymbolTable[SemTypes.SemType]], val pos: (Int, Int)) extends BinopExpr
 
   object MulExpr extends ParserBridgeSymPos2[Expr, Expr, BinopExpr]
 
-  case class DivExpr(e1: Expr, e2: Expr)(var st : Option[SymbolTable[SemTypes.SemType]], val pos: (Int, Int)) extends BinopExpr
+  case class DivExpr(e1: Expr, e2: Expr)(var st: Option[SymbolTable[SemTypes.SemType]], val pos: (Int, Int)) extends BinopExpr
 
   object DivExpr extends ParserBridgeSymPos2[Expr, Expr, BinopExpr]
 
-  case class ModExpr(e1: Expr, e2: Expr)(var st : Option[SymbolTable[SemTypes.SemType]], val pos: (Int, Int)) extends BinopExpr
+  case class ModExpr(e1: Expr, e2: Expr)(var st: Option[SymbolTable[SemTypes.SemType]], val pos: (Int, Int)) extends BinopExpr
 
   object ModExpr extends ParserBridgeSymPos2[Expr, Expr, BinopExpr]
 
-  case class AddExpr(e1: Expr, e2: Expr)(var st : Option[SymbolTable[SemTypes.SemType]], val pos: (Int, Int)) extends BinopExpr
+  case class AddExpr(e1: Expr, e2: Expr)(var st: Option[SymbolTable[SemTypes.SemType]], val pos: (Int, Int)) extends BinopExpr
 
   object AddExpr extends ParserBridgeSymPos2[Expr, Expr, BinopExpr]
 
-  case class SubExpr(e1: Expr, e2: Expr)(var st : Option[SymbolTable[SemTypes.SemType]], val pos: (Int, Int)) extends BinopExpr
+  case class SubExpr(e1: Expr, e2: Expr)(var st: Option[SymbolTable[SemTypes.SemType]], val pos: (Int, Int)) extends BinopExpr
 
   object SubExpr extends ParserBridgeSymPos2[Expr, Expr, BinopExpr]
 
-  case class GTExpr(e1: Expr, e2: Expr)(var st : Option[SymbolTable[SemTypes.SemType]], val pos: (Int, Int)) extends BinopExpr
+  case class GTExpr(e1: Expr, e2: Expr)(var st: Option[SymbolTable[SemTypes.SemType]], val pos: (Int, Int)) extends BinopExpr
 
   object GTExpr extends ParserBridgeSymPos2[Expr, Expr, BinopExpr]
 
-  case class GTEQExpr(e1: Expr, e2: Expr)(var st : Option[SymbolTable[SemTypes.SemType]], val pos: (Int, Int)) extends BinopExpr
+  case class GTEQExpr(e1: Expr, e2: Expr)(var st: Option[SymbolTable[SemTypes.SemType]], val pos: (Int, Int)) extends BinopExpr
 
   object GTEQExpr extends ParserBridgeSymPos2[Expr, Expr, BinopExpr]
 
-  case class LTExpr(e1: Expr, e2: Expr)(var st : Option[SymbolTable[SemTypes.SemType]], val pos: (Int, Int)) extends BinopExpr
+  case class LTExpr(e1: Expr, e2: Expr)(var st: Option[SymbolTable[SemTypes.SemType]], val pos: (Int, Int)) extends BinopExpr
 
   object LTExpr extends ParserBridgeSymPos2[Expr, Expr, BinopExpr]
 
-  case class LTEQExpr(e1: Expr, e2: Expr)(var st : Option[SymbolTable[SemTypes.SemType]], val pos: (Int, Int)) extends BinopExpr
+  case class LTEQExpr(e1: Expr, e2: Expr)(var st: Option[SymbolTable[SemTypes.SemType]], val pos: (Int, Int)) extends BinopExpr
 
   object LTEQExpr extends ParserBridgeSymPos2[Expr, Expr, BinopExpr]
 
-  case class EQExpr(e1: Expr, e2: Expr)(var st : Option[SymbolTable[SemTypes.SemType]], val pos: (Int, Int)) extends BinopExpr
+  case class EQExpr(e1: Expr, e2: Expr)(var st: Option[SymbolTable[SemTypes.SemType]], val pos: (Int, Int)) extends BinopExpr
 
   object EQExpr extends ParserBridgeSymPos2[Expr, Expr, BinopExpr]
 
-  case class NEQExpr(e1: Expr, e2: Expr)(var st : Option[SymbolTable[SemTypes.SemType]], val pos: (Int, Int)) extends BinopExpr
+  case class NEQExpr(e1: Expr, e2: Expr)(var st: Option[SymbolTable[SemTypes.SemType]], val pos: (Int, Int)) extends BinopExpr
 
   object NEQExpr extends ParserBridgeSymPos2[Expr, Expr, BinopExpr]
 
-  case class AndExpr(e1: Expr, e2: Expr)(var st : Option[SymbolTable[SemTypes.SemType]], val pos: (Int, Int)) extends BinopExpr
+  case class AndExpr(e1: Expr, e2: Expr)(var st: Option[SymbolTable[SemTypes.SemType]], val pos: (Int, Int)) extends BinopExpr
 
   object AndExpr extends ParserBridgeSymPos2[Expr, Expr, BinopExpr]
 
-  case class OrExpr(e1: Expr, e2: Expr)(var st : Option[SymbolTable[SemTypes.SemType]], val pos: (Int, Int)) extends BinopExpr
+  case class OrExpr(e1: Expr, e2: Expr)(var st: Option[SymbolTable[SemTypes.SemType]], val pos: (Int, Int)) extends BinopExpr
 
   object OrExpr extends ParserBridgeSymPos2[Expr, Expr, BinopExpr]
 
 
   sealed trait PairElem extends LValue with RValue
 
-  case class Fst(lvalue: LValue)(val pos: (Int, Int)) extends PairElem
+  case class Fst(lvalue: LValue)(val pos: (Int, Int))(var ty: SemTypes.SemType) extends PairElem
 
-  object Fst extends ParserBridgePos1[LValue, PairElem]
+  object Fst extends ParserBridgePos1[LValue, PairElem] {
+    override def apply(x: LValue)(pos: (Int, Int)): PairElem = {
+      new Fst(x)(pos)(InternalPairSemType)
+    }
+  }
 
-  case class Snd(lvalue: LValue)(val pos: (Int, Int)) extends PairElem
+  case class Snd(lvalue: LValue)(val pos: (Int, Int))(var ty: SemTypes.SemType) extends PairElem
 
-  object Snd extends ParserBridgePos1[LValue, PairElem]
+  object Snd extends ParserBridgePos1[LValue, PairElem] {
+    override def apply(x: LValue)(pos: (Int, Int)): PairElem = new Snd(x)(pos)(InternalPairSemType)
+  }
 
   // Statement branch of AST
   sealed trait Statement extends AST
 
   case object Skip extends Statement with ParserBridge0[Statement]
 
-  case class VarDec(assignType: Type, ident: String, rvalue: RValue)(val pos: (Int, Int)) extends Statement
+  case class VarDec(assignType: Type, ident: String, rvalue: RValue)(var symbolTable: Option[SymbolTable[SemTypes.SemType]], val pos: (Int, Int)) extends Statement
 
-  object VarDec extends ParserBridgePos3[Type, String, RValue, Statement]
+  object VarDec extends ParserBridgeSymPos3[Type, String, RValue, Statement]
 
   case class Assign(lvalue: LValue, rvalue: RValue)(val pos: (Int, Int)) extends Statement
 
@@ -280,9 +287,9 @@ object AST {
 
   object Read extends ParserBridgeSymPos1[LValue, Statement]
 
-  case class Free(e: Expr)(val pos: (Int, Int)) extends Statement
+  case class Free(e: Expr)(var symbolTable: Option[SymbolTable[SemTypes.SemType]], val pos: (Int, Int)) extends Statement
 
-  object Free extends ParserBridgePos1[Expr, Statement]
+  object Free extends ParserBridgeSymPos1[Expr, Statement]
 
   case class Return(e: Expr)(val pos: (Int, Int)) extends Statement
 
@@ -292,7 +299,7 @@ object AST {
 
   object Exit extends ParserBridgePos1[Expr, Statement]
 
-  case class Print(e: Expr, var expType : Option[SemTypes.SemType] = None)(var symbolTable: Option[SymbolTable[SemTypes.SemType]], val pos: (Int, Int)) extends Statement
+  case class Print(e: Expr, var expType: Option[SemTypes.SemType] = None)(var symbolTable: Option[SymbolTable[SemTypes.SemType]], val pos: (Int, Int)) extends Statement
 
   object Print extends ParserBridgeSymPos1[Expr, Statement] {
     override def apply(x: Expr)(symbolTable: Option[SymbolTable[SemTypes.SemType]], pos: (Int, Int)): Statement = {
@@ -300,7 +307,7 @@ object AST {
     }
   }
 
-  case class Println(e: Expr, var expType : Option[SemTypes.SemType] = None)(var symbolTable: Option[SymbolTable[SemTypes.SemType]], val pos: (Int, Int)) extends Statement
+  case class Println(e: Expr, var expType: Option[SemTypes.SemType] = None)(var symbolTable: Option[SymbolTable[SemTypes.SemType]], val pos: (Int, Int)) extends Statement
 
   object Println extends ParserBridgeSymPos1[Expr, Statement] {
     override def apply(x: Expr)(symbolTable: Option[SymbolTable[SemTypes.SemType]], pos: (Int, Int)): Statement = {
@@ -330,7 +337,7 @@ object AST {
 
   object IdentValue extends ParserBridgeSymPos1[String, LValue]
 
-  case class ArrayElem(ident: String, exprs: List[Expr])(var st : Option[SymbolTable[SemTypes.SemType]], val pos: (Int, Int)) extends LValue with Expr
+  case class ArrayElem(ident: String, exprs: List[Expr])(var st: Option[SymbolTable[SemTypes.SemType]], val pos: (Int, Int)) extends LValue with Expr
 
   object ArrayElem extends ParserBridgeSymPos2[String, List[Expr], ArrayElem]
 

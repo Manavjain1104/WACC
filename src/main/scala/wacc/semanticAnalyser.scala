@@ -87,6 +87,7 @@ class semanticAnalyser {
       case StringType() => StringSemType
       case ArrayType(t: Type) => ArraySemType(convertToSem(t))
       case DummyPair => PairSemType(InternalPairSemType, InternalPairSemType)
+      case PairType(pt1, pt2) => PairSemType(convertToSem(pt1), convertToSem(pt2))
       case _ => throw new RuntimeException("Should not reach here")
     }
   }
@@ -412,7 +413,7 @@ class semanticAnalyser {
         val e2Type: Option[SemType] = checkExpr(e2, symbolTable)
         Some(PairSemType(e1Type.get, e2Type.get))
 
-      case call@Call(ident, args) =>
+      case call@Call(ident, args) => {
         // valid function in symbol table
         val identSemType = symbolTable.lookupAll(FUNCTION_PREFIX + ident)
         if (identSemType.isEmpty) {
@@ -449,6 +450,7 @@ class semanticAnalyser {
               Some("Cannot call a non function identifier"))
             Some(InternalPairSemType)
         }
+      }
 
       case elem: PairElem => checkPairElem(elem, symbolTable)
     }
@@ -507,6 +509,13 @@ class semanticAnalyser {
     Some(InternalPairSemType)
   }
 
+  def attachType(pe : PairElem, ty : SemType) : Unit = {
+    pe match {
+      case f : Fst => f.ty = ty
+      case s : Snd => s.ty = ty
+    }
+  }
+
   private def checkPairElem(pe: PairElem, symbolTable: SymbolTable[SemType]): Option[SemType] = {
     var is_fst: Boolean = false
     val insideLval: LValue = pe match {
@@ -515,17 +524,44 @@ class semanticAnalyser {
         lvalue
       case Snd(lvalue) => lvalue
     }
+
     insideLval match {
-      case _: PairElem =>
-        Some(InternalPairSemType)
+      case insideElem: PairElem => {
+        val insidePos = insideElem match {
+          case f : Fst => f.pos
+          case s : Snd => s.pos
+        }
+        val insideType = checkPairElem(insideElem, symbolTable)
+        assert(insideType.isDefined, "check pair elem on inside type failed")
+        insideType.get match {
+          case PairSemType(pt1, pt2) => {
+            if (is_fst) {
+              attachType(pe, pt1)
+              Some(pt1)
+            } else {
+              attachType(pe, pt2)
+              Some(pt2)
+            }
+          }
+          case unexpectedType => {
+            errorLog += TypeError(insidePos,
+              Set(PairSemType(InternalPairSemType, InternalPairSemType)), unexpectedType,
+              Some("can only call fst or snd on pairs"))
+            Some(InternalPairSemType)
+          }
+        }
+      }
+//        Some(InternalPairSemType)
 
       case arrayElem: ArrayElem =>
         val opArrayItemType = checkArrayElem(arrayElem, symbolTable)
         opArrayItemType.get match {
           case PairSemType(pt1, pt2) =>
             if (is_fst) {
+              attachType(pe, pt1)
               Some(pt1)
             } else {
+              attachType(pe, pt2)
               Some(pt2)
             }
           case InternalPairSemType => Some(InternalPairSemType)
@@ -542,8 +578,10 @@ class semanticAnalyser {
           identType.get match {
             case PairSemType(pt1, pt2) =>
               if (is_fst) {
+                attachType(pe, pt1)
                 return Some(pt1)
               } else {
+                attachType(pe, pt2)
                 return Some(pt2)
               }
             case unexpectedType =>
@@ -589,6 +627,7 @@ class semanticAnalyser {
             Some(InternalPairSemType)
           } else {
             symbolTable.add(ident, assignSemType)
+            varDec.symbolTable = Some(symbolTable)
             Some(assignSemType)
           }
         }
@@ -788,7 +827,8 @@ class semanticAnalyser {
         val statType = checkStatement(next, symbolTable)
         statType
 
-      case cs@CallStat(ident, args) =>{
+      case cs@CallStat(ident, args) => {
+        // valid function in symbol table
         val identSemType = symbolTable.lookupAll(FUNCTION_PREFIX + ident)
         if (identSemType.isEmpty) {
           errorLog += UnknownIdentifierError(cs.pos, ident, Some("Unknown function identifier found"))

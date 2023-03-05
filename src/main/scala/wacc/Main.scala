@@ -55,10 +55,7 @@ object Main {
               }
               generateOutputMessages(ListBuffer.empty[error.SemanticError], None, file.getPath, OK_EXIT_CODE)
 
-              // TODO : Code Generation
               val output = armPrinter.print(new codeGenerator(prog))
-//              new codeGenerator(prog).generateProgIR().foreach(ir => println(ir))
-//              println(output)
 
               // Write assembly to .s file
               if (!file.getName.endsWith(".wacc")) {

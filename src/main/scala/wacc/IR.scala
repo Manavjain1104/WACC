@@ -3,60 +3,134 @@ package wacc
 import wacc.Registers.Reg
 
 object IR {
+
+  // various flags that can be given to IR
+  sealed trait Flag
+
+  sealed trait MemoryFlag extends Flag
+
+  sealed trait BranchFlag extends Flag
+
+  sealed trait LogicalFlag extends BranchFlag
+
+  sealed trait LinkFlag extends BranchFlag
+
+  sealed trait SignFlag extends BranchFlag
+
+  case object S extends SignFlag
+
+
+  case object BYTECONSTOFFSET extends MemoryFlag
+
+  case object BYTEREGOFFSET extends MemoryFlag
+
+  case object INDEX extends MemoryFlag
+
+  case object DEFAULT extends LogicalFlag with LinkFlag with MemoryFlag with SignFlag
+
+  case object GT extends LogicalFlag
+
+  case object LT extends LogicalFlag
+
+  case object GE extends LogicalFlag
+
+  case object LE extends LogicalFlag
+
+  case object EQ extends LogicalFlag
+
+  case object NE extends LogicalFlag
+
+  case object L extends BranchFlag
+
+  case object LEQ extends BranchFlag
+
+  case object LNE extends BranchFlag
+
+  case object LLT extends BranchFlag
+
+  case object LGE extends BranchFlag
+
+  case object LVS extends BranchFlag
+
   sealed trait IR
 
   // Top level statements
-  case class Data(strings : List[String], startIndex : Int) extends IR
+  case class Data(strings: List[String], startIndex: Int) extends IR
+
   case class Global(globals: List[String]) extends IR
-  case object LTORG                        extends IR
+
+  case object LOCALCOLLECT extends IR
 
   // Label and Branch Statements
-  case class Label(label: String)  extends IR
-  case class BRANCH(label: String, Suffix: String) extends IR
+  case class Label(label: String) extends IR
+
+  case class BRANCH(label: String, Suffix: BranchFlag) extends IR
 
 
   // Move statements
-  case class MOV(rd: Reg, rs: Reg, Flag : String)     extends IR
-  case class MOVImm(rd: Reg, i: Int, Suffix : String) extends IR
+  case class MOV(rd: Reg, rs: Reg, Suffix: LogicalFlag) extends IR
+
+  case class MOVImm(rd: Reg, i: Int, Suffix: LogicalFlag) extends IR
 
   // Push and Pop Statements
   case class PUSHMul(regs: List[Reg]) extends IR
-  case class PUSH(reg: Reg)           extends IR
-  case class POPMul(regs: List[Reg])  extends IR
-  case class POP(reg: Reg)            extends IR
+
+  case class PUSH(reg: Reg) extends IR
+
+  case class POPMul(regs: List[Reg]) extends IR
+
+  case class POP(reg: Reg) extends IR
 
   // Unary Operators
-  case class NEG(rd : Reg, rs : Reg) extends IR
-  case class NOT(rd : Reg, rs : Reg) extends IR
+  case class NEG(rd: Reg, rs: Reg) extends IR
+
+  case class NOT(rd: Reg, rs: Reg) extends IR
 
   // Arithmetic Binary Operators
-  case class ADD(rd: Reg, rn: Reg, i: Int)                extends IR
-  case class ADDREG(rd: Reg, rn: Reg, rm: Reg)            extends IR
-  case class SUB(rd: Reg, rn: Reg, i: Int )               extends IR
-  case class SUBREG(rd: Reg, rn: Reg, rm: Reg)            extends IR
-  case class DIV(rd : Reg, rs : Reg, locals : Int)        extends IR
-  case class MUL(rd : Reg, rs : Reg)                      extends IR
-  case class MOD(rd : Reg, rs : Reg, locals : Int)        extends IR
+  case class ADD(rd: Reg, rn: Reg, i: Int, flag: SignFlag) extends IR
+
+  case class ADDREG(rd: Reg, rn: Reg, rm: Reg) extends IR
+
+  case class SUB(rd: Reg, rn: Reg, i: Int) extends IR
+
+  case class SUBREG(rd: Reg, rn: Reg, rm: Reg) extends IR
+
+  case class DIV(rd: Reg, rs: Reg, willClobber: Boolean) extends IR
+
+  case class MUL(rd: Reg, rs: Reg) extends IR
+
+  case class MOD(rd: Reg, rs: Reg, willClobber: Boolean) extends IR
 
   // Comparison Binary Operators
-  case class CMP(rd: Reg, rn: Reg)   extends IR
+  case class CMP(rd: Reg, rn: Reg) extends IR
+
   case class CMPImm(rd: Reg, i: Int) extends IR
 
   // Logical Binary Operators
   case class AND(rd: Reg, rn: Reg, label: String) extends IR
-  case class OR(rd: Reg, rn: Reg, label: String)  extends IR
+
+  case class OR(rd: Reg, rn: Reg, label: String) extends IR
+
+  case class TRUNCATE(rd: Reg, rn: Reg, i: Int) extends IR
+
 
   // Misc Statements
-  case class LDR(rd : Reg, rs : Reg, offset : Int, flag : String) extends IR
-  case class STR(rd : Reg, rs : Reg, offset : Int) extends IR
-  case class FETCHINDEX(rd: Reg, rb: Reg, ri: Reg, elemSize: Int) extends IR
-  case class StringInit(reg: Reg, stringNum: Int)  extends IR
+  case class LDR(rd: Reg, rs: Reg, offset: Int, flag: MemoryFlag) extends IR
 
+  case class STR(rd: Reg, rs: Reg, offset: Int, flag: MemoryFlag) extends IR
+
+  case class STOREINDEX(rd: Reg, rb: Reg, ri: Reg, elemSize: Int) extends IR
+
+  case class STOREINDEXB(rs: Reg, rb: Reg, ri: Reg) extends IR
+
+  case class StringInit(reg: Reg, stringNum: Int) extends IR
 }
 
 object Registers {
   sealed trait Location
-  case class Stack(offset : Int) extends Location
+
+  case class Stack(offset: Int) extends Location
+
   sealed trait Reg extends Location
 
   case object R0 extends Reg {

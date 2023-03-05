@@ -2,7 +2,7 @@ package wacc
 
 import parsley.Parsley.{attempt, lookAhead}
 import parsley.combinator.{ifP, many, sepBy}
-import parsley.errors.combinator.{ErrorMethods, amend, fail}
+import parsley.errors.combinator.ErrorMethods
 import parsley.expr.{Prefix, chain, precedence}
 
 
@@ -59,16 +59,17 @@ object parser {
   lazy val expList: Parsley[List[Expr]] = sepBy(expr, ",")
   val arrayLiter: Parsley[RValue] = ArrayLiter(OPENSQUAREBRAC ~> expList <~ CLOSESQUAREBRAC)
 
-  // type hierarchy parsers
-  lazy val waccType: Parsley[Type] = attempt(arrayType) <|> baseType <|> pairType <|> voidType
+  // type heirarchy parsers
+  lazy val waccType: Parsley[Type] = attempt(arrayType) <|> baseType <|> pairType //<|> voidType
   val voidType: Parsley[VoidType] = VoidType <# symbol("void")
+
   val baseType: Parsley[BaseType] = ((IntType <# "int") <|>
     (BoolType <# "bool") <|>
     (CharType <# "char") <|>
     (StringType <# "string")).label("primitive_base_type")
   lazy val arrayType: Parsley[ArrayType] = chain.postfix1((baseType <|> pairType), (OPENSQUAREBRAC ~> CLOSESQUAREBRAC) #> ArrayType)
   val pairType: Parsley[Type] = PairType(PAIR ~> OPENPAREN ~> pairelemType, COMMA ~> pairelemType <~ CLOSEDPAREN)
-  lazy val pairelemType: Parsley[PairElemType] = attempt(arrayType) <|> baseType <|> (DummyPair <# PAIR)
+  lazy val pairelemType: Parsley[PairElemType] = attempt(arrayType) <|> baseType <|> attempt(waccType) <|> (DummyPair <# PAIR) // here attempt something - pair(wacc, wacc)
 
   // Statement Parsers
   val skip: Parsley[Statement] = Skip <# "skip".label("Statement_beginning")
@@ -106,10 +107,12 @@ object parser {
     IS ~> statement.filter(isValidFuncStatement).explain("Function body starting here must" +
       " have a return/exit statement on all paths and must end with one") <~ END)
 
+
   val func: Parsley[Func] = ifP(lookAhead(voidType) #> true <|> lookAhead(waccType) #> false, voidFunc, regFunc)
 
+
   val program: Parsley[Program]
-    = Program(BEGIN ~> many(func), statement <~ END)
+  = Program(BEGIN ~> many(func), statement <~ END)
 
   private def isValidFuncStatement(stat: Statement): Boolean = {
     stat match {
@@ -136,6 +139,20 @@ object parser {
       case _ => true
     }
   }
+
+  private def isValidVoidFuncStatement(stat: Statement): Boolean = {
+    stat match {
+      case ConsecStat(first, next) =>
+        isValidVoidFuncStatement(next) && isValidVoidFuncStatement(first)
+      case If(_, thenStat, elseStat) =>
+        isValidVoidFuncStatement(thenStat) && isValidVoidFuncStatement(elseStat)
+      case While(_, doStat) => isValidFuncStatement(doStat)
+      case ScopeStat(stat) => isValidFuncStatement(stat)
+      case _ : Return => false
+      case _ => true
+    }
+  }
+
 
 }
 
