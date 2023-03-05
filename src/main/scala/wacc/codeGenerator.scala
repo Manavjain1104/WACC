@@ -681,8 +681,6 @@ class codeGenerator(program: Program) {
           irs.append(ADD(SP, SP, (lArgs.length - WORDSIZE) * WORDSIZE, DEFAULT))
         }
 
-        irs.append(MOV(scratchReg1, R0, DEFAULT))
-
         // caller saved
         if (realCount > 0) {
           irs.append(POPMul(localRegs.slice(0, realCount)))
@@ -690,8 +688,6 @@ class codeGenerator(program: Program) {
         if (numParams > 0) {
           irs.append(POPMul(paramRegs.slice(0, numParams)))
         }
-
-        irs.append(PUSH(scratchReg1))
         irs.toList
       }
 
