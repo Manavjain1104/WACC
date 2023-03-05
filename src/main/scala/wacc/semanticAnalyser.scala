@@ -827,7 +827,7 @@ class semanticAnalyser {
         val statType = checkStatement(next, symbolTable)
         statType
 
-      case cs@Call(ident, args) => {
+      case cs@CallStat(ident, args) => {
         // valid function in symbol table
         val identSemType = symbolTable.lookupAll(FUNCTION_PREFIX + ident)
         if (identSemType.isEmpty) {
