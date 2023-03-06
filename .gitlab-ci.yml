@@ -33,6 +33,11 @@ all-backend-tests:
     - make
     - sbt "testOnly -- -n ValidTests"
 
+extension-tests:
+  stage: test
+  script:
+    - make
+    - sbt "testOnly -- -n FullPairTypeTests"
 
 # Don't test everything
 # Tag tests and use "PENDING" using scala test

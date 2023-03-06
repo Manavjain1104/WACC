@@ -1,0 +1,11 @@
+# Should be able to read elements inside nested pairs
+
+# Output:
+
+# Program:
+
+begin
+  pair(int, char) p = newpair(10, 'a');
+  pair(pair(int, char), int) q = newpair(p, 5);
+  read snd fst q
+end
