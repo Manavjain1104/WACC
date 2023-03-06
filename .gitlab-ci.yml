@@ -36,7 +36,8 @@ all-backend-tests:
 extension-tests:
   stage: test
   script:
-    - sbt "testOnly
+    - make
+    - sbt "testOnly -- -n FullPairTypeTests"
 # Don't test everything
 # Tag tests and use "PENDING" using scala test
 # test pass rate and coverage
