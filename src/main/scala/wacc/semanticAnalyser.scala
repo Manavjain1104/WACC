@@ -597,14 +597,14 @@ class semanticAnalyser {
   }
 
   private def checkFunction(func: Func, symbolTable: SymbolTable[SemType]): Unit = {
-      val intermediateTable = new SymbolTable(Some(symbolTable))
-      if (checkParams(func.params, intermediateTable, mutable.Set.empty[String])) {
-        val funcSemType: SemType = convertToSem(func.retType)
-        intermediateTable.add(ENCLOSING_FUNC_RETURN_TYPE, funcSemType)
-        val childSym = new SymbolTable(Some(intermediateTable))
-        if (checkStatement(func.stat, childSym).isDefined) {
-          func.st = Some(childSym)
-        }
+    val intermediateTable = new SymbolTable(Some(symbolTable))
+    if (checkParams(func.params, intermediateTable, mutable.Set.empty[String])) {
+      val funcSemType: SemType = convertToSem(func.retType)
+      intermediateTable.add(ENCLOSING_FUNC_RETURN_TYPE, funcSemType)
+      val childSym = new SymbolTable(Some(intermediateTable))
+      if (checkStatement(func.stat, childSym).isDefined) {
+        func.st = Some(childSym)
+      }
     }
   }
 
@@ -784,12 +784,12 @@ class semanticAnalyser {
             Some(InternalPairSemType)
         }
 
-      case printStat: Print =>
+      case printStat : Print =>
         printStat.symbolTable = Some(symbolTable)
         printStat.expType = checkExpr(printStat.e, symbolTable)
         printStat.expType
 
-      case printlnStat: Println =>
+      case printlnStat : Println =>
         printlnStat.symbolTable = Some(symbolTable)
         printlnStat.expType = checkExpr(printlnStat.e, symbolTable)
         printlnStat.expType

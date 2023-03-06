@@ -84,6 +84,7 @@ object parser {
   val scopeStat: Parsley[Statement] = ScopeStat(BEGIN.label("Statement_beginning") ~> statement <~ END)
   val callStat: Parsley[Statement] = CallStat((CALL ~> IDENT <~ OPENPAREN), expList <~ CLOSEDPAREN)
 
+
   // terminal statements
   lazy val terminalStat: Parsley[Statement] = (returnStat <|> exit).label("return/exit_statement")
   val returnStat: Parsley[Statement] = Return(RETURN ~> expr)
@@ -125,18 +126,6 @@ object parser {
       case Exit(_) => true
       case Return(_) => true
       case _ => false
-    }
-  }
-  private def isValidVoidFuncStatement(stat: Statement): Boolean = {
-    stat match {
-      case ConsecStat(first, next) =>
-        isValidVoidFuncStatement(next) && isValidVoidFuncStatement(first)
-      case If(_, thenStat, elseStat) =>
-        isValidVoidFuncStatement(thenStat) && isValidVoidFuncStatement(elseStat)
-      case While(_, doStat) => isValidFuncStatement(doStat)
-      case ScopeStat(stat) => isValidFuncStatement(stat)
-      case _ : Return => false
-      case _ => true
     }
   }
 
