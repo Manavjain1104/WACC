@@ -33,7 +33,10 @@ all-backend-tests:
     - make
     - sbt "testOnly -- -n ValidTests"
 
-
+extension-tests:
+  stage: test
+  script:
+    - sbt "testOnly
 # Don't test everything
 # Tag tests and use "PENDING" using scala test
 # test pass rate and coverage

@@ -1,0 +1,14 @@
+# Should be able to access elements inside nested pairs
+
+# Output:
+# 10
+#
+
+# Program:
+
+begin
+  pair(int, char) p = newpair(10, 'a');
+  pair(pair(int, char), int) q = newpair(p, 5);
+  int x = fst fst q;
+  println x
+end
