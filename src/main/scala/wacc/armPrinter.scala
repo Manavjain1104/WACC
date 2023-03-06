@@ -120,7 +120,7 @@ object armPrinter {
       case ADDREG(rd, rn, rm) => {
         val sb = new StringBuilder
         sb.append(printInstr("adds ", List(rd, rn, rm)) + NewLineChar)
-        sb.append(printIR(BRANCH("_errOverflow", LVS)) + NewLineChar)
+        sb.append(printIR(BRANCH("_errOverflow", LVS)))
         sb.toString()
       }
       case SUB(rd, rn, i) => {

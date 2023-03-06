@@ -40,8 +40,9 @@ class semanticAnalyser {
       checkStruct(struct, structTable)
     }
 
-    // set up struct for entire
+    // set up struct for semantic/cg analysis
     opStructTable = Some(structTable)
+    program.structTable = opStructTable
 
     // first pass to develop function names on the top level symbol table
     val funcDefinitions = mutable.Set.empty[Func]
@@ -66,13 +67,16 @@ class semanticAnalyser {
 
   def getSize(assignType : SemType) : Int = {
     assignType match {
-      case _ : ArraySemType => WORDSIZE
-      case SemTypes.IntSemType => WORDSIZE
       case SemTypes.CharSemType => BYTESIZE
-      case SemTypes.BoolSemType => WORDSIZE
-      case SemTypes.StringSemType => WORDSIZE
-      case _ : PairSemType => WORDSIZE
-      case _ => throw new RuntimeException("Should not reach here")
+      case _ => WORDSIZE
+//      case _ : ArraySemType => WORDSIZE // TODO allowed all types to seep thru
+//      case SemTypes.IntSemType => WORDSIZE
+//
+//      case SemTypes.BoolSemType => WORDSIZE
+//      case SemTypes.StringSemType => WORDSIZE
+//      case _ : PairSemType => WORDSIZE
+//      case
+//      case _ => throw new RuntimeException("Should not reach here")
     }
   }
 
@@ -107,24 +111,23 @@ class semanticAnalyser {
   private def checkStruct(struct: Struct, structTable: StructTable) : Unit = {
     val structDef: StructDef = structTable.lookup(struct.name).get
     var currPointer : Int = 0
-    for (field <- struct.fields) {
-      field match {
-        case varDec: VarDec => {
-          val ttype = convertToSem(varDec.assignType)
-          if (checkStructType(ttype)) {
-            // check validity of varDec Statement
-            checkStatement(varDec, structDef)
-
+    val fieldNames = collection.mutable.Set.empty[String]
+    for (fieldDec <- struct.fields) {
+        // check validity of fieldDec Statement
+        if (!fieldNames.contains(fieldDec.ident)) {
+          val ttype = convertToSem(fieldDec.assignType)
+//          if (checkStructType(ttype)) { // TODO --> allowed all types to go thru
+          if (true) {
             val size = getSize(ttype)
-            currPointer -= size
-            structDef.addOffset(varDec.ident, currPointer)
-
+            structDef.addOffset(fieldDec.ident, currPointer)
+            currPointer += size
+            structDef.add(fieldDec.ident, ttype)
           } else {
-            errorLog += InvalidStructTypeError(varDec.pos, ttype, Some("Struct can only have simple base type and non nested array/pair fields"))
+            errorLog += InvalidStructTypeError(fieldDec.pos, ttype, Some("Struct can only have simple base type and non nested array/pair fields"))
           }
+        } else {
+          errorLog += DuplicateIdentifier(fieldDec.pos, fieldDec.ident, Some("Duplicate field found in struct " + struct.name))
         }
-        case _ => throw new RuntimeException("Should not reach here")
-      }
     }
     structDef.structSize = currPointer
   }
@@ -273,7 +276,10 @@ class semanticAnalyser {
         arrayElem.st = Some(symbolTable)
         checkArrayElem(arrayElem, symbolTable)
 
-      case structElem : StructElem => checkStructElem(structElem, symbolTable)
+      case structElem : StructElem => {
+        structElem.st = Some(symbolTable)
+        checkStructElem(structElem, symbolTable)
+      }
 
       // unary operator expressions
       case node@NotExpr(e: Expr) =>
@@ -629,7 +635,7 @@ class semanticAnalyser {
   }
 
   private def checkStructElem(structElem: StructElem,symbolTable: GenericTable[SemType]): Option[SemType] = {
-    val identType: Option[SemType] = symbolTable.lookupAll(structElem.name)
+    val identType: Option[SemType] = symbolTable.lookupAll(structElem.ident)
     if (identType.isDefined) {
       identType.get match {
         case StructSemType(ident) => {
@@ -637,11 +643,12 @@ class semanticAnalyser {
           if (structDef.isDefined) {
             val opType: Option[SemType] = structDef.get.lookup(structElem.field)
             if (opType.isDefined) {
+              structElem.st = Some(symbolTable)
               return opType
             } else {
               errorLog +=
                 UnknownIdentifierError(structElem.pos, structElem.field,
-                  Some("Cannot find " + structElem.field + "inside the struct " + structElem.name))
+                  Some("Cannot find field inside the struct " + structElem.ident))
               return Some(InternalPairSemType)
             }
           } else {
@@ -660,7 +667,7 @@ class semanticAnalyser {
       }
     }
 
-    errorLog += UnknownIdentifierError(structElem.pos, structElem.name, Some("Unknown struct identifier found: " + structElem.name))
+    errorLog += UnknownIdentifierError(structElem.pos, structElem.ident, Some("Unknown struct identifier found "))
     Some(InternalPairSemType)
   }
 
@@ -964,6 +971,7 @@ class semanticAnalyser {
         exprType.get match {
           case _: PairSemType => exprType
           case _: ArraySemType => exprType
+          case _: StructSemType => exprType
           case unexpectedType =>
             val exprPos = getExprPos(expr)
             errorLog += new TypeError(exprPos._1,

@@ -78,6 +78,7 @@ object parser {
   // Statement Parsers
   val skip: Parsley[Statement]      = Skip <# "skip".label("Statement_beginning")
   val vardec: Parsley[Statement]    = VarDec(waccType, IDENT, ("=" ~> rvalue))
+  val fieldDec : Parsley[FieldDec]  = FieldDec(waccType, IDENT)
   val assign: Parsley[Statement]    = Assign(lvalue, ("=" ~> rvalue))
   val read: Parsley[Statement]      = Read(READ.label("Statement_beginning") ~> lvalue)
   val free: Parsley[Statement]      = Free(FREE.label("Statement_beginning") ~> expr)
@@ -110,7 +111,7 @@ object parser {
       " have a return/exit statement on all paths and must end with one") <~ END)
 
   val struct : Parsley[Struct] = Struct(attempt(STRUCT ~> IDENT <~ OPENCURLY),
-    (sepBy1(vardec, SEMICOLON).explain("Expected non empty struct field variable declaration")
+    (sepBy1(fieldDec, SEMICOLON).explain("Expected non empty struct field variable declaration")
       <~ CLOSEDCURLY).explain("Invalid Struct Definition. Check Syntax."))
 
   val program: Parsley[Program]

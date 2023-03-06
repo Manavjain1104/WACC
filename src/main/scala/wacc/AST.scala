@@ -5,6 +5,7 @@ import parsley.genericbridges.ParserBridge0
 import parsley.implicits.zipped.{Zipped2, Zipped3, Zipped4}
 import parsley.position.pos
 import wacc.SemTypes.InternalPairSemType
+import wacc.StructTable.StructTable
 
 object AST {
 
@@ -96,9 +97,13 @@ object AST {
   sealed trait AST
 
   // * Highest Level Program Branch of the Abstract Syntax Tree * //
-  case class Program(structs : List[Struct], funcs: List[Func], stat: Statement)(val pos: (Int, Int)) extends AST
+  case class Program(structs : List[Struct], funcs: List[Func], stat: Statement)(val pos: (Int, Int))(var structTable : Option[StructTable]) extends AST
 
-  object Program extends ParserBridgePos3[List[Struct], List[Func], Statement, Program]
+  object Program extends ParserBridgePos3[List[Struct], List[Func], Statement, Program] {
+    override def apply(structs: List[Struct], funcs: List[Func], stat: Statement)(pos: (Int, Int)): Program = {
+      new Program(structs, funcs, stat)(pos)(None)
+    }
+  }
 
   case class
   Func(retType: Type, ident: String, params: List[Param], stat: Statement)(var st: Option[GenericTable[SemTypes.SemType]], val pos: (Int, Int))
@@ -279,6 +284,10 @@ object AST {
 
   object VarDec extends ParserBridgeSymPos3[Type, String, RValue, Statement]
 
+  case class FieldDec(assignType: Type, ident: String)(var symbolTable: Option[GenericTable[SemTypes.SemType]], val pos: (Int, Int)) extends AST
+
+  object FieldDec extends ParserBridgeSymPos2[Type, String, FieldDec]
+
   case class Assign(lvalue: LValue, rvalue: RValue)(val pos: (Int, Int)) extends Statement
 
   object Assign extends ParserBridgePos2[LValue, RValue, Statement]
@@ -341,7 +350,7 @@ object AST {
 
   object ArrayElem extends ParserBridgeSymPos2[String, List[Expr], ArrayElem]
 
-  case class StructElem(name: String, field: String)(var st: Option[GenericTable[SemTypes.SemType]], val pos: (Int, Int)) extends LValue with Expr
+  case class StructElem(ident: String, field: String)(var st: Option[GenericTable[SemTypes.SemType]], val pos: (Int, Int)) extends LValue with Expr
 
   object StructElem extends ParserBridgeSymPos2[String, String, StructElem]
 
@@ -365,8 +374,8 @@ object AST {
   object Call extends ParserBridgePos2[String, List[Expr], RValue]
 
   // Struct - AST
-  case class Struct(name : String, fields : List[Statement])(val pos: (Int, Int)) extends AST
+  case class Struct(name : String, fields : List[FieldDec])(val pos: (Int, Int)) extends AST
 
-  object Struct extends ParserBridgePos2[String, List[Statement], Struct]
+  object Struct extends ParserBridgePos2[String, List[FieldDec], Struct]
 
 }

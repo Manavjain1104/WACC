@@ -31,8 +31,6 @@ object Main {
       case util.Success(value) => {
         value match {
           case Success(prog) => {
-//            println(prog)
-//            sys.exit(0) // stop semantic analysis
             val topST = new SymbolTable[SemType](None)
             val structTable = new StructTable()
             val errLog: Option[ListBuffer[error.SemanticError]] = sem.checkProgram(prog, topST, structTable)
@@ -56,7 +54,6 @@ object Main {
                 }
               }
               generateOutputMessages(ListBuffer.empty[error.SemanticError], None, file.getPath, OK_EXIT_CODE)
-//              sys.exit(0) // stop code generation analysis
 
               val output = armPrinter.print(new codeGenerator(prog))
 

@@ -216,8 +216,8 @@ object errorPrinter {
       var line = pos._1 - 1
       var col = pos._2 - 1
       val len = ident.length
-      while ((line < fileLines.length && !fileLines(line).slice(col, col + len).equals(ident))
-          || fileLines(line)(col + len).isLetter) {
+      while (line < fileLines.length && ((!fileLines(line).slice(col, col + len).equals(ident))
+          || ((col + len) < fileLines(line).length && fileLines(line)(col + len).isLetter))) {
         col += 1
         if (col >= fileLines(line).length || fileLines(line).charAt(col) == '\n') {
           col = 0
