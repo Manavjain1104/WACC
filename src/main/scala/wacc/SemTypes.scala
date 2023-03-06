@@ -10,6 +10,9 @@ object SemTypes {
   case object CharSemType extends SemType
   case object StringSemType extends SemType
 
+
+  case class StructSemType(ident : String) extends SemType
+
   case class ArraySemType(t : SemType) extends SemType
 
   case class PairSemType(pt1 : SemType, pt2 : SemType) extends SemType

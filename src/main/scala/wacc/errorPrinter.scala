@@ -64,6 +64,13 @@ object errorPrinter {
             sb.append("Unknown Identifier error in " + filename + " " + "(line " + newPos._1 + ", column " + newPos._2 + "):\n")
             sb.append(printForInvalidToken(newPos, ident, context))
           }
+          case InvalidStructTypeError(pos, foundType, context) => {
+            sb.append("Invalid Struct Type error in " + filename + " " + "(line " + pos._1 + ", column " + pos._2 + "):\n")
+            if (context.isDefined) {
+              sb.append(context.get + "\n")
+            }
+            sb.append(printForTypeError(pos, StructTable.allowedTypes.toList, foundType))
+          }
           case DuplicateIdentifier(pos, ident, context) => {
             val newPos = getIdentPos(pos, ident)
             sb.append("Duplicate Identifier error in " + filename + " " + "(line " + newPos._1 + ", column " + newPos._2 + "):\n")
@@ -107,6 +114,13 @@ object errorPrinter {
               sb.append(context.get + "\n")
             }
             sb.append(printForTypeError(pos, expectedTypes.toList, foundType))
+          }
+          case UnknownStructError(pos, context) => {
+            sb.append("Struct Type error starting here in " + filename + " " + "(line " + pos._1 + ", column " + pos._2 + ") starting here:\n")
+            if (context.isDefined) {
+              sb.append(context.get + "\n")
+            }
+            sb.append(printForInvalidToken(pos, fileLines(pos._1 - 1), None))
           }
 
         }
@@ -178,6 +192,13 @@ object errorPrinter {
             "array [ " + typeToString(t) + " ]"
           }
         }
+        case StructSemType(ident) => {
+          if (ident.isEmpty) {
+            "`struct type`"
+          } else {
+            "`struct " + ident + "`"
+          }
+        }
         case InternalPairSemType => "pair"
         case FuncSemType(retType, paramTypes, _) => {
           val sb = new StringBuilder()
@@ -195,7 +216,8 @@ object errorPrinter {
       var line = pos._1 - 1
       var col = pos._2 - 1
       val len = ident.length
-      while (line < fileLines.length && !fileLines(line).slice(col, col + len).equals(ident)) {
+      while ((line < fileLines.length && !fileLines(line).slice(col, col + len).equals(ident))
+          || fileLines(line)(col + len).isLetter) {
         col += 1
         if (col >= fileLines(line).length || fileLines(line).charAt(col) == '\n') {
           col = 0

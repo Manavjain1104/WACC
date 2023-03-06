@@ -1,5 +1,4 @@
-package src.main.scala.wacc
-
+package wacc.ASTTests
 
 import org.scalatest.Tag
 import wacc.AST._
