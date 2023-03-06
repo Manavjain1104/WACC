@@ -1,4 +1,4 @@
-package wacc.ASTTests
+package src.main.scala.wacc
 
 import org.scalatest.Tag
 import org.scalatest.flatspec.AnyFlatSpec

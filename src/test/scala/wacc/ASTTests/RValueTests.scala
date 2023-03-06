@@ -4,7 +4,9 @@ import org.scalatest.Tag
 import org.scalatest.flatspec.AnyFlatSpec
 import wacc.AST._
 import wacc.SemTypes.InternalPairSemType
-import wacc.parser.rvalue
+import wacc.ASTTests.SyntacticTests
+import wacc.parser.{rvalue}
+
 
 object RValueTests extends Tag("RValueTests")
 
