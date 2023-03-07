@@ -1193,7 +1193,7 @@ class codeGenerator(program: Program) {
                   i += 1
               }
 
-            case MOV(reg1, reg2, _) => {
+            case MOV(reg1, reg2, _) =>
               val irNext = irs(i + 1)
               newIRs.append(ir)
               irNext match {
@@ -1207,9 +1207,8 @@ class codeGenerator(program: Program) {
                 case _ =>
                   i += 1
               }
-            }
 
-            case LDR(rd1, rs1, offset1, _) => {
+            case LDR(rd1, rs1, offset1, _) =>
               val irNext = irs(i + 1)
               newIRs.append(ir)
               irNext match {
@@ -1223,9 +1222,8 @@ class codeGenerator(program: Program) {
                 }
                 case _ => i += 1
               }
-            }
 
-            case STR(rd1, rs1, offset1, _) => {
+            case STR(rd1, rs1, offset1, _) =>
               val irNext = irs(i + 1)
               newIRs.append(ir)
               irNext match {
@@ -1239,7 +1237,6 @@ class codeGenerator(program: Program) {
                 }
                 case _ => i += 1
               }
-            }
 
             case _ =>
               newIRs.append(ir)
