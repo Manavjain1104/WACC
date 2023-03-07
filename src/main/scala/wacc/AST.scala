@@ -149,6 +149,10 @@ object AST {
   // Expr hierarchy
   sealed trait Expr extends RValue
 
+  case class IfExpr(cond: Expr, thenExpr: Expr, elseExpr: Expr)(val pos: (Int, Int)) extends Expr
+
+  object IfExpr extends ParserBridgePos3[Expr, Expr, Expr, Expr]
+
   case class IntExpr(x: Int)(val pos: (Int, Int)) extends Expr
 
   object IntExpr extends ParserBridgePos1[Int, Expr]

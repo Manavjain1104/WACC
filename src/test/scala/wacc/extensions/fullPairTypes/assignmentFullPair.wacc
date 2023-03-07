@@ -1,0 +1,18 @@
+# Should be able to assign internal elements of nested pairs
+
+# Output:
+# a
+# b
+#
+
+# Program:
+
+begin
+  pair(int, char) p = newpair(10, 'a');
+  pair(pair(int, char), int) q = newpair(p, 5);
+  char x = snd fst q;
+  println x;
+  snd fst q = 'b';
+  x = snd fst q;
+  println x
+end
