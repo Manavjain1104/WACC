@@ -86,6 +86,26 @@ class codeGenerator(program: Program) {
         getIntoTarget(ident, scratchReg1, liveMap).appended(PUSH(scratchReg1))
       }
 
+      case IfExpr(cond, thenExpr, elseExpr) => {
+        val label0: String = getNewLabel
+        val label1: String = getNewLabel
+
+        val ifIr = ListBuffer.empty[IR]
+        ifIr.appendAll(generateExprIR(cond, liveMap, localRegs))
+        ifIr.append(POP(scratchReg1))
+        ifIr.append(CMPImm(scratchReg1, 0))
+        ifIr.append(BRANCH(label1, EQ))
+        val thenLiveMap = new SymbolTable[Location](Some(liveMap))
+        ifIr.appendAll(generateExprIR(thenExpr, thenLiveMap, localRegs))
+        ifIr.append(BRANCH(label0, DEFAULT))
+        ifIr.append(Label(label1))
+        val elseLiveMap = new SymbolTable[Location](Some(liveMap))
+        ifIr.appendAll(generateExprIR(elseExpr, elseLiveMap, localRegs))
+        ifIr.append(Label(label0))
+
+        ifIr.toList
+      }
+
       case expr: UnopExpr => {
         expr match {
           case ChrExpr(e) => {

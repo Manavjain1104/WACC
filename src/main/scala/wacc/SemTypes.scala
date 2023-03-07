@@ -17,4 +17,5 @@ object SemTypes {
 
   case class FuncSemType(retType : SemType, paramTypes : List[SemType], numParams : Int) extends SemType
 
+  case class IfExprSemType(cond : SemType, thenExpr : SemType, elseExpr : SemType) extends SemType
 }

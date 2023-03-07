@@ -136,6 +136,7 @@ class semanticAnalyser {
           case InternalPairSemType => true
           case _ => false
         }
+      case IfExprSemType(cond, thenExpr, elseExpr) => matchTypes(cond, BoolSemType) && matchTypes(thenExpr, type2) && matchTypes(elseExpr, type2)
       case _ => matchBaseTypes(type1, type2)
     }
   }
@@ -266,6 +267,28 @@ class semanticAnalyser {
         node.st = Some(symbolTable)
         checkSameType(e1, e2, symbolTable)
 
+      case ifExpression@IfExpr(cond, thenExpr, elseExpr) => {
+        val condition: Option[SemType] = checkExpr(cond, symbolTable)
+        if (matchTypes(condition.get, BoolSemType)) {
+          val thenScope = new SymbolTable(Some(symbolTable))
+          val elseScope = new SymbolTable(Some(symbolTable))
+          val thenCond: Option[SemType] = checkExpr(thenExpr, thenScope)
+          val elseCond: Option[SemType] = checkExpr(elseExpr, elseScope)
+          assert(thenCond.isDefined, "thenCond should be defined")
+          assert(elseCond.isDefined, "elseCond should be defined")
+          if (matchTypes(elseCond.get, thenCond.get)) {
+            return elseCond
+          }
+          else {
+            val condPos = getExprPos(ifExpression)
+            errorLog += TypeError(condPos._1, Set(thenCond.get), elseCond.get, Some("All branches of the if starting here should have same return types"))
+            return Some(InternalPairSemType)
+          }
+        }
+        val condPos = getExprPos(cond)
+        errorLog += TypeError(condPos._1, Set(BoolSemType), condition.get, Some("If expects a bool condition type"))
+        Some(InternalPairSemType)
+      }
       case _ => System.err.println("Should not reach here")
         Some(InternalPairSemType)
     }
@@ -358,6 +381,7 @@ class semanticAnalyser {
       case pairLiter: PairExpr => (pairLiter.pos, 0)
       case ident: IdentExpr => (ident.pos, 0)
       case arrayElem: ArrayElem => (arrayElem.pos, 0)
+      case ifExpr: IfExpr => (ifExpr.pos, 0)
 
       case unOp: UnopExpr =>
         unOp match {

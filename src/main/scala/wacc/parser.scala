@@ -22,6 +22,7 @@ object parser {
     StringExpr(STRING) <|>
     attempt(arrayelem) <|>
     IdentExpr(IDENT) <|>
+    IfExpr(IF ~> expr, THEN ~> expr, ELSE ~> expr <~ FI).label("If expression") <|>
     (PairExpr <# PAIR_LITER)).label("Atomic Literal")
     .explain("--> Atomic Literals includes booleans, chars, strings, " +
       "array-elems `identifier[]` or identifiers")
@@ -121,4 +122,3 @@ object parser {
   }
 
 }
-
