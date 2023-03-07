@@ -54,7 +54,7 @@ class codeGenerator(program: Program) {
     // add all required widgets
     widgets.foreach(w => irs.appendAll(w.getIR()))
 
-    optimisePushPop(irs.toList)
+    optimisePeepHole(irs.toList)
   }
 
   // this function writes instructions that calculate the value of the expression
@@ -1166,36 +1166,91 @@ class codeGenerator(program: Program) {
     label
   }
 
-  private def optimisePushPop(irs: List[IR]): List[IR] = {
+  private def optimisePeepHole(irs: List[IR]): List[IR] = {
     val newIRs = ListBuffer.empty[IR]
     var i = 0
     while (i < irs.length) {
       val ir = irs(i)
-      if (i < (irs.length - 1)) {
-        ir match {
-          case PUSH(reg1) =>
-            val irNext = irs(i + 1)
-            irNext match {
-              case POP(reg2) =>
-                if (reg1 == reg2) {
-                  i += 2
-                }
-                else {
-                  newIRs.append(MOV(reg2, reg1, DEFAULT))
-                  i += 2
-                }
-              case _ =>
-                newIRs.append(ir)
-                i += 1
-            }
-          case _ =>
-            newIRs.append(ir)
-            i += 1
-        }
-      } else {
-        newIRs.append(ir)
-        i += 1
+      val redundantMov = ir match {
+        case MOV(rd, rs, _) => if (rd == rs) true else false
+        case _ => false
       }
+
+      if (redundantMov) i += 1 else {
+        if (i < (irs.length - 1)) {
+          ir match {
+            case PUSH(reg1) =>
+              val irNext = irs(i + 1)
+              irNext match {
+                case POP(reg2) =>
+                  if (reg1 == reg2) i += 2
+                  else {
+                    newIRs.append(MOV(reg2, reg1, DEFAULT))
+                    i += 2
+                  }
+                case _ =>
+                  newIRs.append(ir)
+                  i += 1
+              }
+
+            case MOV(reg1, reg2, _) => {
+              val irNext = irs(i + 1)
+              newIRs.append(ir)
+              irNext match {
+                case MOV(reg3, reg4, _) => {
+                  if (reg1 == reg4 && reg2 == reg3) {
+                    i += 2
+                  } else {
+                    i += 1
+                  }
+                }
+                case _ =>
+                  i += 1
+              }
+            }
+
+            case LDR(rd1, rs1, offset1, _) => {
+              val irNext = irs(i + 1)
+              newIRs.append(ir)
+              irNext match {
+                case STR(rd2, rs2, offset2, _) => {
+                  if (rd1 == rd2 && rs1 == rs2 && offset1 == offset2) i += 2 // same instructions
+                  else i += 1
+                }
+                case LDR(rd2, rs2, offset2, _) => {
+                  if (rd1 == rd2 && rs1 == rs2 && offset1 == offset2) i += 2 // unneccesary assembly
+                  else i += 1
+                }
+                case _ => i += 1
+              }
+            }
+
+            case STR(rd1, rs1, offset1, _) => {
+              val irNext = irs(i + 1)
+              newIRs.append(ir)
+              irNext match {
+                case STR(rd2, rs2, offset2, _) => {
+                  if (rd1 == rd2 && rs1 == rs2 && offset1 == offset2) i += 2 // same instructions
+                  else i += 1
+                }
+                case LDR(rd2, rs2, offset2, _) => {
+                  if (rd1 == rd2 && rs1 == rs2 && offset1 == offset2) i += 2 // not needed assembly
+                  else i += 1
+                }
+                case _ => i += 1
+              }
+            }
+
+            case _ =>
+              newIRs.append(ir)
+              i += 1
+          }
+        } else {
+          newIRs.append(ir)
+          i += 1
+        }
+      }
+
     }
     newIRs.toList
   }
