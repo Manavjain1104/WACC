@@ -42,7 +42,7 @@ object lexer {
       hardKeywords = Set[String]("begin", "end", "is", "skip", "free", "read",
         "return", "exit", "print", "println", "if", "then", "else", "fi", "while", "do", "done",
         "snd", "fst", "newpair", "call", "int", "bool", "char", "string", "pair", "true", "false",
-        "null"
+        "null", "match", "case"
       ),
       hardOperators = Set[String]("!", "-", "len", "ord", "chr", "*", "/", "%", "+", ">", ">=",
         "<", "<=", "==", "!=", "&&", "||"),
@@ -69,6 +69,8 @@ object lexer {
   // token definitions
   val BEGIN: Parsley[Unit] = symbol("begin")
   val END: Parsley[Unit] = symbol("end")
+  val OPENCURLY = symbol("{")
+  val CLOSEDCURLY = symbol("}")
   val OPENPAREN: Parsley[Unit] = lexer.lexeme.symbol.openParen.label("\'(\'")
   val CLOSEDPAREN: Parsley[Unit] = lexer.lexeme.symbol.closingParen.label("\')\'")
   val IS: Parsley[Unit] = symbol("is")
@@ -93,6 +95,12 @@ object lexer {
   val SND: Parsley[Unit] = symbol("snd")
   val NEWPAIR: Parsley[Unit] = symbol("newpair")
   val CALL: Parsley[Unit] = symbol("call")
+  val MATCH: Parsley[Unit] = symbol("match")
+  val CASE: Parsley[Unit] = symbol("case")
+  val ARROW: Parsley[Unit] = symbol("=>")
+  val COLON: Parsley[Unit] = symbol(":")
+
+
 
   // making lexer for Expr branch
   val INT: Parsley[Int] = lexer.lexeme.numeric.signed.decimal32.filter(validInt).explain("Only 32-bit signed intergers allowed ")

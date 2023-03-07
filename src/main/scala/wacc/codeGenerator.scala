@@ -770,6 +770,21 @@ class codeGenerator(program: Program) {
         whileIr.toList
       }
 
+      case IfThen(cond, thenStat) => {
+        val label: String = getNewLabel
+
+        val ifIr = ListBuffer.empty[IR]
+        ifIr.appendAll(generateExprIR(cond, liveMap, localRegs))
+        ifIr.append(POP(scratchReg1))
+        ifIr.append(CMPImm(scratchReg1, 0))
+        ifIr.append(BRANCH(label, EQ))
+        val thenLiveMap = new SymbolTable[Location](Some(liveMap))
+        ifIr.appendAll(generateStatIR(thenStat, thenLiveMap, localRegs, numParams))
+        ifIr.append(Label(label))
+
+        ifIr.toList
+      }
+
       case If(cond, thenStat, elseStat) => {
         val label0: String = getNewLabel
         val label1: String = getNewLabel

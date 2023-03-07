@@ -828,6 +828,16 @@ class semanticAnalyser {
         errorLog += TypeError(condPos._1, Set(BoolSemType), condType.get, Some("If expects a bool condition type"))
         Some(InternalPairSemType)
 
+      case IfThen(cond, thenStat) =>
+        val condType: Option[SemType] = checkExpr(cond, symbolTable)
+        if (matchTypes(condType.get, BoolSemType)) {
+          val thenScope = new SymbolTable(Some(symbolTable))
+          return checkStatement(thenStat, thenScope)
+        }
+        val condPos = getExprPos(cond)
+        errorLog += TypeError(condPos._1, Set(BoolSemType), condType.get, Some("If expects a bool condition type"))
+        Some(InternalPairSemType)
+
       case While(cond, doStat) =>
         val condType = checkExpr(cond, symbolTable)
         if (matchTypes(condType.get, BoolSemType)) {
