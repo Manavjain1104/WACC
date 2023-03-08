@@ -1,0 +1,9 @@
+# cannot have 1 or 0 as a boolean in an if expression
+
+# Exit:
+# 200
+
+begin
+  int x = 0;
+  if false then println 1 else if 1 then int y = 3 else println x fi fi
+end

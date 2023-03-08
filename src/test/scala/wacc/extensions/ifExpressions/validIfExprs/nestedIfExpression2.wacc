@@ -1,0 +1,9 @@
+# can nest if expressions in then and else clauses
+
+# Output:
+# 10
+#
+
+begin
+  if true then if false then println 9 else println 10 fi else if false then println 2 else println 3 fi fi
+end
