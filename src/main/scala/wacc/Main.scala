@@ -3,7 +3,7 @@ package wacc
 import parsley.io.ParseFromIO
 import parsley.{Failure, Success}
 import wacc.SemTypes.SemType
-import wacc.lexer.fully
+import wacc.lexer.{fully, symbol}
 import wacc.parser.program
 import wacc.errorPrinter._
 import wacc.StructTable._
@@ -32,8 +32,7 @@ object Main {
         value match {
           case Success(prog) => {
             val topST = new SymbolTable[SemType](None)
-            val structTable = new StructTable()
-            val errLog: Option[ListBuffer[error.SemanticError]] = sem.checkProgram(prog, topST, structTable)
+            val errLog: Option[ListBuffer[error.SemanticError]] = sem.checkProgram(prog, topST)
 
             if (errLog.isDefined) {
               if (args.length > 1) {
@@ -54,7 +53,6 @@ object Main {
                 }
               }
               generateOutputMessages(ListBuffer.empty[error.SemanticError], None, file.getPath, OK_EXIT_CODE)
-
               val output = armPrinter.print(new codeGenerator(prog))
 
               // Write assembly to .s file
