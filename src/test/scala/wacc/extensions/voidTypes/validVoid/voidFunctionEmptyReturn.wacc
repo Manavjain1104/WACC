@@ -1,0 +1,12 @@
+# Simple void function printing empty string
+
+# Output:
+#
+#
+
+begin
+  void f() is
+    println ""
+  end
+  call f()
+end
