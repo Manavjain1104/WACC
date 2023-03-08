@@ -1,0 +1,21 @@
+# can pass struct elements into functions
+
+# Output:
+# a
+# 1
+#
+
+begin
+    struct test {
+        int x;
+        char c
+    }
+
+    int f(int x, char c) is
+        println c;
+        return x
+    end
+    struct test t = {1, 'a'};
+    int tmp = call f(t.x, t.c);
+    println tmp
+end

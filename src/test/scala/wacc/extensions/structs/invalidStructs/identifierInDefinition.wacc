@@ -1,0 +1,14 @@
+# need to give identifier when defining struct
+
+# Exit:
+# 100
+#
+
+begin
+    struct test1 {
+        int x;
+        char c
+    }
+
+    struct test1 = {1, 'd'}
+end
