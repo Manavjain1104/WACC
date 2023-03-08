@@ -136,6 +136,10 @@ object AST {
 
   object StringType extends ParserBridgePos0[BaseType]
 
+  case class VoidType()(val pos: (Int, Int)) extends Type
+
+  object VoidType extends ParserBridgePos0[VoidType]
+
   case class ArrayType(t: Type) extends Type with PairElemType
 
   case class PairType(pt1: PairElemType, pt2: PairElemType)(val pos: (Int, Int)) extends Type
@@ -148,10 +152,6 @@ object AST {
 
   // Expr hierarchy
   sealed trait Expr extends RValue
-
-  case class IfExpr(cond: Expr, thenExpr: Expr, elseExpr: Expr)(val pos: (Int, Int)) extends Expr
-
-  object IfExpr extends ParserBridgePos3[Expr, Expr, Expr, Expr]
 
   case class IntExpr(x: Int)(val pos: (Int, Int)) extends Expr
 
@@ -355,4 +355,9 @@ object AST {
   case class Call(ident: String, args: List[Expr])(val pos: (Int, Int)) extends RValue
 
   object Call extends ParserBridgePos2[String, List[Expr], RValue]
+
+  case class CallStat(ident: String, args: List[Expr])(val pos: (Int, Int)) extends Statement
+
+  object CallStat extends ParserBridgePos2[String, List[Expr], Statement]
+
 }

@@ -5,6 +5,7 @@ object SemTypes {
   // WACC SEMANTIC type hierarchy
   trait SemType
 
+  case object VoidSemType extends SemType
   case object IntSemType extends SemType
   case object BoolSemType extends SemType
   case object CharSemType extends SemType

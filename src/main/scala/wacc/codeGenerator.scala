@@ -672,6 +672,43 @@ class codeGenerator(program: Program) {
 
   private def generateStatIR(stat: Statement, liveMap: SymbolTable[Location], localRegs: List[Reg], numParams: Int): List[IR] = {
     stat match {
+      case CallStat(ident, lArgs) => {
+        val localCount = liveMap.getNestedEntries()
+        val irs = ListBuffer.empty[IR]
+
+
+        // caller saved
+        if (numParams > 0) {
+          irs.append(PUSHMul(paramRegs.slice(0, numParams)))
+        }
+        val realCount = localCount - numParams
+        if (realCount > 0) {
+          irs.append(PUSHMul(localRegs.slice(0, realCount)))
+        }
+
+        for (i <- lArgs.length - 1 to 0 by -1) {
+          irs.appendAll(generateExprIR(lArgs(i), liveMap, localRegs)) // this leaves the value on top of stack for function call
+        }
+
+        for (i <- 0 until math.min(WORDSIZE, lArgs.length)) {
+          irs.append(POP(paramRegs(i)))
+        }
+
+        irs.append(BRANCH(FUNCTION_PREFIX + ident, L))
+
+        if (lArgs.length > WORDSIZE) {
+          irs.append(ADD(SP, SP, (lArgs.length - WORDSIZE) * WORDSIZE, DEFAULT))
+        }
+
+        // caller saved
+        if (realCount > 0) {
+          irs.append(POPMul(localRegs.slice(0, realCount)))
+        }
+        if (numParams > 0) {
+          irs.append(POPMul(paramRegs.slice(0, numParams)))
+        }
+        irs.toList
+      }
 
       case Exit(e) => generateExprIR(e, liveMap, localRegs) ++ List(POP(R0), BRANCH("exit", L))
 
