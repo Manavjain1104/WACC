@@ -1,6 +1,7 @@
 package wacc
 
 import wacc.AST._
+import wacc.ClassTable.ClassTable
 import wacc.SemTypes._
 import wacc.error._
 import wacc.StructTable._
@@ -15,7 +16,10 @@ class semanticAnalyser {
   // error semanticErrLogs for semantic analysis
   private final val errorLog = mutable.ListBuffer.empty[SemanticError]
 
-  // structTable populated after semantic analysis of structs at the start of the program
+  // classTable populated after semantic analysis of classes at the start of the program
+  private var opClassTable : Option[ClassTable] = None
+
+  // structTable populated after semantic analysis of structs
   private var opStructTable : Option[StructTable] = None
 
   // to store function return type in the intermediate scope
@@ -24,16 +28,42 @@ class semanticAnalyser {
   // mangling function names to maintain uniqueness
   private final val FUNCTION_PREFIX = "wacc_"
 
-  def checkProgram(program: Program, topLevelSymbolTable: SymbolTable[SemType], structTable: StructTable): Option[ListBuffer[SemanticError]] = {
+  // mangling class parameters and fields
+  private final val CLASS_FIELD_PREFIX = "this."
 
-    // absorbing structs from the top of the file
+  // mangling class method names
+  private final val CLASS_METHOD_PREFIX = "wacc_class_"
+
+  def checkProgram(program: Program, topLevelSymbolTable: SymbolTable[SemType]): Option[ListBuffer[SemanticError]] = {
+
+    // absorbing the classes from the top of the file
+    val classTable = ClassTable()
+    val classDefinitions = mutable.Set.empty[Class]
+    for (waccClass <- program.classes) {
+      if (classTable.lookup(waccClass.name).isEmpty) {
+        classTable.add(waccClass.name, new SymbolTable[SemType](None), new SymbolTable[Scope](None), new ListBuffer[Param])
+        classDefinitions.add(waccClass)
+      } else {
+        errorLog += DuplicateIdentifier(waccClass.pos, waccClass.name, Some("Duplicate class definition"))
+      }
+    }
+    for (waccClass <- classDefinitions) {
+      checkClass(waccClass, classTable)
+    }
+
+    // set up classes for semantic/cg analysis
+    opClassTable = Some(classTable)
+    program.classTable = opClassTable
+
+    // absorbing structs next
+    val structTable = new StructTable()
     val structDefinitions = mutable.Set.empty[Struct]
     for (struct <- program.structs) {
       if (structTable.lookup(struct.name).isEmpty) {
         structTable.add(struct.name)
         structDefinitions.add(struct)
       } else {
-        errorLog += DuplicateIdentifier(struct.pos, struct.name, Some("Duplicate struct definition: " + struct.name))
+        errorLog += DuplicateIdentifier(struct.pos, struct.name, Some("Duplicate struct definition"))
       }
     }
     for (struct <- structDefinitions) {
@@ -57,7 +87,7 @@ class semanticAnalyser {
     for (func <- funcDefinitions) {
       checkFunction(func, topLevelSymbolTable)
     }
-    checkStatement(program.stat, topLevelSymbolTable)
+    checkStatement(program.stat, topLevelSymbolTable, None)
 
     if (errorLog.nonEmpty) {
       return Some(errorLog)
@@ -65,22 +95,14 @@ class semanticAnalyser {
     None
   }
 
-  def getSize(assignType : SemType) : Int = {
+  private def getSize(assignType : SemType) : Int = {
     assignType match {
       case SemTypes.CharSemType => BYTESIZE
       case _ => WORDSIZE
-//      case _ : ArraySemType => WORDSIZE // TODO allowed all types to seep thru
-//      case SemTypes.IntSemType => WORDSIZE
-//
-//      case SemTypes.BoolSemType => WORDSIZE
-//      case SemTypes.StringSemType => WORDSIZE
-//      case _ : PairSemType => WORDSIZE
-//      case
-//      case _ => throw new RuntimeException("Should not reach here")
     }
   }
 
-  def checkStructType(tType: SemType): Boolean = {
+  private def checkStructType(tType: SemType): Boolean = {
     tType match {
       case SemTypes.CharSemType => true
       case SemTypes.BoolSemType => true
@@ -108,6 +130,57 @@ class semanticAnalyser {
     }
   }
 
+  private def checkClass(waccClass: Class, classTable: ClassTable) : Unit = {
+    val classDef = classTable.lookup(waccClass.name).get
+
+    // To add and initialise the scope/type of parameters/fields and populate their respective tables
+    if (checkClassParams(waccClass.params, classDef, mutable.Set.empty[String])) {
+      for (field <- waccClass.fields) {
+        val statSemType = checkStatement(field.varDec, classDef._1, Some(CLASS_FIELD_PREFIX))
+        if (statSemType.isDefined){
+          val name = (field.varDec match {
+            case VarDec(_, ident, _) => ident
+            case _ => throw new RuntimeException("Parsing should filter this")
+          })
+          val mangledName = CLASS_FIELD_PREFIX + name
+          if (classDef._2.lookup(mangledName).isDefined) {
+            errorLog += DuplicateIdentifier(field.pos, name, Some("Duplicate field/parameter found in class definition"))
+          } else {
+            classDef._2.add(mangledName, field.scope)
+          }
+        }
+      }
+
+      // now consume the class methods
+      val methodDefinitions = collection.mutable.Set.empty[Method]
+      for (method <- waccClass.methods) {
+        if (classDef._2.lookup(method.func.ident).isDefined) {
+          errorLog += DuplicateIdentifier(method.func.pos, method.func.ident, Some("Duplicate identifier found in method definition"))
+        } else {
+          classDef._2.add(method.func.ident, method.scope)
+          methodDefinitions.add(method)
+        }
+      }
+      methodDefinitions.foreach(m => checkFunction(m.func, classDef._1))
+    }
+  }
+
+  private def checkClassParams(params: List[Param], classDef: (SymbolTable[SemType], SymbolTable[Scope], ListBuffer[Param]), paramNames: mutable.Set[String]): Boolean = {
+    for (param <- params) {
+      if (paramNames.contains(param.ident)) {
+        errorLog += DuplicateIdentifier(param.pos, param.ident, Some("Duplicate identifier found in class definition"))
+        return false // duplicate param names
+      } else {
+
+        paramNames.add(param.ident)
+        classDef._1.add(CLASS_FIELD_PREFIX + param.ident, convertToSem(param.paramType))
+        classDef._2.add(CLASS_FIELD_PREFIX + param.ident, Public)
+        classDef._3.append(param)
+      }
+    }
+    true
+  }
+
   private def checkStruct(struct: Struct, structTable: StructTable) : Unit = {
     val structDef: StructDef = structTable.lookup(struct.name).get
     var currPointer : Int = 0
@@ -119,9 +192,8 @@ class semanticAnalyser {
 //          if (checkStructType(ttype)) { // TODO --> allowed all types to go thru
           if (true) {
             val size = getSize(ttype)
-            structDef.addOffset(fieldDec.ident, currPointer)
+            structDef.add(fieldDec.ident, ttype, currPointer)
             currPointer += size
-            structDef.add(fieldDec.ident, ttype)
           } else {
             errorLog += InvalidStructTypeError(fieldDec.pos, ttype, Some("Struct can only have simple base type and non nested array/pair fields"))
           }
@@ -166,6 +238,7 @@ class semanticAnalyser {
       case ArrayType(t: Type) => ArraySemType(convertToSem(t))
       case PairType(pt1, pt2) => PairSemType(convertToSem(pt1), convertToSem(pt2))
       case StructType(structName) => StructSemType(structName)
+      case ClassType(className) => ClassSemType(className)
       case _ => throw new RuntimeException("Should not reach here")
     }
   }
@@ -180,6 +253,7 @@ class semanticAnalyser {
       case DummyPair => PairSemType(InternalPairSemType, InternalPairSemType)
       case PairType(pt1, pt2) => PairSemType(convertToSem(pt1), convertToSem(pt2))
       case StructType(structName) => StructSemType(structName)
+      case ClassType(className) => ClassSemType(className)
       case _ => throw new RuntimeException("Should not reach here")
     }
   }
@@ -229,6 +303,15 @@ class semanticAnalyser {
           case InternalPairSemType => true
           case _ => false
         }
+
+      case ClassSemType(className1) => {
+        type2 match {
+          case ClassSemType(className2) => className1 == className2
+          case InternalPairSemType => true
+          case _ => false
+        }
+      }
+
       case StructSemType(ident1) => {
         type2 match {
           case StructSemType(ident2) => {
@@ -247,7 +330,6 @@ class semanticAnalyser {
             }
             true
           }
-
           case InternalPairSemType => true
           case _ => false
         }
@@ -270,6 +352,15 @@ class semanticAnalyser {
           return identType
         }
         errorLog += UnknownIdentifierError(id.pos, ident, Some("Unknown variable identifier found"))
+        Some(InternalPairSemType)
+      case ex@ThisExpr(ident) =>
+        val thisIdent = CLASS_FIELD_PREFIX + ident
+        val identType = symbolTable.lookupAll(thisIdent)
+        if (identType.isDefined) {
+          ex.st = Some(symbolTable)
+          return identType
+        }
+        errorLog += UnknownIdentifierError(ex.pos, thisIdent, Some("Unknown class variable identifier found"))
         Some(InternalPairSemType)
       case PairExpr() => Some(InternalPairSemType)
       case arrayElem: ArrayElem =>
@@ -478,6 +569,7 @@ class semanticAnalyser {
       case stringLiter: StringExpr => (stringLiter.pos, 0)
       case pairLiter: PairExpr => (pairLiter.pos, 0)
       case ident: IdentExpr => (ident.pos, 0)
+      case thisExpr: ThisExpr => (thisExpr.pos, 0)
       case arrayElem: ArrayElem => (arrayElem.pos, 0)
       case structElem: StructElem => (structElem.pos, 0)
 
@@ -563,13 +655,48 @@ class semanticAnalyser {
     }
   }
 
+
+  def checkNewClass(newClass: NewClass, symbolTable: GenericTable[SemType]): Option[SemType] = {
+    val classTable: ClassTable = opClassTable.get
+
+    val opClassDefn: Option[(SymbolTable[SemType], SymbolTable[Scope], ListBuffer[Param])] = classTable.lookup(newClass.className)
+
+    if (opClassDefn.isDefined) {
+      val classDefn: (SymbolTable[SemType], SymbolTable[Scope], ListBuffer[Param]) = opClassDefn.get
+
+      // checking that parameter lengths match
+      if (newClass.exprs.size == classDefn._3.size) {
+        for (i <- newClass.exprs.indices) {
+          val expType = checkExpr(newClass.exprs(i), symbolTable)
+          val paramType = convertToSem(classDefn._3(i).paramType)
+          if (!matchTypes(expType.get, paramType)) {
+            val exprPos = getExprPos(newClass.exprs(i))
+            errorLog += new TypeError(exprPos._1,
+              Set(paramType), expType.get,
+              Some("Argument type does not match with parameter"))(exprPos._2)
+            return Some(InternalPairSemType)
+          }
+        }
+        return Some(ClassSemType(newClass.className))
+      } else {
+        errorLog += ArityMismatch(newClass.pos, classDefn._3.size, newClass.exprs.size, Some("Wrong number of function arguments"))
+      }
+    } else {
+      errorLog += UnknownIdentifierError(newClass.pos, newClass.className, Some("Unknown class name found"))
+    }
+    Some(InternalPairSemType)
+  }
+
+
   private def checkRvalue(rvalue: RValue, symbolTable: GenericTable[SemType]): Option[SemType] = {
     rvalue match {
       case expr: Expr => checkExpr(expr, symbolTable)
 
       case arrayLiter: ArrayLiter => checkArrayLiteral(arrayLiter, symbolTable)
 
-      case structLiter : StructLiter =>  checkStructLiteral(structLiter, symbolTable)
+      case structLiter: StructLiter =>  checkStructLiteral(structLiter, symbolTable)
+
+      case nc : NewClass => checkNewClass(nc, symbolTable)
 
       case NewPair(e1: Expr, e2: Expr) =>
         val e1Type: Option[SemType] = checkExpr(e1, symbolTable)
@@ -816,19 +943,21 @@ class semanticAnalyser {
     }
   }
 
-  private def checkFunction(func: Func, symbolTable: SymbolTable[SemType]): Unit = {
+  private def checkFunction(func: Func, symbolTable: SymbolTable[SemType]): Option[SemType] = {
     val intermediateTable = new SymbolTable(Some(symbolTable))
     if (checkParams(func.params, intermediateTable, mutable.Set.empty[String])) {
       val funcSemType: SemType = convertToSem(func.retType)
       intermediateTable.add(ENCLOSING_FUNC_RETURN_TYPE, funcSemType)
       val childSym = new SymbolTable(Some(intermediateTable))
-      if (checkStatement(func.stat, childSym).isDefined) {
+      if (checkStatement(func.stat, childSym, None).isDefined) {
         func.st = Some(childSym)
+        return Some(funcSemType)
       }
     }
+    None
   }
 
-  private def checkStatement(node: Statement, symbolTable: GenericTable[SemType]): Option[SemType] = {
+  private def checkStatement(node: Statement, symbolTable: GenericTable[SemType], prefix: Option[String]): Option[SemType] = {
     node match {
       case Skip => Some(InternalPairSemType)
       case varDec@VarDec(assignType, ident, rvalue) =>
@@ -842,11 +971,12 @@ class semanticAnalyser {
 
           val notFound : Boolean = assignSemType match {
             case StructSemType(ident) => opStructTable.get.lookup(ident).isEmpty
+            case ClassSemType(className) => opClassTable.get.lookup(className).isEmpty
             case _ => false
           }
 
           if (notFound) {
-            errorLog += UnknownIdentifierError(varDec.pos, varDec.ident, Some("Unknown Struct type found: " + ident))
+            errorLog += UnknownIdentifierError(varDec.pos, varDec.ident, Some("Unknown object type found: " + ident))
             return Some(InternalPairSemType)
           }
 
@@ -857,7 +987,7 @@ class semanticAnalyser {
               Some("Assignment and target types don't match"))
             Some(InternalPairSemType)
           } else {
-            symbolTable.add(ident, assignSemType)
+            symbolTable.add(prefix.getOrElse("") + ident, assignSemType)
             varDec.symbolTable = Some(symbolTable)
             Some(assignSemType)
           }
@@ -972,6 +1102,7 @@ class semanticAnalyser {
           case _: PairSemType => exprType
           case _: ArraySemType => exprType
           case _: StructSemType => exprType
+          case _: ClassSemType => exprType
           case unexpectedType =>
             val exprPos = getExprPos(expr)
             errorLog += new TypeError(exprPos._1,
@@ -1031,8 +1162,8 @@ class semanticAnalyser {
         if (matchTypes(condType.get, BoolSemType)) {
           val thenScope = new SymbolTable(Some(symbolTable))
           val elseScope = new SymbolTable(Some(symbolTable))
-          checkStatement(elseStat, elseScope)
-          return checkStatement(thenStat, thenScope)
+          checkStatement(elseStat, elseScope, prefix)
+          return checkStatement(thenStat, thenScope, prefix)
         }
         val condPos = getExprPos(cond)
         errorLog += TypeError(condPos._1, Set(BoolSemType), condType.get, Some("If expects a bool condition type"))
@@ -1042,7 +1173,7 @@ class semanticAnalyser {
         val condType = checkExpr(cond, symbolTable)
         if (matchTypes(condType.get, BoolSemType)) {
           val doScope = new SymbolTable(Some(symbolTable))
-          val statType = checkStatement(doStat, doScope)
+          val statType = checkStatement(doStat, doScope, prefix)
           return statType
         }
         val condPos = getExprPos(cond)
@@ -1051,12 +1182,12 @@ class semanticAnalyser {
 
       case ScopeStat(stat) =>
         val newScope = new SymbolTable(Some(symbolTable))
-        val statType = checkStatement(stat, newScope)
+        val statType = checkStatement(stat, newScope, prefix)
         statType
 
       case ConsecStat(first, next) =>
-        checkStatement(first, symbolTable)
-        val statType = checkStatement(next, symbolTable)
+        checkStatement(first, symbolTable, prefix)
+        val statType = checkStatement(next, symbolTable, prefix)
         statType
     }
   }

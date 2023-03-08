@@ -9,6 +9,12 @@ import scala.collection.mutable.ListBuffer
 
 class codeGenerator(program: Program) {
 
+  /* TODO : -
+  1) This expr
+  2) Classes
+
+   */
+
   private val paramRegs = List(R0, R1, R2, R3)
   private var labelOrder = 0
   private val FUNCTION_PREFIX = "wacc_"

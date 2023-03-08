@@ -12,6 +12,7 @@ object SemTypes {
 
 
   case class StructSemType(structName: String) extends SemType
+  case class ClassSemType(className: String) extends SemType
 
   case class ArraySemType(t : SemType) extends SemType
 
