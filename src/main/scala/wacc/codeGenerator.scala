@@ -856,8 +856,10 @@ class codeGenerator(program: Program) {
         if (numParams > 0) {
           irs.append(POPMul(paramRegs.slice(0, numParams)))
         }
+
         irs.toList
       }
+
 
       case Exit(e) => generateExprIR(e, liveMap, localRegs) ++ List(POP(R0), BRANCH("exit", L))
 

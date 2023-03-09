@@ -141,6 +141,11 @@ object AST {
 
   object StringType extends ParserBridgePos0[BaseType]
 
+  case class VoidType()(val pos: (Int, Int)) extends Type
+
+  object VoidType extends ParserBridgePos0[VoidType]
+
+
   case class ArrayType(t: Type) extends Type with PairElemType
 
   case class PairType(pt1: PairElemType, pt2: PairElemType)(val pos: (Int, Int)) extends Type
