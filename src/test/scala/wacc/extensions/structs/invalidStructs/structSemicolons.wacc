@@ -1,0 +1,21 @@
+# all non final lines in struct must have semicolons
+
+# Exit:
+# 100
+#
+
+begin
+    struct test1 {
+        int x;
+        char c;
+    }
+
+    struct test2 {
+        int x
+        char c
+    }
+
+    struct test1 t1 = {1, 'd'};
+    println test2
+
+end

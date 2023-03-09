@@ -19,6 +19,8 @@ class codeGenerator(program: Program) {
 
   private val widgets = collection.mutable.Set.empty[Widget]
 
+  private val structTable: StructTable.StructTable = program.structTable.get
+
   // generate assembly for entire program
   def generateProgIR(): List[IR] = {
     val irs = ListBuffer.empty[IR]
@@ -236,6 +238,27 @@ class codeGenerator(program: Program) {
         }
       }
 
+      case structElem @ StructElem(ident, field) => {
+        val irs = ListBuffer.empty[IR]
+
+        val identType = structElem.st.get.lookupAll(ident).get
+        identType match {
+          case StructSemType(structName) => {
+            val offset = structTable.lookup(structName).get.getOffset(field).get
+            irs.appendAll(getIntoTarget(ident, scratchReg1, liveMap))
+            if (structTable.lookup(structName).get.lookup(field).get == CharSemType) {
+              irs.append(LDR(scratchReg2, scratchReg1, offset, BYTECONSTOFFSET))
+            } else {
+              irs.append(LDR(scratchReg2, scratchReg1, offset, DEFAULT))
+            }
+            irs.append(PUSH(scratchReg2))
+          }
+          case _ => throw new RuntimeException()
+        }
+
+        irs.toList
+      }
+
       case arrElem@ArrayElem(ident, exprs) => {
         val irs = ListBuffer.empty[IR]
 
@@ -296,6 +319,14 @@ class codeGenerator(program: Program) {
           case _ => false
         }
       }
+      case structElem @ StructElem(ident, field) => {
+        val structName = structElem.st.get.lookupAll(ident).get match {
+          case StructSemType(structName) => structName
+          case _ => throw new RuntimeException("shoudl not be possible")
+        }
+
+        structTable.lookup(structName).get.lookup(field).get == CharSemType
+      }
       case arrElem: ArrayElem => arrayElemIsChar(arrElem)
       case _ => false
     }
@@ -330,7 +361,45 @@ class codeGenerator(program: Program) {
     irs.toList
   }
 
-  // made changes to array(char) here
+  def lvalStructName(lval: LValue) : String = {
+    lval match {
+      case id@IdentValue(s) => {
+        id.st.get.lookupAll(s).get match {
+          case StructSemType(ident) => ident
+          case _ => throw new RuntimeException("Should not be possible")
+        }
+      }
+      case elem: PairElem => {
+        elem match {
+          case f: Fst => {
+            f.ty match {
+              case StructSemType(ident) => ident
+              case _ => throw new RuntimeException("Should not be possible")
+            }
+          }
+          case s: Snd => {
+            s.ty match {
+              case StructSemType(ident) => ident
+              case _ => throw new RuntimeException("Should not be possible")
+            }
+          }
+        }
+      }
+      case StructElem(name, field) => {
+        structTable.lookup(name).get.lookup(field).get match {
+          case StructSemType(ident) => ident
+          case _ => throw new RuntimeException("Should not be possible")
+        }
+      }
+      case arrElem : ArrayElem => {
+        getArrElemType(arrElem) match {
+          case StructSemType(ident) => ident
+          case _ => throw new RuntimeException("Should not be possible")
+        }
+      }
+    }
+  }
+
   private def lvalCharArraySize(lval: LValue): Int = {
     lval match {
       case id@IdentValue(s) => {
@@ -339,6 +408,18 @@ class codeGenerator(program: Program) {
           case _ => WORDSIZE
         }
       }
+      case structElem @ StructElem(ident, field) => {
+        structElem.st.get.lookupAll(ident).get match {
+          case StructSemType(structName) => {
+            structTable.lookup(structName).get.lookup(field).get match {
+              case ArraySemType(t) => if (t == CharSemType) 1 else 4
+              case _ => 4
+            }
+          }
+          case _ => 4
+        }
+      }
+
       case arrElem: ArrayElem => {
         getArrElemType(arrElem) match {
           case ArraySemType(t) => if (t == CharSemType) 1 else 4
@@ -353,6 +434,7 @@ class codeGenerator(program: Program) {
       }
     }
   }
+
 
   // writes instructions that calculate the value and place it on top of the stack
   private def generateRvalue(rvalue: RValue, liveMap: SymbolTable[Location], localRegs: List[Reg], numParams: Int, lval: LValue): List[IR] = {
@@ -374,6 +456,13 @@ class codeGenerator(program: Program) {
               case snd: Snd => snd.ty == CharSemType
             }
           }
+
+          case structElem @ StructElem(ident, field) =>
+            structElem.st.get.lookupAll(ident).get match {
+              case StructSemType(structName) => structTable.lookup(structName).get.lookup(field).get == CharSemType
+              case _ => throw new RuntimeException("should not reach here")
+            }
+
           case arrElem: ArrayElem => arrayElemIsChar(arrElem)
         }
         if (isChar) {
@@ -409,6 +498,39 @@ class codeGenerator(program: Program) {
         irs.append(POP(scratchReg1))
         irs.append(STR(scratchReg1, R12, 0, DEFAULT))
         irs.append(PUSH(R12))
+        irs.toList
+      }
+
+      case StructLiter(exprs) => {
+        val irs = ListBuffer.empty[IR]
+
+        // malloc enough space for Struct
+        val structName = lvalStructName(lval)
+        val size = structTable.lookup(structName).get.structSize
+        val saveParamRegs = willClobber(localRegs, liveMap)
+        if (saveParamRegs) {
+          irs.append(PUSHMul(paramRegs))
+        }
+        irs.append(MOVImm(R0, size, DEFAULT))
+        irs.append(BRANCH("malloc", L))
+        irs.append(MOV(R12, R0, DEFAULT))
+        if (saveParamRegs) {
+          irs.append(POPMul(paramRegs))
+        }
+
+        // R12 now holds the pointer to the structure at 0 offset
+        // set all the expr in mem
+        val structDefn = structTable.lookup(structName).get
+        val fields = structDefn.getKeys()
+        for (i <- exprs.indices) {
+          irs.appendAll(generateExprIR(exprs(i), liveMap, localRegs))
+          irs.append(POP(scratchReg1))
+          irs.append(STR(scratchReg1, R12, structDefn.getOffset(fields(i)).get, DEFAULT))
+        }
+
+        // push pointer to struct on stack
+        irs.append(PUSH(R12))
+
         irs.toList
       }
 
@@ -588,7 +710,7 @@ class codeGenerator(program: Program) {
       widgets.add(arrLoad)
     }
 
-    // Now R3 contains the requred element --> which must be a pair
+    // Now R3 contains the required element --> which must be a pair
     irs.append(MOV(scratchReg1, R3, DEFAULT))
     irs.append(POP(R3))
     irs.toList
@@ -616,7 +738,7 @@ class codeGenerator(program: Program) {
             irs.appendAll(getIRForPairElem(insideElem, liveMap, localRegs))
 
             irs.append(POP(scratchReg1))
-            irs.append(CMPImm(scratchReg1, 0)) // this loads the value... we want to load the pointer
+            irs.append(CMPImm(scratchReg1, 0))
             irs.append(BRANCH("_errNull", LEQ))
             irs.append(LDR(scratchReg1, scratchReg1, 0, DEFAULT))
 
@@ -624,6 +746,19 @@ class codeGenerator(program: Program) {
             irs.append(BRANCH("_errNull", LEQ))
             irs.append(LDR(scratchReg1, scratchReg1, 0, DEFAULT))
           }
+
+          case structElem @ StructElem(ident, field) => {
+            structElem.st.get.lookupAll(ident).get match {
+              case StructSemType(structName) => {
+                val structDefn = structTable.lookup(structName).get
+                irs.appendAll(getIntoTarget(ident, scratchReg2, liveMap))
+                irs.append(LDR(scratchReg1, scratchReg2, structDefn.getOffset(field).get, DEFAULT)) // must be a pointer to a pair
+                irs.append(LDR(scratchReg1, scratchReg1, 0, DEFAULT))
+              }
+              case _ => throw new RuntimeException("should not reach here")
+            }
+          }
+
           case arrElem: ArrayElem => {
             irs.appendAll(getArrayElemIr(liveMap, arrElem, localRegs))
             irs.append(LDR(scratchReg1, scratchReg1, 0, DEFAULT))
@@ -648,6 +783,19 @@ class codeGenerator(program: Program) {
             irs.append(BRANCH("_errNull", LEQ))
             irs.append(LDR(scratchReg1, scratchReg1, WORDSIZE, DEFAULT))
           }
+
+          case structElem @ StructElem(ident, field) => {
+            structElem.st.get.lookupAll(ident).get match {
+              case StructSemType(structName) => {
+                val structDefn = structTable.lookup(structName).get
+                irs.appendAll(getIntoTarget(ident, scratchReg2, liveMap))
+                irs.append(LDR(scratchReg1, scratchReg2, structDefn.getOffset(field).get, DEFAULT)) // must be a pointer to a pair
+                irs.append(LDR(scratchReg1, scratchReg1, WORDSIZE, DEFAULT))
+              }
+              case _ => throw new RuntimeException("should not reach here")
+            }
+          }
+
           case arrElem: ArrayElem => {
             irs.appendAll(getArrayElemIr(liveMap, arrElem, localRegs))
             irs.append(LDR(scratchReg1, scratchReg1, WORDSIZE, DEFAULT))
@@ -732,6 +880,29 @@ class codeGenerator(program: Program) {
             irs.append(POP(scratchReg2))
             //            val size = lvalCharArraySize(elem)
             irs.append(STR(scratchReg1, scratchReg2, 0, DEFAULT))
+            irs.toList
+          }
+
+          case structElem@StructElem(ident, field) => {
+            val irs = ListBuffer.empty[IR]
+
+            structElem.st.get.lookupAll(ident).get match {
+              case StructSemType(structName) => {
+                val structDefn = structTable.lookup(structName).get
+
+                irs.appendAll(generateRvalue(rvalue, liveMap, localRegs, numParams, lvalue))
+                irs.append(POP(scratchReg2))
+
+                irs.appendAll(getIntoTarget(ident, scratchReg1, liveMap))
+                if (structDefn.lookup(field).get == CharSemType) {
+                  irs.append(STR(scratchReg2, scratchReg1, structDefn.getOffset(field).get, BYTECONSTOFFSET))
+                } else {
+                  irs.append(STR(scratchReg2, scratchReg1,structDefn.getOffset(field).get, DEFAULT))
+                }
+              }
+              case _ => throw new RuntimeException("should not reach here")
+            }
+
             irs.toList
           }
 
@@ -885,6 +1056,51 @@ class codeGenerator(program: Program) {
             irs.toList
           }
 
+          case structElem @ StructElem(ident, field) => {
+            val irs = ListBuffer.empty[IR]
+
+            val structDefn: StructTable.StructDef = structElem.st.get.lookupAll(ident).get match {
+              case StructSemType(structName) => structTable.lookup(structName).get
+              case _ => throw new RuntimeException("should not reach here")
+            }
+
+            val isChar = structDefn.lookup(field).get == CharSemType
+
+            val shouldSave = willClobber(localRegs, liveMap)
+            if (shouldSave) {
+              irs.append(PUSHMul(paramRegs))
+            }
+
+            irs.appendAll(getIntoTarget(ident, scratchReg1, liveMap))
+            if (isChar) {
+              irs.append(LDR(R0, scratchReg1, structDefn.getOffset(field).get ,BYTECONSTOFFSET))
+            } else {
+              irs.append(LDR(R0,scratchReg1, structDefn.getOffset(field).get,DEFAULT))
+            }
+
+            // Now R0 contains old value for read
+            if (isChar) {
+              widgets.add(readChar)
+              irs.append(BRANCH("_readc", L))
+            } else {
+              widgets.add(readInt)
+              irs.append(BRANCH("_readi", L))
+            }
+
+            irs.appendAll(getIntoTarget(ident, scratchReg1, liveMap))
+            if (isChar) {
+              irs.append(STR(R0, scratchReg1, structDefn.getOffset(field).get ,BYTECONSTOFFSET))
+            } else {
+              irs.append(STR(R0, scratchReg1, structDefn.getOffset(field).get,DEFAULT))
+            }
+
+            if (shouldSave) {
+              irs.append(POPMul(paramRegs))
+            }
+
+            irs.toList
+
+          }
 
           case ar@ArrayElem(ident, exprs) => {
             val irs = ListBuffer.empty[IR]
@@ -975,16 +1191,30 @@ class codeGenerator(program: Program) {
             val irs = ListBuffer.empty[IR]
             val stType = id.st.get.lookupAll(ident).get
             stType match {
-              case ArraySemType(_) => {
-                irs.appendAll(getIntoTarget(ident, scratchReg1, liveMap))
-                irs.append(SUB(scratchReg1, scratchReg1, 4))
+              case _ :ArraySemType => {
                 val saveParams = willClobber(localRegs, liveMap)
 
                 if (saveParams) {
                   irs.append(PUSHMul(paramRegs))
                 }
 
-                irs.append(MOV(R0, scratchReg1, DEFAULT))
+                irs.appendAll(getIntoTarget(ident, R0, liveMap))
+                irs.append(SUB(R0, R0, WORDSIZE))
+                irs.append(BRANCH("free", L))
+
+                if (saveParams) {
+                  irs.append(POPMul(paramRegs))
+                }
+                irs.toList
+              }
+              case _ : StructSemType => {
+                val saveParams = willClobber(localRegs, liveMap)
+
+                if (saveParams) {
+                  irs.append(PUSHMul(paramRegs))
+                }
+
+                irs.appendAll(getIntoTarget(ident, R0, liveMap))
                 irs.append(BRANCH("free", L))
 
                 if (saveParams) {
@@ -1011,6 +1241,44 @@ class codeGenerator(program: Program) {
               }
             }
           }
+
+          case structElem @ StructElem(ident, field) => {
+            val irs = ListBuffer.empty[IR]
+
+            val saveParams = willClobber(localRegs, liveMap)
+            if (saveParams) {
+              irs.append(PUSHMul(paramRegs))
+            }
+
+            val structDefn = structElem.st.get.lookupAll(ident).get match {
+              case StructSemType(structName) => structTable.lookup(structName).get
+              case _ => throw new RuntimeException("should not reach here")
+            }
+
+            // put in r0 the thing to be freed
+            irs.appendAll(getIntoTarget(ident, scratchReg1, liveMap))
+            irs.append(LDR(R0, scratchReg1, structDefn.getOffset(field).get, DEFAULT))
+
+            structDefn.lookup(field).get match {
+              case _: PairSemType => {
+                irs.append(BRANCH("_freepair", L))
+                widgets.add(freepair)
+              }
+              case _: ArraySemType => {
+                irs.append(SUB(R0, R0, WORDSIZE))
+                irs.append(BRANCH("free", L))
+              }
+              case _ :StructSemType => {
+                irs.append(BRANCH("free", L))
+              }
+            }
+
+            if (saveParams) {
+              irs.append(POPMul(paramRegs))
+            }
+            irs.toList
+          }
+
           case arrElem@ArrayElem(ident, exprs) => {
             val irs = ListBuffer.empty[IR]
             irs.append(PUSH(R3)) // save R3
@@ -1046,7 +1314,7 @@ class codeGenerator(program: Program) {
 
 
             // right now r3 hold ths array
-            irs.append(SUB(R3, R3, 4))
+            irs.append(SUB(R3, R3, WORDSIZE))
 
             val saveParams = willClobber(localRegs, liveMap)
 

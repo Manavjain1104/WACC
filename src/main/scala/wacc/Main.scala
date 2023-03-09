@@ -6,6 +6,7 @@ import wacc.SemTypes.SemType
 import wacc.lexer.fully
 import wacc.parser.program
 import wacc.errorPrinter._
+import wacc.StructTable._
 
 import java.io.{File, PrintWriter}
 import scala.collection.mutable.ListBuffer
@@ -31,7 +32,8 @@ object Main {
         value match {
           case Success(prog) => {
             val topST = new SymbolTable[SemType](None)
-            val errLog: Option[ListBuffer[error.SemanticError]] = sem.checkProgram(prog, topST)
+            val structTable = new StructTable()
+            val errLog: Option[ListBuffer[error.SemanticError]] = sem.checkProgram(prog, topST, structTable)
 
             if (errLog.isDefined) {
               if (args.length > 1) {
@@ -48,8 +50,6 @@ object Main {
               if (args.length > 1) {
                 val test = args(1)
                 if (test == "check") {
-
-                  //println("recheckturning 0")
                   return
                 }
               }

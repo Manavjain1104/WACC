@@ -1,8 +1,9 @@
-package wacc.ASTTests
+package src.main.scala.wacc
 
 import org.scalatest.Tag
 import org.scalatest.flatspec.AnyFlatSpec
 import wacc.AST.{ArrayElem, Fst, IdentValue, IntExpr, Snd}
+import wacc.ASTTests.SyntacticTests
 import wacc.SemTypes.InternalPairSemType
 import wacc.parser._
 

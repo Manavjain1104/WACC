@@ -1,0 +1,18 @@
+# can access struct elements
+
+# Output:
+# #addrs#
+# #addrs#
+#
+
+begin
+    struct test {
+        int x;
+        char c
+    }
+
+    struct test t1 = {1, 'd'};
+    println t1;
+    t1.c = 'e';
+    println t1
+end
