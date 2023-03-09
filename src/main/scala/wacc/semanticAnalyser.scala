@@ -10,8 +10,9 @@ import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
 class semanticAnalyser {
-  private final val WORDSIZE = 4
-  private final val BYTESIZE = 1
+
+  private final val WORD_SIZE = 4
+  private final val BYTE_SIZE = 1
 
   // error semanticErrLogs for semantic analysis
   private final val errorLog = mutable.ListBuffer.empty[SemanticError]
@@ -97,8 +98,8 @@ class semanticAnalyser {
 
   private def getSize(assignType : SemType) : Int = {
     assignType match {
-      case SemTypes.CharSemType => BYTESIZE
-      case _ => WORDSIZE
+      case SemTypes.CharSemType => BYTE_SIZE
+      case _ => WORD_SIZE
     }
   }
 
@@ -131,7 +132,7 @@ class semanticAnalyser {
   }
 
   private def checkClass(waccClass: Class, classTable: ClassTable) : Unit = {
-    val classDef = classTable.lookup(waccClass.name).get
+    val classDef: (SymbolTable[SemType], SymbolTable[Scope], ListBuffer[Param]) = classTable.lookup(waccClass.name).get
 
     // To add and initialise the scope/type of parameters/fields and populate their respective tables
     if (checkClassParams(waccClass.params, classDef, mutable.Set.empty[String])) {
@@ -157,7 +158,9 @@ class semanticAnalyser {
         if (classDef._2.lookup(method.func.ident).isDefined) {
           errorLog += DuplicateIdentifier(method.func.pos, method.func.ident, Some("Duplicate identifier found in method definition"))
         } else {
-          classDef._2.add(method.func.ident, method.scope)
+          val mangledMethodName = CLASS_METHOD_PREFIX + waccClass.name + "_" + method.func.ident
+          classDef._1.add(mangledMethodName, convertToSem(method.func))
+          classDef._2.add(mangledMethodName, method.scope)
           methodDefinitions.add(method)
         }
       }
@@ -174,7 +177,7 @@ class semanticAnalyser {
 
         paramNames.add(param.ident)
         classDef._1.add(CLASS_FIELD_PREFIX + param.ident, convertToSem(param.paramType))
-        classDef._2.add(CLASS_FIELD_PREFIX + param.ident, Public)
+        classDef._2.add(CLASS_FIELD_PREFIX + param.ident, Public.apply()(param.pos))
         classDef._3.append(param)
       }
     }
@@ -188,14 +191,14 @@ class semanticAnalyser {
     for (fieldDec <- struct.fields) {
         // check validity of fieldDec Statement
         if (!fieldNames.contains(fieldDec.ident)) {
-          val ttype = convertToSem(fieldDec.assignType)
-//          if (checkStructType(ttype)) { // TODO --> allowed all types to go thru
+          val tType = convertToSem(fieldDec.assignType)
+//          if (checkStructType(tType)) { // TODO --> allowed all types to go through
           if (true) {
-            val size = getSize(ttype)
-            structDef.add(fieldDec.ident, ttype, currPointer)
+            val size = getSize(tType)
+            structDef.add(fieldDec.ident, tType, currPointer)
             currPointer += size
           } else {
-            errorLog += InvalidStructTypeError(fieldDec.pos, ttype, Some("Struct can only have simple base type and non nested array/pair fields"))
+            errorLog += InvalidStructTypeError(fieldDec.pos, tType, Some("Struct can only have simple base type and non nested array/pair fields"))
           }
         } else {
           errorLog += DuplicateIdentifier(fieldDec.pos, fieldDec.ident, Some("Duplicate field found in struct " + struct.name))
@@ -209,6 +212,7 @@ class semanticAnalyser {
       case ident: IdentValue => (ident.pos, 0)
       case arrayElem: ArrayElem => (arrayElem.pos, 0)
       case structElem: StructElem => (structElem.pos, 0)
+      case classElem: ClassElem => (classElem.pos, 0)
       case pairElem: PairElem =>
         val insideLval = pairElem match {
           case Fst(lvalue) => lvalue
@@ -367,10 +371,13 @@ class semanticAnalyser {
         arrayElem.st = Some(symbolTable)
         checkArrayElem(arrayElem, symbolTable)
 
-      case structElem : StructElem => {
+      case structElem : StructElem =>
         structElem.st = Some(symbolTable)
         checkStructElem(structElem, symbolTable)
-      }
+
+      case classElem : ClassElem =>
+        classElem.st = Some(symbolTable)
+        checkClassElem(classElem, symbolTable)
 
       // unary operator expressions
       case node@NotExpr(e: Expr) =>
@@ -572,6 +579,7 @@ class semanticAnalyser {
       case thisExpr: ThisExpr => (thisExpr.pos, 0)
       case arrayElem: ArrayElem => (arrayElem.pos, 0)
       case structElem: StructElem => (structElem.pos, 0)
+      case classElem: ClassElem => (classElem.pos, 0)
 
       case unOp: UnopExpr =>
         unOp match {
@@ -648,7 +656,7 @@ class semanticAnalyser {
     if (foundName.isDefined) {
       Some(StructSemType(foundName.get))
     } else {
-      errorLog += UnknownStructError(getExprPos(structLiter.exprs.head)._1,
+      errorLog += UnknownObjectError(getExprPos(structLiter.exprs.head)._1,
         Some("Struct assignment doesn't match any existing struct type"))
 
       Some(InternalPairSemType)
@@ -659,16 +667,15 @@ class semanticAnalyser {
   def checkNewClass(newClass: NewClass, symbolTable: GenericTable[SemType]): Option[SemType] = {
     val classTable: ClassTable = opClassTable.get
 
-    val opClassDefn: Option[(SymbolTable[SemType], SymbolTable[Scope], ListBuffer[Param])] = classTable.lookup(newClass.className)
+    val opClassDefinition: Option[(SymbolTable[SemType], SymbolTable[Scope], ListBuffer[Param])] = classTable.lookup(newClass.className)
 
-    if (opClassDefn.isDefined) {
-      val classDefn: (SymbolTable[SemType], SymbolTable[Scope], ListBuffer[Param]) = opClassDefn.get
-
+    if (opClassDefinition.isDefined) {
+      val classDefinition: (SymbolTable[SemType], SymbolTable[Scope], ListBuffer[Param]) = opClassDefinition.get
       // checking that parameter lengths match
-      if (newClass.exprs.size == classDefn._3.size) {
+      if (newClass.exprs.size == classDefinition._3.size) {
         for (i <- newClass.exprs.indices) {
           val expType = checkExpr(newClass.exprs(i), symbolTable)
-          val paramType = convertToSem(classDefn._3(i).paramType)
+          val paramType = convertToSem(classDefinition._3(i).paramType)
           if (!matchTypes(expType.get, paramType)) {
             val exprPos = getExprPos(newClass.exprs(i))
             errorLog += new TypeError(exprPos._1,
@@ -679,7 +686,7 @@ class semanticAnalyser {
         }
         return Some(ClassSemType(newClass.className))
       } else {
-        errorLog += ArityMismatch(newClass.pos, classDefn._3.size, newClass.exprs.size, Some("Wrong number of function arguments"))
+        errorLog += ArityMismatch(newClass.pos, classDefinition._3.size, newClass.exprs.size, Some("Wrong number of function arguments"))
       }
     } else {
       errorLog += UnknownIdentifierError(newClass.pos, newClass.className, Some("Unknown class name found"))
@@ -696,12 +703,86 @@ class semanticAnalyser {
 
       case structLiter: StructLiter =>  checkStructLiteral(structLiter, symbolTable)
 
-      case nc : NewClass => checkNewClass(nc, symbolTable)
+      case nc: NewClass => checkNewClass(nc, symbolTable)
 
       case NewPair(e1: Expr, e2: Expr) =>
         val e1Type: Option[SemType] = checkExpr(e1, symbolTable)
         val e2Type: Option[SemType] = checkExpr(e2, symbolTable)
         Some(PairSemType(e1Type.get, e2Type.get))
+
+      case mc@MethodCall(ident, methodName, args) => {
+        val opType = symbolTable.lookupAll(ident)
+        if (opType.isEmpty) {
+          errorLog += UnknownIdentifierError(mc.pos, ident, Some("Unknown identifier found "))
+          return Some(InternalPairSemType)
+        }
+
+        opType.get match {
+          case ClassSemType(className) => {
+            val opClassDEfn = opClassTable.get.lookup(className)
+            if (opClassDEfn.isDefined) {
+              val classDefinition: (SymbolTable[SemType], SymbolTable[Scope], ListBuffer[Param]) = opClassDEfn.get
+              val mangledMethodName = CLASS_METHOD_PREFIX + className + "_" + methodName
+              val opType = classDefinition._1.lookup(mangledMethodName)
+
+              if (opType.isDefined) {
+                opType.get match {
+                  case FuncSemType(retType, paramTypes, numParams) => {
+                    val opScope = classDefinition._2.lookup(mangledMethodName)
+
+                    // Checking if method is callable
+                    opScope.get match {
+                      case Public() =>
+                        // parameters length match
+                        if (numParams != args.length) {
+                          errorLog += ArityMismatch(mc.pos, numParams, args.length,
+                            Some("Wrong number of method arguments"))
+                          return Some(InternalPairSemType)
+                        }
+
+                        // parameters and arguments type match
+                        for (i <- args.indices) {
+                          val expType = checkExpr(args(i), symbolTable)
+                          if (!matchTypes(expType.get, paramTypes(i))) {
+                            val argPos = getExprPos(args(i))
+                            errorLog += new TypeError(argPos._1,
+                              Set(paramTypes(i)), expType.get,
+                              Some("Argument type does not match with parameter"))(argPos._2)
+                            return Some(InternalPairSemType)
+                          }
+                        }
+                        Some(retType)
+
+                      case Private() =>
+                        errorLog +=
+                          InvalidScopeError(mc.pos, methodName, Some("Cannot access private members " + methodName))
+                        Some(InternalPairSemType)
+                    }
+
+                  }
+                  case otherType => {
+                    errorLog += new TypeError(mc.pos,
+                      Set(FuncSemType(InternalPairSemType, List.empty, 0)), otherType,
+                      Some("Cannot call non methods"))(0)
+                    Some(InternalPairSemType)
+                  }
+                }
+              } else {
+                errorLog += UnknownIdentifierError(mc.pos, methodName, Some("Unknown method identifier found"))
+                Some(InternalPairSemType)
+              }
+            } else {
+              errorLog += UnknownObjectError(mc.pos,
+                Some("No such class is defined"))
+              Some(InternalPairSemType)
+            }
+          }
+          case otherType => errorLog += new TypeError(mc.pos,
+            Set(ClassSemType("")), otherType,
+            Some("Method call can only be done on classes"))(0)
+            Some(InternalPairSemType)
+        }
+      }
 
       case call@Call(ident, args) =>
         // valid function in symbol table
@@ -757,8 +838,56 @@ class semanticAnalyser {
         Some(InternalPairSemType)
       case arrayElem: ArrayElem => checkArrayElem(arrayElem, symbolTable)
       case structElem: StructElem => checkStructElem(structElem, symbolTable)
+      case classElem: ClassElem => checkClassElem(classElem, symbolTable)
       case elem: PairElem => checkPairElem(elem, symbolTable)
     }
+  }
+
+  private def checkClassElem(classElem: ClassElem, symbolTable: GenericTable[SemType]): Option[SemType] = {
+    val identType: Option[SemType] = symbolTable.lookupAll(classElem.ident)
+    if (identType.isDefined) {
+      identType.get match {
+
+        case ClassSemType(className) => {
+          val classDefinition: Option[(SymbolTable[SemType], SymbolTable[Scope], ListBuffer[Param])]
+            = opClassTable.get.lookup(className)
+          if (classDefinition.isDefined) {
+            val opScope: Option[Scope] = classDefinition.get._2.lookup(CLASS_FIELD_PREFIX + classElem.member)
+            if (opScope.isDefined) {
+
+              opScope.get match {
+                case Public() =>
+                  classElem.st = Some(symbolTable)
+                  return classDefinition.get._1.lookup(CLASS_FIELD_PREFIX + classElem.member)
+
+                case Private() =>
+                  errorLog +=
+                    InvalidScopeError(classElem.pos, classElem.member, Some("Cannot access private members " + classElem.member))
+                  return Some(InternalPairSemType)
+              }
+            } else {
+              errorLog +=
+                UnknownIdentifierError(classElem.pos, classElem.member,
+                  Some("Cannot find member inside the class " + classElem.ident))
+              return Some(InternalPairSemType)
+            }
+          } else {
+            return Some(InternalPairSemType)
+          }
+        }
+
+        case unexpectedType => {
+          errorLog += TypeError(classElem.pos,
+            Set(ClassSemType("")),
+            unexpectedType,
+            Some("Expected a struct type for accessing a field"))
+          return Some(InternalPairSemType)
+        }
+      }
+    }
+
+    errorLog += UnknownIdentifierError(classElem.pos, classElem.ident, Some("Unknown class identifier found "))
+    Some(InternalPairSemType)
   }
 
   private def checkStructElem(structElem: StructElem,symbolTable: GenericTable[SemType]): Option[SemType] = {
@@ -779,7 +908,7 @@ class semanticAnalyser {
               return Some(InternalPairSemType)
             }
           } else {
-            errorLog += UnknownStructError(structElem.pos,
+            errorLog += UnknownObjectError(structElem.pos,
               Some("Cannot find struct type for struct elem access"))
             return Some(InternalPairSemType)
           }
@@ -878,7 +1007,26 @@ class semanticAnalyser {
           }
         }
       }
-//        Some(InternalPairSemType)
+
+      case classElem : ClassElem => {
+        val opClassElemType = checkClassElem(classElem, symbolTable)
+        opClassElemType.get match {
+          case PairSemType(pt1, pt2) =>
+            if (is_fst) {
+              attachType(pe, pt1)
+              Some(pt1)
+            } else {
+              attachType(pe, pt2)
+              Some(pt2)
+            }
+          case InternalPairSemType => Some(InternalPairSemType)
+          case unexpectedType =>
+            errorLog += TypeError(classElem.pos,
+              Set(PairSemType(InternalPairSemType, InternalPairSemType)), unexpectedType,
+              Some("can only call fst or snd on pairs"))
+            Some(InternalPairSemType)
+        }
+      }
 
       case arrayElem: ArrayElem =>
         val opArrayItemType = checkArrayElem(arrayElem, symbolTable)
@@ -899,9 +1047,9 @@ class semanticAnalyser {
             Some(InternalPairSemType)
         }
 
-      case structElem : StructElem => {
-        val opArrayItemType = checkStructElem(structElem, symbolTable)
-        opArrayItemType.get match {
+      case structElem : StructElem =>
+        val opStructElemType = checkStructElem(structElem, symbolTable)
+        opStructElemType.get match {
           case PairSemType(pt1, pt2) =>
             if (is_fst) {
               attachType(pe, pt1)
@@ -917,7 +1065,7 @@ class semanticAnalyser {
               Some("can only call fst or snd on pairs"))
             Some(InternalPairSemType)
         }
-      }
+
 
       case ident@IdentValue(name) =>
         val identType: Option[SemType] = symbolTable.lookupAll(name)
@@ -1146,6 +1294,83 @@ class semanticAnalyser {
               Some("Cannot exit with a non integer exit code"))(exprPos._2)
             Some(InternalPairSemType)
         }
+
+      case mc@MethodStat(ident, methodName, args) => {
+        val opType = symbolTable.lookupAll(ident)
+        if (opType.isEmpty) {
+          errorLog += UnknownIdentifierError(mc.pos, ident, Some("Unknown identifier found "))
+          return Some(InternalPairSemType)
+        }
+
+        opType.get match {
+          case ClassSemType(className) => {
+            val opClassDefinition = opClassTable.get.lookup(className)
+            if (opClassDefinition.isDefined) {
+              val classDefinition: (SymbolTable[SemType], SymbolTable[Scope], ListBuffer[Param]) = opClassDefinition.get
+              val mangledMethodName = CLASS_METHOD_PREFIX + className + "_" + methodName
+              val opType = classDefinition._1.lookup(mangledMethodName)
+
+              if (opType.isDefined) {
+                opType.get match {
+                  case FuncSemType(retType, paramTypes, numParams) => {
+                    val opScope = classDefinition._2.lookup(mangledMethodName)
+
+                    // Checking if method is callable
+                    opScope.get match {
+                      case Public() =>
+                        // parameters length match
+                        if (numParams != args.length) {
+                          errorLog += ArityMismatch(mc.pos, numParams, args.length,
+                            Some("Wrong number of method arguments"))
+                          return Some(InternalPairSemType)
+                        }
+
+                        // parameters and arguments type match
+                        for (i <- args.indices) {
+                          val expType = checkExpr(args(i), symbolTable)
+                          if (!matchTypes(expType.get, paramTypes(i))) {
+                            val argPos = getExprPos(args(i))
+                            errorLog += new TypeError(argPos._1,
+                              Set(paramTypes(i)), expType.get,
+                              Some("Argument type does not match with parameter"))(argPos._2)
+                            return Some(InternalPairSemType)
+                          }
+                        }
+                        Some(retType)
+
+                      case Private() =>
+                        errorLog +=
+                          InvalidScopeError(mc.pos, methodName, Some("Cannot access private members " + methodName))
+                        Some(InternalPairSemType)
+                    }
+
+                  }
+                  case otherType => {
+                    errorLog += new TypeError(mc.pos,
+                      Set(FuncSemType(InternalPairSemType, List.empty, 0)), otherType,
+                      Some("Cannot call non methods"))(0)
+                    Some(InternalPairSemType)
+                  }
+                }
+              } else {
+                errorLog += UnknownIdentifierError(mc.pos, methodName, Some("Unknown method identifier found"))
+                Some(InternalPairSemType)
+              }
+            } else {
+              errorLog += UnknownObjectError(mc.pos,
+                Some("No such class is defined"))
+              Some(InternalPairSemType)
+            }
+          }
+          case otherType => errorLog += new TypeError(mc.pos,
+            Set(ClassSemType("")), otherType,
+            Some("Method call can only be done on classes"))(0)
+            Some(InternalPairSemType)
+        }
+      }
+
+
+
 
       case printStat : Print =>
         printStat.symbolTable = Some(symbolTable)

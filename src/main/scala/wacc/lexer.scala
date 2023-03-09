@@ -75,8 +75,8 @@ object lexer {
   // token definitions
   val BEGIN: Parsley[Unit]        = symbol("begin")
   val END: Parsley[Unit]          = symbol("end")
-  val PUBLIC: Parsley[Unit]       = symbol("private")
-  val PRIVATE: Parsley[Unit]      = symbol("public")
+  val PUBLIC: Parsley[Unit]       = symbol("public")
+  val PRIVATE: Parsley[Unit]      = symbol("private")
   val CLASS: Parsley[Unit]        = symbol("class")
   val OPENPAREN: Parsley[Unit]    = lexer.lexeme.symbol.openParen.label("\'(\'")
   val CLOSEDPAREN: Parsley[Unit]  = lexer.lexeme.symbol.closingParen.label("\')\'")
@@ -119,6 +119,7 @@ object lexer {
 
   val OPENSQUAREBRAC: Parsley[Unit] = lexer.lexeme.symbol.openSquare.label("\'[\'")
   val CLOSESQUAREBRAC: Parsley[Unit] = lexer.lexeme.symbol.closingSquare.label("\']\'")
+  val ARROW: Parsley[Unit] = lexer.lexeme.symbol("->")
   val PAIR: Parsley[Unit] = symbol("pair")
 
   val NEGATE: Parsley[Unit] = lexer.lexeme(attempt(char('-') *> notFollowedBy(digit)))

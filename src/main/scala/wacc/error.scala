@@ -113,7 +113,9 @@ object error {
 
   case class TypeErasureError(pos: (Int, Int), context: Option[String]) extends SemanticError
 
-  case class UnknownStructError(pos: (Int, Int), context: Option[String]) extends SemanticError
+  case class UnknownObjectError(pos: (Int, Int), context: Option[String]) extends SemanticError
+
+  case class InvalidScopeError(pos: (Int, Int), member : String, context: Option[String]) extends SemanticError
 
   case class ArityMismatch(pos: (Int, Int), expectedArity: Int, foundArity: Int, context: Option[String]) extends SemanticError
 

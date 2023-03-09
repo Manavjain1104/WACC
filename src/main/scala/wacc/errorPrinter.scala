@@ -99,6 +99,15 @@ object errorPrinter {
             sb.append("Found number of arguments: " + foundArity + "\n")
             sb.append(printForInvalidToken(pos, fileLines(pos._1 - 1), None))
           }
+
+          case InvalidScopeError(pos, member, context) => {
+            sb.append("Invalid Scope Access error in " + filename + " " + "(line " + pos._1 + ", column " + pos._2 + ") on " + member + " :\n")
+            if (context.isDefined) {
+              sb.append(context.get + "\n")
+            }
+            sb.append(printForInvalidToken(pos, fileLines(pos._1 - 1), None))
+          }
+
           case ArrayError(pos, arrName, maxDimension, context) => {
             sb.append("Array Out of Bounds error in " + filename + " " + "(line " + pos._1 + ", column " + pos._2 + "):\n")
             if (context.isDefined) {
@@ -115,8 +124,8 @@ object errorPrinter {
             }
             sb.append(printForTypeError(pos, expectedTypes.toList, foundType))
           }
-          case UnknownStructError(pos, context) => {
-            sb.append("Struct Type error starting here in " + filename + " " + "(line " + pos._1 + ", column " + pos._2 + ") starting here:\n")
+          case UnknownObjectError(pos, context) => {
+            sb.append("Unknown Object Type error starting here in " + filename + " " + "(line " + pos._1 + ", column " + pos._2 + ") starting here:\n")
             if (context.isDefined) {
               sb.append(context.get + "\n")
             }
@@ -199,10 +208,19 @@ object errorPrinter {
             "`struct " + ident + "`"
           }
         }
+
+        case ClassSemType(className) => {
+          if (className.isEmpty) {
+            "`class type`"
+          } else {
+            "`class " + className + "`"
+          }
+        }
+
         case InternalPairSemType => "pair"
         case FuncSemType(retType, paramTypes, _) => {
           val sb = new StringBuilder()
-          sb.append("Function: ")
+          sb.append("Function/Method: ")
           for (paramType <- paramTypes) {
             sb.append(typeToString(paramType) + " -> ")
           }

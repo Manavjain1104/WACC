@@ -23,6 +23,7 @@ object parser {
       StringExpr(STRING) <|>
       attempt(arrayelem) <|>
       attempt(structelem) <|>
+      attempt(classelem) <|>
       ThisExpr(THIS ~> DOT ~> IDENT) <|>
       IdentExpr(IDENT) <|>
       (PairExpr <# PAIR_LITER)).label("Atomic Literal")
@@ -50,18 +51,20 @@ object parser {
         " unary, binary, logical and comparison operators")
 
   // Lvalue parsers
-  lazy val lvalue: Parsley[LValue] = attempt(arrayelem) <|> attempt(structelem) <|> IdentValue(IDENT) <|> pairelem
+  lazy val lvalue: Parsley[LValue] = attempt(arrayelem) <|> attempt(structelem) <|> attempt(classelem) <|> IdentValue(IDENT) <|> pairelem
   lazy val pairelem: Parsley[PairElem] = (FST ~> Fst(lvalue)) <|> (SND ~> Snd(lvalue))
   lazy val arrayelem: Parsley[ArrayElem] = ArrayElem(IDENT, some(OPENSQUAREBRAC ~> expr <~ CLOSESQUAREBRAC))
-  lazy val structelem: Parsley[StructElem] = StructElem(IDENT <~ DOT, IDENT)
+  lazy val structelem: Parsley[StructElem] = StructElem(IDENT <~ ARROW, IDENT)
+  lazy val classelem: Parsley[ClassElem] = ClassElem(IDENT <~ DOT, IDENT)
 
   // Rvalue parsers
-  lazy val rvalue: Parsley[RValue] = call <|> expr <|> pairelem <|> newPair <|> newClass <|> arrayLiter <|> structLiter
+  lazy val rvalue: Parsley[RValue] = call <|> attempt(methodCall) <|> expr <|> pairelem <|> newPair <|> newClass <|> arrayLiter <|> structLiter
   val call: Parsley[RValue] = Call((CALL ~> IDENT <~ OPENPAREN), expList <~ CLOSEDPAREN)
   val newClass : Parsley[RValue] = NewClass(NEW ~> IDENT, OPENPAREN ~> expList <~ CLOSEDPAREN)
   val newPair: Parsley[RValue] = NewPair((NEWPAIR ~> OPENPAREN ~> expr), COMMA ~> expr <~ CLOSEDPAREN)
   val arrayLiter: Parsley[RValue] = ArrayLiter(OPENSQUAREBRAC ~> expList <~ CLOSESQUAREBRAC)
   val structLiter: Parsley[RValue] = StructLiter(OPENCURLY ~> expList <~ CLOSEDCURLY)
+  val methodCall : Parsley[RValue] = MethodCall(IDENT <~ DOT, IDENT <~ OPENPAREN, expList <~ CLOSEDPAREN)
   lazy val expList: Parsley[List[Expr]] = sepBy(expr, ",")
 
   // type hierarchy parsers
@@ -89,13 +92,14 @@ object parser {
   val ifStat: Parsley[Statement] = If((IF.label("Statement_beginning") ~> expr), (THEN ~> statement), (ELSE ~> statement <~ FI))
   val whileStat: Parsley[Statement] = While((WHILE.label("Statement_beginning") ~> expr), (DO ~> statement <~ DONE))
   val scopeStat: Parsley[Statement] = ScopeStat(BEGIN.label("Statement_beginning") ~> statement <~ END)
+  val methodStat : Parsley[Statement] = MethodStat(IDENT <~ DOT, IDENT <~ OPENPAREN, expList <~ CLOSEDPAREN)
 
   // terminal statements
   lazy val terminalStat: Parsley[Statement] = (returnStat <|> exit).label("return/exit_statement")
   val returnStat: Parsley[Statement] = Return(RETURN ~> expr)
   val exit: Parsley[Statement] = Exit(EXIT ~> expr)
 
-  val statAtoms: Parsley[Statement] = skip <|> vardec <|> assign <|> read <|>
+  val statAtoms: Parsley[Statement] = skip <|> vardec <|> attempt(methodStat) <|> assign <|> read <|>
     free <|> attempt(println) <|> print <|>
     ifStat <|> whileStat <|> scopeStat
 
@@ -116,7 +120,7 @@ object parser {
     (sepBy1(fieldDec, SEMICOLON).explain("Expected non empty struct field variable declaration")
       <~ CLOSEDCURLY).explain("Invalid Struct Definition. Check Syntax."))
 
-  val scope: Parsley[Scope] = (Public <# PUBLIC) <|> (Private <# PRIVATE) <|> (Public <# unit)
+  val scope: Parsley[Scope] = (Private <# PRIVATE) <|> (Public <# PUBLIC) <|> (Public <# unit)
   val classField: Parsley[ClassField] = ClassField(scope, vardec)
 
   val method: Parsley[Method] = Method(scope, func)
