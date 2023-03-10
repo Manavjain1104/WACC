@@ -87,7 +87,7 @@ object parser {
   val ifThenStat: Parsley[Statement] = IfThen((IF.label("Statement_beginning") ~> expr), (THEN ~> statement <~ FI))
   val whileStat: Parsley[Statement] = While((WHILE.label("Statement_beginning") ~> expr), (DO ~> statement <~ DONE))
   val scopeStat: Parsley[Statement] = ScopeStat(BEGIN.label("Statement_beginning") ~> statement <~ END)
-  val matchStat: Parsley[Statement] = MatchStat(MATCH ~> COLON ~> expr, some(OPENCURLY ~> CASE ~> expr <~ ARROW <~> statement <~ CLOSEDCURLY))
+  val matchStat: Parsley[Statement] = MatchStat(MATCH ~> expr <~ COLON , some(OPENCURLY ~> CASE ~> expr <~ ARROW <~> statement <~ CLOSEDCURLY))
   val returnStat: Parsley[Statement] = Return(RETURN ~> expr)
   val exit: Parsley[Statement] = Exit(EXIT ~> expr)
 

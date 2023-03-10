@@ -277,6 +277,13 @@ class codeGenerator(program: Program) {
   private def findNumLocals(stat: Statement): Int = {
     stat match {
       case _: VarDec => 1
+      case MatchStat(_, condStatList) => {
+        var numLocals = 0
+        for (condStat <- condStatList){
+          numLocals += findNumLocals(condStat._2)
+        }
+        numLocals
+      }
       case ScopeStat(stat) => findNumLocals(stat)
       case While(_, doStat) => findNumLocals(doStat)
       case ConsecStat(first, next) => findNumLocals(first) + findNumLocals(next)
@@ -676,7 +683,22 @@ class codeGenerator(program: Program) {
       case Exit(e) => generateExprIR(e, liveMap, localRegs) ++ List(POP(R0), BRANCH("exit", L))
 
       case Skip => List.empty[IR]
+      case MatchStat(cond, condStatList) => {
+        val ifIr = ListBuffer.empty[IR]
+        for (condStat <- condStatList){
+        val label: String = getNewLabel
+        ifIr.appendAll(generateExprIR(cond, liveMap, localRegs))
+        ifIr.appendAll(generateExprIR(condStat._1, liveMap, localRegs))
+        ifIr.append(POPMul(List(scratchReg1, scratchReg2)))
+        ifIr.append(CMP(scratchReg1, scratchReg2))
+        ifIr.append(BRANCH(label, NE))
+        val caseLiveMap = new SymbolTable[Location](Some(liveMap))
+        ifIr.appendAll(generateStatIR(condStat._2, caseLiveMap, localRegs, numParams))
+        ifIr.append(Label(label))
+        }
 
+        ifIr.toList
+      }
       case varDec@VarDec(_, ident, rvalue) => {
         val irs = ListBuffer.empty[IR]
         irs.appendAll(generateRvalue(rvalue, liveMap, localRegs, numParams, IdentValue(ident)(varDec.symbolTable, (0, 0))))
