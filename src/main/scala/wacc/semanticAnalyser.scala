@@ -1,7 +1,7 @@
 package wacc
 
 import wacc.AST._
-import wacc.ClassTable.ClassTable
+import wacc.ClassTable.{ClassDefinition, ClassTable}
 import wacc.SemTypes._
 import wacc.error._
 import wacc.StructTable._
@@ -35,6 +35,9 @@ class semanticAnalyser {
   // mangling class method names
   private final val CLASS_METHOD_PREFIX = "wacc_class_"
 
+  // flag set when checking class for method calls
+  private var curClassName : Option[String] = None
+
   def checkProgram(program: Program, topLevelSymbolTable: SymbolTable[SemType]): Option[ListBuffer[SemanticError]] = {
 
     // absorbing the classes from the top of the file
@@ -42,7 +45,7 @@ class semanticAnalyser {
     val classDefinitions = mutable.Set.empty[Class]
     for (waccClass <- program.classes) {
       if (classTable.lookup(waccClass.name).isEmpty) {
-        classTable.add(waccClass.name, new SymbolTable[SemType](None), new SymbolTable[Scope](None), new ListBuffer[Param])
+        classTable.add(waccClass.name)
         classDefinitions.add(waccClass)
       } else {
         errorLog += DuplicateIdentifier(waccClass.pos, waccClass.name, Some("Duplicate class definition"))
@@ -132,56 +135,76 @@ class semanticAnalyser {
   }
 
   private def checkClass(waccClass: Class, classTable: ClassTable) : Unit = {
-    val classDef: (SymbolTable[SemType], SymbolTable[Scope], ListBuffer[Param]) = classTable.lookup(waccClass.name).get
+    curClassName = Some(waccClass.name)
+
+    val classDef: ClassDefinition = classTable.lookup(waccClass.name).get
 
     // To add and initialise the scope/type of parameters/fields and populate their respective tables
-    if (checkClassParams(waccClass.params, classDef, mutable.Set.empty[String])) {
+    val opOffset: Option[Int] = checkClassParams(waccClass.params, classDef, mutable.Set.empty[String])
+    if (opOffset.isDefined) {
+      var offset = opOffset.get
       for (field <- waccClass.fields) {
-        val statSemType = checkStatement(field.varDec, classDef._1, Some(CLASS_FIELD_PREFIX))
+        val statSemType = checkStatement(field.varDec, classDef.getTypeTable, Some(CLASS_FIELD_PREFIX))
         if (statSemType.isDefined){
-          val name = (field.varDec match {
-            case VarDec(_, ident, _) => ident
+          val name = field.varDec match {
+            case vd @ VarDec(_, ident, _) => {
+              classDef.addField(vd)
+              ident
+            }
             case _ => throw new RuntimeException("Parsing should filter this")
-          })
-          val mangledName = CLASS_FIELD_PREFIX + name
-          if (classDef._2.lookup(mangledName).isDefined) {
+          }
+
+          if (classDef.getFieldScope(name).isDefined) {
             errorLog += DuplicateIdentifier(field.pos, name, Some("Duplicate field/parameter found in class definition"))
           } else {
-            classDef._2.add(mangledName, field.scope)
+            val size = statSemType.get match {
+              case SemTypes.CharSemType => 1
+              case _ => 4
+            }
+            classDef.addFieldOffsetScope(name, offset, field.scope)
+            offset += size
           }
         }
       }
+      classDef.setClassSize(offset)
 
       // now consume the class methods
       val methodDefinitions = collection.mutable.Set.empty[Method]
       for (method <- waccClass.methods) {
-        if (classDef._2.lookup(method.func.ident).isDefined) {
+        if (classDef.getMethodScope(method.func.ident).isDefined) {
           errorLog += DuplicateIdentifier(method.func.pos, method.func.ident, Some("Duplicate identifier found in method definition"))
         } else {
-          val mangledMethodName = CLASS_METHOD_PREFIX + waccClass.name + "_" + method.func.ident
-          classDef._1.add(mangledMethodName, convertToSem(method.func))
-          classDef._2.add(mangledMethodName, method.scope)
+          classDef.addMethodType(method.func.ident, convertToSem(method.func))
+          classDef.addMethodOffsetScope(method.func.ident, method.scope)
           methodDefinitions.add(method)
         }
       }
-      methodDefinitions.foreach(m => checkFunction(m.func, classDef._1))
+      methodDefinitions.foreach(m => checkFunction(m.func, classDef.getTypeTable))
     }
+    curClassName = None
   }
 
-  private def checkClassParams(params: List[Param], classDef: (SymbolTable[SemType], SymbolTable[Scope], ListBuffer[Param]), paramNames: mutable.Set[String]): Boolean = {
+  private def checkClassParams(params: List[Param],
+                               classDef: ClassDefinition,
+                               paramNames: mutable.Set[String]): Option[Int] = {
+    var offset = 0
     for (param <- params) {
       if (paramNames.contains(param.ident)) {
         errorLog += DuplicateIdentifier(param.pos, param.ident, Some("Duplicate identifier found in class definition"))
-        return false // duplicate param names
+        return None // duplicate param names
       } else {
 
         paramNames.add(param.ident)
-        classDef._1.add(CLASS_FIELD_PREFIX + param.ident, convertToSem(param.paramType))
-        classDef._2.add(CLASS_FIELD_PREFIX + param.ident, Public.apply()(param.pos))
-        classDef._3.append(param)
+        val paramType: SemType = convertToSem(param.paramType)
+        val size = paramType match {
+          case CharSemType => 1
+          case _ => 4
+        }
+        classDef.addParam(param, offset, paramType)
+        offset += size
       }
     }
-    true
+    Some(offset)
   }
 
   private def checkStruct(struct: Struct, structTable: StructTable) : Unit = {
@@ -667,15 +690,16 @@ class semanticAnalyser {
   def checkNewClass(newClass: NewClass, symbolTable: GenericTable[SemType]): Option[SemType] = {
     val classTable: ClassTable = opClassTable.get
 
-    val opClassDefinition: Option[(SymbolTable[SemType], SymbolTable[Scope], ListBuffer[Param])] = classTable.lookup(newClass.className)
+    val opClassDefinition = classTable.lookup(newClass.className)
 
     if (opClassDefinition.isDefined) {
-      val classDefinition: (SymbolTable[SemType], SymbolTable[Scope], ListBuffer[Param]) = opClassDefinition.get
+      val classDefn: ClassDefinition = opClassDefinition.get
+
       // checking that parameter lengths match
-      if (newClass.exprs.size == classDefinition._3.size) {
+      if (newClass.exprs.size == classDefn.numParams) {
         for (i <- newClass.exprs.indices) {
           val expType = checkExpr(newClass.exprs(i), symbolTable)
-          val paramType = convertToSem(classDefinition._3(i).paramType)
+          val paramType = convertToSem(classDefn.getParams(i).paramType)
           if (!matchTypes(expType.get, paramType)) {
             val exprPos = getExprPos(newClass.exprs(i))
             errorLog += new TypeError(exprPos._1,
@@ -686,7 +710,7 @@ class semanticAnalyser {
         }
         return Some(ClassSemType(newClass.className))
       } else {
-        errorLog += ArityMismatch(newClass.pos, classDefinition._3.size, newClass.exprs.size, Some("Wrong number of function arguments"))
+        errorLog += ArityMismatch(newClass.pos, classDefn.numParams, newClass.exprs.size, Some("Wrong number of function arguments"))
       }
     } else {
       errorLog += UnknownIdentifierError(newClass.pos, newClass.className, Some("Unknown class name found"))
@@ -721,14 +745,14 @@ class semanticAnalyser {
           case ClassSemType(className) => {
             val opClassDEfn = opClassTable.get.lookup(className)
             if (opClassDEfn.isDefined) {
-              val classDefinition: (SymbolTable[SemType], SymbolTable[Scope], ListBuffer[Param]) = opClassDEfn.get
-              val mangledMethodName = CLASS_METHOD_PREFIX + className + "_" + methodName
-              val opType = classDefinition._1.lookup(mangledMethodName)
+              val classDefinition: ClassDefinition = opClassDEfn.get
+//              val mangledMethodName = FUNCTION_PREFIX + methodName
+              val opType = classDefinition.getMethodType(methodName)
 
               if (opType.isDefined) {
                 opType.get match {
                   case FuncSemType(retType, paramTypes, numParams) => {
-                    val opScope = classDefinition._2.lookup(mangledMethodName)
+                    val opScope: Option[Scope] = classDefinition.getMethodScope(methodName)
 
                     // Checking if method is callable
                     opScope.get match {
@@ -786,7 +810,13 @@ class semanticAnalyser {
 
       case call@Call(ident, args) =>
         // valid function in symbol table
-        val identSemType = symbolTable.lookupAll(FUNCTION_PREFIX + ident)
+        var identSemType : Option[SemType] = None
+        if (curClassName.isDefined) {
+          identSemType = symbolTable.lookupAll(CLASS_METHOD_PREFIX + curClassName.get + "_" + ident)
+        } else {
+          identSemType = symbolTable.lookupAll(FUNCTION_PREFIX + ident)
+        }
+
         if (identSemType.isEmpty) {
           errorLog += UnknownIdentifierError(call.pos, ident, Some("Unknown function identifier found"))
           return Some(InternalPairSemType)
@@ -849,16 +879,15 @@ class semanticAnalyser {
       identType.get match {
 
         case ClassSemType(className) => {
-          val classDefinition: Option[(SymbolTable[SemType], SymbolTable[Scope], ListBuffer[Param])]
-            = opClassTable.get.lookup(className)
-          if (classDefinition.isDefined) {
-            val opScope: Option[Scope] = classDefinition.get._2.lookup(CLASS_FIELD_PREFIX + classElem.member)
+          val opClassDefn: Option[ClassDefinition] = opClassTable.get.lookup(className)
+          if (opClassDefn.isDefined) {
+            val opScope: Option[Scope] = opClassDefn.get.getFieldScope(classElem.member)
             if (opScope.isDefined) {
-
               opScope.get match {
                 case Public() =>
                   classElem.st = Some(symbolTable)
-                  return classDefinition.get._1.lookup(CLASS_FIELD_PREFIX + classElem.member)
+                  classElem.className = Some(className)
+                  return opClassDefn.get.getFieldType(classElem.member)
 
                 case Private() =>
                   errorLog +=
@@ -1306,14 +1335,14 @@ class semanticAnalyser {
           case ClassSemType(className) => {
             val opClassDefinition = opClassTable.get.lookup(className)
             if (opClassDefinition.isDefined) {
-              val classDefinition: (SymbolTable[SemType], SymbolTable[Scope], ListBuffer[Param]) = opClassDefinition.get
-              val mangledMethodName = CLASS_METHOD_PREFIX + className + "_" + methodName
-              val opType = classDefinition._1.lookup(mangledMethodName)
+              val classDefinition: ClassDefinition = opClassDefinition.get
+//              val mangledMethodNames = FUNCTION_PREFIX + methodName
+              val opType = classDefinition.getMethodType(methodName)
 
               if (opType.isDefined) {
                 opType.get match {
                   case FuncSemType(retType, paramTypes, numParams) => {
-                    val opScope = classDefinition._2.lookup(mangledMethodName)
+                    val opScope: Option[Scope] = classDefinition.getMethodScope(methodName)
 
                     // Checking if method is callable
                     opScope.get match {

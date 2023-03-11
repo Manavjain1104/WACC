@@ -1,6 +1,6 @@
 package wacc
 
-import parsley.Parsley.{attempt, unit}
+import parsley.Parsley.{attempt, notFollowedBy, unit}
 import parsley.combinator.{many, sepBy, sepBy1}
 import parsley.errors.combinator.ErrorMethods
 import parsley.expr.{Prefix, chain, precedence}
@@ -24,7 +24,7 @@ object parser {
       attempt(arrayelem) <|>
       attempt(structelem) <|>
       attempt(classelem) <|>
-      ThisExpr(THIS ~> DOT ~> IDENT) <|>
+      ThisExpr(THIS ~> DOT ~> IDENT) <* notFollowedBy(OPENPAREN).explain("`this` can only be applied to non methods") <|>
       IdentExpr(IDENT) <|>
       (PairExpr <# PAIR_LITER)).label("Atomic Literal")
       .explain("--> Atomic Literals includes booleans, chars, strings, " + "array-elems, struct-elems or `identifier[]` or identifiers")

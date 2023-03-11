@@ -373,9 +373,13 @@ object AST {
 
   object StructElem extends ParserBridgeSymPos2[String, String, StructElem]
 
-  case class ClassElem(ident: String, member: String)(var st: Option[GenericTable[SemTypes.SemType]], val pos: (Int, Int)) extends LValue with Expr
+  case class ClassElem(ident: String, member: String)(var st: Option[GenericTable[SemTypes.SemType]], val pos: (Int, Int))(var className : Option[String]) extends LValue with Expr
 
-  object ClassElem extends ParserBridgeSymPos2[String, String, ClassElem]
+  object ClassElem extends ParserBridgeSymPos2[String, String, ClassElem] {
+    override def apply(ident: String, member: String)(st: Option[GenericTable[SemTypes.SemType]], pos: (Int, Int)): ClassElem = {
+      new ClassElem(ident, member)(st, pos)(None)
+    }
+  }
 
   // RValue branch of AST
   sealed trait RValue extends AST

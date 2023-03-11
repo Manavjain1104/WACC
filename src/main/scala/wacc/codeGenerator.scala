@@ -1,6 +1,7 @@
 package wacc
 
 import wacc.AST._
+import wacc.ClassTable.{ClassDefinition, ClassTable}
 import wacc.IR._
 import wacc.Registers._
 import wacc.SemTypes._
@@ -9,23 +10,24 @@ import scala.collection.mutable.ListBuffer
 
 class codeGenerator(program: Program) {
 
-  /* TODO : -
-  1) This expr
-  2) Classes
-
-   */
-
   private val paramRegs = List(R0, R1, R2, R3)
   private var labelOrder = 0
   private val FUNCTION_PREFIX = "wacc_"
-  private val WORDSIZE = 4
+  private val WORD_SIZE = 4
 
   private val strings: ListBuffer[String] = ListBuffer.empty[String]
   private var stringNum = 0
 
   private val widgets = collection.mutable.Set.empty[Widget]
 
+  // defining structure of classes and structs
   private val structTable: StructTable.StructTable = program.structTable.get
+  private val classTable: ClassTable = program.classTable.get
+  private var curClassName : Option[String] = None
+
+  // mangling class parameters, fields and methods
+  private final val CLASS_METHOD_PREFIX = "wacc_class_"
+  private final val CLASS_FIELD_PREFIX = "this."
 
   // generate assembly for entire program
   def generateProgIR(): List[IR] = {
@@ -33,8 +35,8 @@ class codeGenerator(program: Program) {
     // assembly hygiene
     irs += Global(List("main"))
 
-    // this is consuming the *Main* body of the program
-    val localRegs: List[Reg] = List(R4, R5, R6, R7, R0, R1, R2, R3)
+    // this is consuming the *Main* body of the program --> R7 is a class pointer
+    val localRegs: List[Reg] = List(R4, R5, R6, R0, R1, R2, R3)
     val numLocalRegs = localRegs.length
 
     irs += Label("main")
@@ -42,13 +44,13 @@ class codeGenerator(program: Program) {
     irs.append(MOV(FP, SP, DEFAULT))
     val numLocalsInMain = findNumLocals(program.stat)
     if (numLocalsInMain > numLocalRegs) {
-      irs.append(SUB(SP, SP, (numLocalsInMain - numLocalRegs) * WORDSIZE))
+      irs.append(SUB(SP, SP, (numLocalsInMain - numLocalRegs) * WORD_SIZE))
     }
     val liveMap = new SymbolTable[Location](None)
     irs.appendAll(generateStatIR(program.stat, liveMap, localRegs, 0))
 
     if (numLocalsInMain > numLocalRegs) {
-      irs.append(ADD(SP, SP, (numLocalsInMain - numLocalRegs) * WORDSIZE, DEFAULT))
+      irs.append(ADD(SP, SP, (numLocalsInMain - numLocalRegs) * WORD_SIZE, DEFAULT))
     }
     irs += MOVImm(R0, 0, DEFAULT)
     irs += POPMul(List(FP, PC))
@@ -57,12 +59,38 @@ class codeGenerator(program: Program) {
     for (func <- program.funcs) {
       irs.appendAll(generateFuncIR(func, localRegs))
     }
+
+    // generate assembly for class Methods
+    for (waccClass <- program.classes) {
+      curClassName = Some(waccClass.name) // so that method knows which class it is in
+      for (method <- waccClass.methods) {
+        irs.appendAll(generateFuncIR(method.func, localRegs))
+      }
+      curClassName = None
+    }
+
     irs.prepend(Data(strings.toList, 0))
 
     // add all required widgets
     widgets.foreach(w => irs.appendAll(w.getIR()))
 
     optimisePushPop(irs.toList)
+  }
+
+  private def getMemberIntoTarget(ident: String, dst : Reg): List[IR]= {
+    val irs = ListBuffer.empty[IR]
+    assert(curClassName.isDefined, "This must being used in a class")
+
+    val classDefn: ClassDefinition = classTable.lookup(curClassName.get).get
+    val offset: Int = classDefn.getFieldOffset(ident).get
+    val isChar : Boolean = classDefn.getFieldType(ident).get == CharSemType
+
+    if (isChar){
+      irs.append(LDR(dst, CP, offset, BYTECONSTOFFSET))
+    } else {
+      irs.append(LDR(dst, CP, offset, DEFAULT))
+    }
+    irs.toList
   }
 
   // this function writes instructions that calculate the value of the expression
@@ -94,6 +122,10 @@ class codeGenerator(program: Program) {
         getIntoTarget(ident, scratchReg1, liveMap).appended(PUSH(scratchReg1))
       }
 
+      case ThisExpr(ident) => {
+        getMemberIntoTarget(ident, scratchReg1).appended(PUSH(scratchReg1))
+      }
+
       case expr: UnopExpr => {
         expr match {
           case ChrExpr(e) => {
@@ -118,8 +150,13 @@ class codeGenerator(program: Program) {
             e match {
               case IdentExpr(ident) => {
                 irs.appendAll(getIntoTarget(ident, scratchReg1, liveMap))
-                irs.append(LDR(scratchReg1, scratchReg1, -WORDSIZE, DEFAULT))
+                irs.append(LDR(scratchReg1, scratchReg1, -WORD_SIZE, DEFAULT))
                 irs.append(PUSH(scratchReg1))
+              }
+              case ThisExpr(ident) => {
+                irs.appendAll(getMemberIntoTarget(ident, scratchReg1))
+                irs.append(LDR(scratchReg1, scratchReg1, -WORD_SIZE, DEFAULT))
+                irs.append(PUSH(scratchReg1))  // scratchReg1 now holds ths class member
               }
               case ar@ArrayElem(ident, exprs) => {
                 //                 irs.append(MOV(R12, R3, DEFAULT))
@@ -139,7 +176,7 @@ class codeGenerator(program: Program) {
                 }
 
                 // at this point R3 hold ths target array
-                irs.append(LDR(scratchReg1, R3, -WORDSIZE, DEFAULT))
+                irs.append(LDR(scratchReg1, R3, -WORD_SIZE, DEFAULT))
                 irs.append(POP(R3))
                 irs.append(PUSH(scratchReg1))
 
@@ -245,6 +282,24 @@ class codeGenerator(program: Program) {
         irs.toList
       }
 
+
+      case classElem @ ClassElem(ident, member) => {
+        val irs = ListBuffer.empty[IR]
+
+        val identType = classElem.st.get.lookupAll(ident).get
+        identType match {
+          case ClassSemType(className) => {
+            irs.append(PUSH(CP))
+            irs.appendAll(getIntoTarget(ident, CP, liveMap)) // set class pointer
+            irs.appendAll(getMemberIntoTarget(member, scratchReg1))
+            irs.append(POP(CP))
+            irs.append(PUSH(scratchReg1))
+          }
+          case _ => throw new RuntimeException()
+        }
+        irs.toList
+      }
+
       case arrElem@ArrayElem(ident, exprs) => {
         val irs = ListBuffer.empty[IR]
 
@@ -305,7 +360,7 @@ class codeGenerator(program: Program) {
           case _ => false
         }
       }
-      case structElem @ StructElem(ident, field) => {
+      case structElem@StructElem(ident, field) => {
         val structName = structElem.st.get.lookupAll(ident).get match {
           case StructSemType(structName) => structName
           case _ => throw new RuntimeException("shoudl not be possible")
@@ -313,7 +368,24 @@ class codeGenerator(program: Program) {
 
         structTable.lookup(structName).get.lookup(field).get == CharSemType
       }
+
+      case classElem@ClassElem(ident, member) => {
+        val className = classElem.st.get.lookupAll(ident).get match {
+          case ClassSemType(className) => className
+          case _ => throw new RuntimeException("shoudl not be possible")
+        }
+
+        classTable.lookup(className).get.getFieldType(member).get == CharSemType
+      }
+
       case arrElem: ArrayElem => arrayElemIsChar(arrElem)
+      case th @ ThisExpr(ident) => {
+        val ty: Option[SemType] = th.st.get.lookupAll(CLASS_FIELD_PREFIX + ident)
+        ty.get match {
+          case SemTypes.CharSemType => true
+          case _ => false
+        }
+      }
       case _ => false
     }
   }
@@ -327,7 +399,7 @@ class codeGenerator(program: Program) {
     }
 
     val isChar = exprIsChar(expr)
-    val size = if (isChar) 1 else WORDSIZE
+    val size = if (isChar) 1 else WORD_SIZE
 
     irs.append(MOVImm(R0, size, DEFAULT))
     irs.append(BRANCH("malloc", L))
@@ -371,12 +443,32 @@ class codeGenerator(program: Program) {
           }
         }
       }
-      case StructElem(name, field) => {
-        structTable.lookup(name).get.lookup(field).get match {
+      case structElem @ StructElem(ident, field) => {
+
+        val structName = structElem.st.get.lookupAll(ident).get match {
+          case StructSemType(structName) => structName
+          case _ => throw new RuntimeException("should not be possible")
+        }
+
+        structTable.lookup(structName).get.lookup(field).get match {
           case StructSemType(ident) => ident
           case _ => throw new RuntimeException("Should not be possible")
         }
       }
+      case classElem @ ClassElem(ident, member) => {
+
+        val className = classElem.st.get.lookupAll(ident).get match {
+          case ClassSemType(className) => className
+          case _ => throw new RuntimeException("should not be possible")
+        }
+
+        classTable.lookup(className).get.getFieldType(member).get match {
+          case StructSemType(structName) => structName
+          case _ => throw new RuntimeException("Should not be possible")
+        }
+
+      }
+
       case arrElem : ArrayElem => {
         getArrElemType(arrElem) match {
           case StructSemType(ident) => ident
@@ -391,7 +483,7 @@ class codeGenerator(program: Program) {
       case id@IdentValue(s) => {
         id.st.get.lookupAll(s).get match {
           case ArraySemType(CharSemType) => 1
-          case _ => WORDSIZE
+          case _ => WORD_SIZE
         }
       }
       case structElem @ StructElem(ident, field) => {
@@ -399,6 +491,18 @@ class codeGenerator(program: Program) {
           case StructSemType(structName) => {
             structTable.lookup(structName).get.lookup(field).get match {
               case ArraySemType(t) => if (t == CharSemType) 1 else 4
+              case _ => 4
+            }
+          }
+          case _ => 4
+        }
+      }
+
+      case classElem @ ClassElem(ident, member) => {
+        classElem.st.get.lookupAll(ident).get match {
+          case ClassSemType(className) => {
+            classTable.lookup(className).get.getFieldType(member).get match {
+              case ArraySemType(t) => if (t == CharSemType) 1 else  4
               case _ => 4
             }
           }
@@ -416,7 +520,7 @@ class codeGenerator(program: Program) {
         if (elem match {
           case f: Fst => f.ty == ArraySemType(CharSemType)
           case s: Snd => s.ty == ArraySemType(CharSemType)
-        }) 1 else WORDSIZE
+        }) 1 else WORD_SIZE
       }
     }
   }
@@ -449,6 +553,16 @@ class codeGenerator(program: Program) {
               case _ => throw new RuntimeException("should not reach here")
             }
 
+          case classElem @ ClassElem(ident, member) => {
+
+            val className = classElem.st.get.lookupAll(ident).get match {
+              case ClassSemType(className) => className
+              case _ => throw new RuntimeException("should not be possible")
+            }
+
+            classTable.lookup(className).get.getFieldType(member).get == CharSemType
+          }
+
           case arrElem: ArrayElem => arrayElemIsChar(arrElem)
         }
         if (isChar) {
@@ -471,7 +585,7 @@ class codeGenerator(program: Program) {
           irs.append(PUSHMul(paramRegs))
         }
 
-        irs.append(MOVImm(R0, 2 * WORDSIZE, DEFAULT))
+        irs.append(MOVImm(R0, 2 * WORD_SIZE, DEFAULT))
         irs.append(BRANCH("malloc", L))
         irs.append(MOV(R12, R0, DEFAULT))
 
@@ -483,6 +597,59 @@ class codeGenerator(program: Program) {
         irs.append(STR(scratchReg1, R12, 4, DEFAULT))
         irs.append(POP(scratchReg1))
         irs.append(STR(scratchReg1, R12, 0, DEFAULT))
+        irs.append(PUSH(R12))
+        irs.toList
+      }
+
+      case NewClass(className, exprs) => {
+        val irs = ListBuffer.empty[IR]
+
+        val classDefn: ClassDefinition = classTable.lookup(className).get
+        val size = classDefn.getClassSize
+
+        val saveParamRegs = willClobber(localRegs, liveMap)
+
+        if (saveParamRegs) {
+          irs.append(PUSHMul(paramRegs))
+        }
+
+        irs.append(MOVImm(R0, size, DEFAULT))
+        irs.append(BRANCH("malloc", L))
+        irs.append(MOV(R12, R0, DEFAULT))
+
+        if (saveParamRegs) {
+          irs.append(POPMul(paramRegs))
+        }
+
+        // R12 is now the pointer to the class in memory
+        // setting up class parameters
+        val params = classDefn.getParams
+        for (i <- exprs.indices) {
+          irs.appendAll(generateExprIR(exprs(i), liveMap, localRegs))
+          irs.append(POP(scratchReg1))
+
+          val offset = classDefn.getFieldOffset(params(i).ident).get
+          if (classDefn.getFieldType(params(i).ident).get == CharSemType) {
+            irs.append(STR(scratchReg1 ,R12, offset, BYTECONSTOFFSET))
+          } else {
+            irs.append(STR(scratchReg1 ,R12, offset, DEFAULT))
+          }
+        }
+
+        // now setting up class field members
+        for (varDec <- classDefn.getFields) {
+          irs.appendAll(generateRvalue(varDec.rvalue, liveMap, localRegs, numParams,
+              IdentValue(varDec.ident)(varDec.symbolTable, (0, 0))))
+          irs.append(POP(scratchReg1))
+
+          val offset = classDefn.getFieldOffset(varDec.ident).get
+          if (classDefn.getFieldType(varDec.ident).get == CharSemType) {
+            irs.append(STR(scratchReg1 ,R12, offset, BYTECONSTOFFSET))
+          } else {
+            irs.append(STR(scratchReg1 ,R12, offset, DEFAULT))
+          }
+        }
+
         irs.append(PUSH(R12))
         irs.toList
       }
@@ -506,12 +673,12 @@ class codeGenerator(program: Program) {
 
         // R12 now holds the pointer to the structure at 0 offset
         // set all the expr in mem
-        val structDefn = structTable.lookup(structName).get
-        val fields = structDefn.getKeys()
+        val structDefinition = structTable.lookup(structName).get
+        val fields = structDefinition.getKeys()
         for (i <- exprs.indices) {
           irs.appendAll(generateExprIR(exprs(i), liveMap, localRegs))
           irs.append(POP(scratchReg1))
-          irs.append(STR(scratchReg1, R12, structDefn.getOffset(fields(i)).get, DEFAULT))
+          irs.append(STR(scratchReg1, R12, structDefinition.getOffset(fields(i)).get, DEFAULT))
         }
 
         // push pointer to struct on stack
@@ -530,7 +697,7 @@ class codeGenerator(program: Program) {
         if (saveParamRegs) {
           irs.append(PUSHMul(paramRegs))
         }
-        irs.append(MOVImm(R0, (exprLen * size) + WORDSIZE, DEFAULT))
+        irs.append(MOVImm(R0, (exprLen * size) + WORD_SIZE, DEFAULT))
         irs.append(BRANCH("malloc", L))
         irs.append(MOV(R12, R0, DEFAULT))
 
@@ -538,11 +705,11 @@ class codeGenerator(program: Program) {
           irs.append(POPMul(paramRegs))
         }
 
-        irs.append(ADD(R12, R12, WORDSIZE, DEFAULT))
+        irs.append(ADD(R12, R12, WORD_SIZE, DEFAULT))
 
         // store size of array
         irs.append(MOVImm(scratchReg1, exprLen, DEFAULT))
-        irs.append(STR(scratchReg1, R12, -WORDSIZE, DEFAULT))
+        irs.append(STR(scratchReg1, R12, -WORD_SIZE, DEFAULT))
 
         // set all the expr in mem
         for (i <- exprs.indices) {
@@ -572,14 +739,19 @@ class codeGenerator(program: Program) {
           irs.appendAll(generateExprIR(lArgs(i), liveMap, localRegs)) // this leaves the value on top of stack for function call
         }
 
-        for (i <- 0 until math.min(WORDSIZE, lArgs.length)) {
+        for (i <- 0 until math.min(WORD_SIZE, lArgs.length)) {
           irs.append(POP(paramRegs(i)))
         }
 
-        irs.append(BRANCH(FUNCTION_PREFIX + ident, L))
+        var prefix = FUNCTION_PREFIX
+        if (curClassName.isDefined) {
+          prefix = CLASS_METHOD_PREFIX + curClassName.get + "_"
+        }
 
-        if (lArgs.length > WORDSIZE) {
-          irs.append(ADD(SP, SP, (lArgs.length - WORDSIZE) * WORDSIZE, DEFAULT))
+        irs.append(BRANCH(prefix + ident, L))
+
+        if (lArgs.length > WORD_SIZE) {
+          irs.append(ADD(SP, SP, (lArgs.length - WORD_SIZE) * WORD_SIZE, DEFAULT))
         }
 
         irs.append(MOV(scratchReg1, R0, DEFAULT))
@@ -595,6 +767,12 @@ class codeGenerator(program: Program) {
         irs.append(PUSH(scratchReg1))
         irs.toList
       }
+
+      case MethodCall(ident, methodName, args) => {
+        // TODO null
+        null
+      }
+
     }
   }
 
@@ -624,7 +802,12 @@ class codeGenerator(program: Program) {
   // Parameters stored in r0-r3 and then on stack
   private def generateFuncIR(func: Func, totalLocalRegs: List[Reg]): List[IR] = {
     val irs = ListBuffer.empty[IR]
-    irs += Label(FUNCTION_PREFIX + func.ident)
+    var prefix = FUNCTION_PREFIX
+    if (curClassName.isDefined) {
+      prefix = CLASS_METHOD_PREFIX + curClassName.get + "_"
+    }
+    irs += Label(prefix + func.ident)
+
     irs += PUSHMul(List(FP, LR))
     irs.append(MOV(FP, SP, DEFAULT))
 
@@ -633,19 +816,19 @@ class codeGenerator(program: Program) {
 
     val numParams = func.params.length
     for (i <- 0 until numParams) {
-      if (i < WORDSIZE) {
+      if (i < WORD_SIZE) {
         liveMap.add(func.params(i).ident, paramRegs(i))
       } else {
-        liveMap.add(func.params(i).ident, Stack((i - 2) * WORDSIZE))
+        liveMap.add(func.params(i).ident, Stack((i - 2) * WORD_SIZE))
       }
     }
 
     // setting up function local registers
     val localRegsBuilder = ListBuffer.empty[Reg]
     val totalNum = totalLocalRegs.length
-    localRegsBuilder.appendAll(totalLocalRegs.slice(0, WORDSIZE))
-    if (numParams <= WORDSIZE) {
-      for (i <- (totalNum - (WORDSIZE - numParams)) until totalNum) {
+    localRegsBuilder.appendAll(totalLocalRegs.slice(0, WORD_SIZE))
+    if (numParams <= WORD_SIZE) {
+      for (i <- (totalNum - (WORD_SIZE - numParams)) until totalNum) {
         localRegsBuilder.append(totalLocalRegs(i))
       }
     }
@@ -655,14 +838,14 @@ class codeGenerator(program: Program) {
     val localRegs = localRegsBuilder.toList
     val numLocalRegs = localRegs.length
     if (numLocalsInBody > numLocalRegs) {
-      irs.append(SUB(SP, SP, (numLocalsInBody - numLocalRegs) * WORDSIZE))
+      irs.append(SUB(SP, SP, (numLocalsInBody - numLocalRegs) * WORD_SIZE))
     }
     val childLiveMap = new SymbolTable[Location](Some(liveMap))
     irs.appendAll(generateStatIR(func.stat, childLiveMap, localRegs, numParams))
     irs += POPMul(List(FP, PC))
 
     if (numLocalsInBody > numLocalRegs) {
-      irs.append(ADD(SP, SP, (numLocalsInBody - numLocalRegs) * WORDSIZE, DEFAULT))
+      irs.append(ADD(SP, SP, (numLocalsInBody - numLocalRegs) * WORD_SIZE, DEFAULT))
     }
     irs.append(LOCALCOLLECT)
     irs.toList
@@ -736,13 +919,21 @@ class codeGenerator(program: Program) {
           case structElem @ StructElem(ident, field) => {
             structElem.st.get.lookupAll(ident).get match {
               case StructSemType(structName) => {
-                val structDefn = structTable.lookup(structName).get
+                val structDefinition = structTable.lookup(structName).get
                 irs.appendAll(getIntoTarget(ident, scratchReg2, liveMap))
-                irs.append(LDR(scratchReg1, scratchReg2, structDefn.getOffset(field).get, DEFAULT)) // must be a pointer to a pair
+                irs.append(LDR(scratchReg1, scratchReg2, structDefinition.getOffset(field).get, DEFAULT)) // must be a pointer to a pair
                 irs.append(LDR(scratchReg1, scratchReg1, 0, DEFAULT))
               }
               case _ => throw new RuntimeException("should not reach here")
             }
+          }
+
+          case ClassElem(ident, member) => {
+            irs.append(PUSH(CP))
+            irs.appendAll(getIntoTarget(ident, CP, liveMap)) // set class pointer
+            irs.appendAll(getMemberIntoTarget(member, scratchReg1))
+            irs.append(POP(CP))
+            irs.append(LDR(scratchReg1, scratchReg1, 0, DEFAULT))
           }
 
           case arrElem: ArrayElem => {
@@ -767,28 +958,36 @@ class codeGenerator(program: Program) {
 
             irs.append(CMPImm(scratchReg1, 0))
             irs.append(BRANCH("_errNull", LEQ))
-            irs.append(LDR(scratchReg1, scratchReg1, WORDSIZE, DEFAULT))
+            irs.append(LDR(scratchReg1, scratchReg1, WORD_SIZE, DEFAULT))
           }
 
           case structElem @ StructElem(ident, field) => {
             structElem.st.get.lookupAll(ident).get match {
               case StructSemType(structName) => {
-                val structDefn = structTable.lookup(structName).get
+                val structDefinition = structTable.lookup(structName).get
                 irs.appendAll(getIntoTarget(ident, scratchReg2, liveMap))
-                irs.append(LDR(scratchReg1, scratchReg2, structDefn.getOffset(field).get, DEFAULT)) // must be a pointer to a pair
-                irs.append(LDR(scratchReg1, scratchReg1, WORDSIZE, DEFAULT))
+                irs.append(LDR(scratchReg1, scratchReg2, structDefinition.getOffset(field).get, DEFAULT)) // must be a pointer to a pair
+                irs.append(LDR(scratchReg1, scratchReg1, WORD_SIZE, DEFAULT))
               }
               case _ => throw new RuntimeException("should not reach here")
             }
           }
 
+          case ClassElem(ident, member) => {
+            irs.append(PUSH(CP))
+            irs.appendAll(getIntoTarget(ident, CP, liveMap)) // set class pointer
+            irs.appendAll(getMemberIntoTarget(member, scratchReg1))
+            irs.append(POP(CP))
+            irs.append(LDR(scratchReg1, scratchReg1, WORD_SIZE, DEFAULT))
+          }
+
           case arrElem: ArrayElem => {
             irs.appendAll(getArrayElemIr(liveMap, arrElem, localRegs))
-            irs.append(LDR(scratchReg1, scratchReg1, WORDSIZE, DEFAULT))
+            irs.append(LDR(scratchReg1, scratchReg1, WORD_SIZE, DEFAULT))
           }
           case IdentValue(s) => {
             irs.appendAll(getIdentValueIr(liveMap, s))
-            irs.append(LDR(scratchReg1, scratchReg1, WORDSIZE, DEFAULT))
+            irs.append(LDR(scratchReg1, scratchReg1, WORD_SIZE, DEFAULT))
           }
         }
     }
@@ -837,16 +1036,16 @@ class codeGenerator(program: Program) {
 
             structElem.st.get.lookupAll(ident).get match {
               case StructSemType(structName) => {
-                val structDefn = structTable.lookup(structName).get
+                val structDefinition = structTable.lookup(structName).get
 
                 irs.appendAll(generateRvalue(rvalue, liveMap, localRegs, numParams, lvalue))
                 irs.append(POP(scratchReg2))
 
                 irs.appendAll(getIntoTarget(ident, scratchReg1, liveMap))
-                if (structDefn.lookup(field).get == CharSemType) {
-                  irs.append(STR(scratchReg2, scratchReg1, structDefn.getOffset(field).get, BYTECONSTOFFSET))
+                if (structDefinition.lookup(field).get == CharSemType) {
+                  irs.append(STR(scratchReg2, scratchReg1, structDefinition.getOffset(field).get, BYTECONSTOFFSET))
                 } else {
-                  irs.append(STR(scratchReg2, scratchReg1,structDefn.getOffset(field).get, DEFAULT))
+                  irs.append(STR(scratchReg2, scratchReg1,structDefinition.getOffset(field).get, DEFAULT))
                 }
               }
               case _ => throw new RuntimeException("should not reach here")
@@ -854,6 +1053,33 @@ class codeGenerator(program: Program) {
 
             irs.toList
           }
+
+
+          case classElem@ClassElem(ident, member) => {
+            val irs = ListBuffer.empty[IR]
+
+            classElem.st.get.lookupAll(ident).get match {
+              case ClassSemType(className) => {
+                val classDefn = classTable.lookup(className).get
+
+                irs.appendAll(generateRvalue(rvalue, liveMap, localRegs, numParams, lvalue))
+                irs.append(POP(scratchReg2))
+
+                irs.append(PUSH(CP))
+                irs.appendAll(getIntoTarget(ident, CP, liveMap))
+                val offset: Int = classDefn.getFieldOffset(member).get
+                if (classDefn.getFieldType(member).get == CharSemType) {
+                  irs.append(STR(scratchReg2, CP, offset, BYTECONSTOFFSET))
+                } else {
+                  irs.append(STR(scratchReg2, CP, offset, DEFAULT))
+                }
+                irs.append(POP(CP))
+              }
+              case _ => throw new RuntimeException("should not reach here")
+            }
+            irs.toList
+          }
+
 
           case arrElem@ArrayElem(ident, exprs) => {
             val irs = ListBuffer.empty[IR]
@@ -1008,12 +1234,12 @@ class codeGenerator(program: Program) {
           case structElem @ StructElem(ident, field) => {
             val irs = ListBuffer.empty[IR]
 
-            val structDefn: StructTable.StructDef = structElem.st.get.lookupAll(ident).get match {
+            val structDefinition: StructTable.StructDef = structElem.st.get.lookupAll(ident).get match {
               case StructSemType(structName) => structTable.lookup(structName).get
               case _ => throw new RuntimeException("should not reach here")
             }
 
-            val isChar = structDefn.lookup(field).get == CharSemType
+            val isChar = structDefinition.lookup(field).get == CharSemType
 
             val shouldSave = willClobber(localRegs, liveMap)
             if (shouldSave) {
@@ -1022,9 +1248,9 @@ class codeGenerator(program: Program) {
 
             irs.appendAll(getIntoTarget(ident, scratchReg1, liveMap))
             if (isChar) {
-              irs.append(LDR(R0, scratchReg1, structDefn.getOffset(field).get ,BYTECONSTOFFSET))
+              irs.append(LDR(R0, scratchReg1, structDefinition.getOffset(field).get ,BYTECONSTOFFSET))
             } else {
-              irs.append(LDR(R0,scratchReg1, structDefn.getOffset(field).get,DEFAULT))
+              irs.append(LDR(R0,scratchReg1, structDefinition.getOffset(field).get,DEFAULT))
             }
 
             // Now R0 contains old value for read
@@ -1038,9 +1264,9 @@ class codeGenerator(program: Program) {
 
             irs.appendAll(getIntoTarget(ident, scratchReg1, liveMap))
             if (isChar) {
-              irs.append(STR(R0, scratchReg1, structDefn.getOffset(field).get ,BYTECONSTOFFSET))
+              irs.append(STR(R0, scratchReg1, structDefinition.getOffset(field).get ,BYTECONSTOFFSET))
             } else {
-              irs.append(STR(R0, scratchReg1, structDefn.getOffset(field).get,DEFAULT))
+              irs.append(STR(R0, scratchReg1, structDefinition.getOffset(field).get,DEFAULT))
             }
 
             if (shouldSave) {
@@ -1049,6 +1275,52 @@ class codeGenerator(program: Program) {
 
             irs.toList
 
+          }
+
+          case classElem @ ClassElem(ident, member) => {
+            val irs = ListBuffer.empty[IR]
+
+            val classDefn = classElem.st.get.lookupAll(ident).get match {
+              case StructSemType(structName) => classTable.lookup(structName).get
+              case _ => throw new RuntimeException("should not reach here")
+            }
+
+            val isChar = classDefn.getFieldType(member).get == CharSemType
+
+            val shouldSave = willClobber(localRegs, liveMap)
+            if (shouldSave) {
+              irs.append(PUSHMul(paramRegs))
+            }
+
+            irs.append(PUSH(CP)) // SAVING CLASS POINTER
+
+            irs.appendAll(getIntoTarget(ident, CP, liveMap))
+            irs.appendAll(getMemberIntoTarget(member, R0))
+
+            // Now R0 contains old value for read
+            if (isChar) {
+              widgets.add(readChar)
+              irs.append(BRANCH("_readc", L))
+            } else {
+              widgets.add(readInt)
+              irs.append(BRANCH("_readi", L))
+            }
+
+//            irs.appendAll(getIntoTarget(ident, CP, liveMap))
+            val offset = classDefn.getFieldOffset(member).get
+            if (isChar) {
+              irs.append(STR(R0, CP, offset, BYTECONSTOFFSET))
+            } else {
+              irs.append(STR(R0, CP, offset, DEFAULT))
+            }
+
+            irs.append(POP(CP))
+
+            if (shouldSave) {
+              irs.append(POPMul(paramRegs))
+            }
+
+            irs.toList
           }
 
           case ar@ArrayElem(ident, exprs) => {
@@ -1136,60 +1408,9 @@ class codeGenerator(program: Program) {
       }
       case Free(e) => {
         e match {
-          case id@IdentExpr(ident) => {
-            val irs = ListBuffer.empty[IR]
-            val stType = id.st.get.lookupAll(ident).get
-            stType match {
-              case _ :ArraySemType => {
-                val saveParams = willClobber(localRegs, liveMap)
+          case id@IdentExpr(ident) => freeIdentWithGetIntoTargetIR(id.st.get, ident, getIntoTarget(ident, R0, liveMap),localRegs, liveMap)
 
-                if (saveParams) {
-                  irs.append(PUSHMul(paramRegs))
-                }
-
-                irs.appendAll(getIntoTarget(ident, R0, liveMap))
-                irs.append(SUB(R0, R0, WORDSIZE))
-                irs.append(BRANCH("free", L))
-
-                if (saveParams) {
-                  irs.append(POPMul(paramRegs))
-                }
-                irs.toList
-              }
-              case _ : StructSemType => {
-                val saveParams = willClobber(localRegs, liveMap)
-
-                if (saveParams) {
-                  irs.append(PUSHMul(paramRegs))
-                }
-
-                irs.appendAll(getIntoTarget(ident, R0, liveMap))
-                irs.append(BRANCH("free", L))
-
-                if (saveParams) {
-                  irs.append(POPMul(paramRegs))
-                }
-                irs.toList
-              }
-              case _: PairSemType => {
-                val saveParams = willClobber(localRegs, liveMap)
-                val irs = ListBuffer.empty[IR]
-                if (saveParams) {
-                  irs.append(PUSHMul(paramRegs))
-                }
-
-                irs.appendAll(getIntoTarget(ident, R0, liveMap))
-                irs.append(BRANCH("_freepair", L))
-                widgets.add(freepair)
-
-                if (saveParams) {
-                  irs.append(POPMul(paramRegs))
-                }
-
-                irs.toList
-              }
-            }
-          }
+          case th@ThisExpr(ident) => freeIdentWithGetIntoTargetIR(th.st.get, CLASS_FIELD_PREFIX + ident, getMemberIntoTarget(ident, R0),localRegs, liveMap)
 
           case structElem @ StructElem(ident, field) => {
             val irs = ListBuffer.empty[IR]
@@ -1199,25 +1420,25 @@ class codeGenerator(program: Program) {
               irs.append(PUSHMul(paramRegs))
             }
 
-            val structDefn = structElem.st.get.lookupAll(ident).get match {
+            val structDefinition = structElem.st.get.lookupAll(ident).get match {
               case StructSemType(structName) => structTable.lookup(structName).get
               case _ => throw new RuntimeException("should not reach here")
             }
 
             // put in r0 the thing to be freed
             irs.appendAll(getIntoTarget(ident, scratchReg1, liveMap))
-            irs.append(LDR(R0, scratchReg1, structDefn.getOffset(field).get, DEFAULT))
+            irs.append(LDR(R0, scratchReg1, structDefinition.getOffset(field).get, DEFAULT))
 
-            structDefn.lookup(field).get match {
+            structDefinition.lookup(field).get match {
               case _: PairSemType => {
                 irs.append(BRANCH("_freepair", L))
                 widgets.add(freepair)
               }
               case _: ArraySemType => {
-                irs.append(SUB(R0, R0, WORDSIZE))
+                irs.append(SUB(R0, R0, WORD_SIZE))
                 irs.append(BRANCH("free", L))
               }
-              case _ :StructSemType => {
+              case _ => {
                 irs.append(BRANCH("free", L))
               }
             }
@@ -1228,14 +1449,14 @@ class codeGenerator(program: Program) {
             irs.toList
           }
 
-          case arrElem@ArrayElem(ident, exprs) => {
+          case arrElem@ArrayElem(ident, expressions) => {
             val irs = ListBuffer.empty[IR]
             irs.append(PUSH(R3)) // save R3
 
             // place array on stack for first index
             irs.appendAll(getIntoTarget(ident, R3, liveMap))
 
-            for (expr <- exprs) {
+            for (expr <- expressions) {
               irs.appendAll(generateExprIR(expr, liveMap, localRegs))
               irs.append(POP(R10))
               irs.append(BRANCH("_arrLoad", L))
@@ -1261,9 +1482,8 @@ class codeGenerator(program: Program) {
               return irs.toList
             }
 
-
             // right now r3 hold ths array
-            irs.append(SUB(R3, R3, WORDSIZE))
+            irs.append(SUB(R3, R3, WORD_SIZE))
 
             val saveParams = willClobber(localRegs, liveMap)
 
@@ -1281,12 +1501,113 @@ class codeGenerator(program: Program) {
             irs.append(POP(R3)) // save R3
             irs.toList
           }
+
+          case classElem @ ClassElem(ident, member) => {
+            val irs = ListBuffer.empty[IR]
+
+            val saveParams = willClobber(localRegs, liveMap)
+            if (saveParams) {
+              irs.append(PUSHMul(paramRegs))
+            }
+
+            irs.append(PUSH(CP)) // saving Class Pointer
+
+            val classDefn = classElem.st.get.lookupAll(ident).get match {
+              case ClassSemType(className) => classTable.lookup(className).get
+              case _ => throw new RuntimeException("should not reach here")
+            }
+
+            // put in r0 the thing to be freed
+            irs.appendAll(getIntoTarget(ident, CP, liveMap))
+            irs.appendAll(getMemberIntoTarget(member, R0))
+
+            classDefn.getFieldType(member).get match {
+              case _: PairSemType =>
+                irs.append(BRANCH("_freepair", L))
+                widgets.add(freepair)
+
+              case _: ArraySemType =>
+                irs.append(SUB(R0, R0, WORD_SIZE))
+                irs.append(BRANCH("free", L))
+
+              case _ =>
+                irs.append(BRANCH("free", L))
+            }
+
+            irs.append(POP(CP)) // saving Class Pointer
+
+            if (saveParams) {
+              irs.append(POPMul(paramRegs))
+            }
+            irs.toList
+          }
         }
       }
 
       case Return(e) => generateExprIR(e, liveMap, localRegs).appendedAll(List(POP(R0), POPMul(List(FP, PC))))
     }
   }
+
+  private def freeIdentWithGetIntoTargetIR(st : GenericTable[SemType],
+                                           ident : String,
+                                           targetMoveIR : List[IR],
+                                           localRegs : List[Reg],
+                                           liveMap : SymbolTable[Location]) : List[IR] = {
+    val irs = ListBuffer.empty[IR]
+    val stType = st.lookupAll(ident).get
+    stType match {
+      case _ :ArraySemType => {
+        val saveParams = willClobber(localRegs, liveMap)
+
+        if (saveParams) {
+          irs.append(PUSHMul(paramRegs))
+        }
+
+        irs.appendAll(targetMoveIR)
+        irs.append(SUB(R0, R0, WORD_SIZE))
+        irs.append(BRANCH("free", L))
+
+        if (saveParams) {
+          irs.append(POPMul(paramRegs))
+        }
+      }
+
+      case _: PairSemType => {
+        val saveParams = willClobber(localRegs, liveMap)
+        val irs = ListBuffer.empty[IR]
+        if (saveParams) {
+          irs.append(PUSHMul(paramRegs))
+        }
+
+        irs.appendAll(targetMoveIR)
+        irs.append(BRANCH("_freepair", L))
+        widgets.add(freepair)
+
+        if (saveParams) {
+          irs.append(POPMul(paramRegs))
+        }
+      }
+
+      // for structs and classes
+      case _ => {
+        val saveParams = willClobber(localRegs, liveMap)
+
+        if (saveParams) {
+          irs.append(PUSHMul(paramRegs))
+        }
+
+        irs.appendAll(targetMoveIR)
+        irs.append(BRANCH("free", L))
+
+        if (saveParams) {
+          irs.append(POPMul(paramRegs))
+        }
+      }
+
+    }
+    irs.toList
+  }
+
 
   private def getArrType(arrType: SemType): SemType = {
     arrType match {
@@ -1423,7 +1744,7 @@ class codeGenerator(program: Program) {
       liveMap.add(ident, localRegs(realLocal))
       List(POP(localRegs(realLocal)))
     } else {
-      val offset = (realLocal - localRegs.size + 1) * (-WORDSIZE)
+      val offset = (realLocal - localRegs.size + 1) * (-WORD_SIZE)
       liveMap.add(ident, Stack(offset))
       if (isChar) {
         List(POP(scratchReg1), STR(scratchReg1, FP, offset, BYTECONSTOFFSET))
@@ -1509,7 +1830,7 @@ class codeGenerator(program: Program) {
       stringNum += 1
       ir.append(BRANCH("scanf", L))
       ir.append(LDR(R0, SP, 0, DEFAULT))
-      ir.append(ADD(SP, SP, WORDSIZE, DEFAULT))
+      ir.append(ADD(SP, SP, WORD_SIZE, DEFAULT))
       ir.append(POP(PC))
       ir.toList
     }
@@ -1527,7 +1848,7 @@ class codeGenerator(program: Program) {
       ir.append(BRANCH("_errNull", LEQ))
       ir.append(LDR(R0, scratchReg1, 0, DEFAULT))
       ir.append(BRANCH("free", L))
-      ir.append(LDR(R0, scratchReg1, WORDSIZE, DEFAULT))
+      ir.append(LDR(R0, scratchReg1, WORD_SIZE, DEFAULT))
       ir.append(BRANCH("free", L))
       ir.append(MOV(R0, scratchReg1, DEFAULT))
       ir.append(BRANCH("free", L))
@@ -1569,7 +1890,7 @@ class codeGenerator(program: Program) {
       ir.append(Label(label0))
       ir.append(StringInit(R2, stringNum + 1))
       ir.append(Label(label1))
-      ir.append(LDR(R1, R2, -WORDSIZE, DEFAULT))
+      ir.append(LDR(R1, R2, -WORD_SIZE, DEFAULT))
       ir.append(StringInit(R0, stringNum + 2))
       ir.append(BRANCH("printf", L))
       ir.append(MOVImm(R0, 0, DEFAULT))
@@ -1606,7 +1927,7 @@ class codeGenerator(program: Program) {
       ir.append(Label("_prints"))
       ir.append(PUSH(LR))
       ir.append(MOV(R2, R0, DEFAULT))
-      ir.append(LDR(R1, R0, -WORDSIZE, DEFAULT))
+      ir.append(LDR(R1, R0, -WORD_SIZE, DEFAULT))
       ir.append(StringInit(R0, stringNum))
       stringNum += 1
       ir.append(BRANCH("printf", L))
@@ -1708,7 +2029,7 @@ class codeGenerator(program: Program) {
       ir.append(CMPImm(R10, 0))
       ir.append(MOV(R1, R10, LT))
       ir.append(BRANCH("_boundsCheck", LLT))
-      ir.append(LDR(LR, R3, -WORDSIZE, DEFAULT))
+      ir.append(LDR(LR, R3, -WORD_SIZE, DEFAULT))
       ir.append(CMP(R10, LR))
       ir.append(MOV(R1, R10, GE))
       ir.append(BRANCH("_boundsCheck", LGE))
@@ -1728,7 +2049,7 @@ class codeGenerator(program: Program) {
       ir.append(CMPImm(R10, 0))
       ir.append(MOV(R1, R10, LT))
       ir.append(BRANCH("_boundsCheck", LLT))
-      ir.append(LDR(LR, R3, -WORDSIZE, DEFAULT))
+      ir.append(LDR(LR, R3, -WORD_SIZE, DEFAULT))
       ir.append(CMP(R10, LR))
       ir.append(MOV(R1, R10, GE))
       ir.append(BRANCH("_boundsCheck", LGE))
@@ -1748,7 +2069,7 @@ class codeGenerator(program: Program) {
       ir.append(CMPImm(R10, 0))
       ir.append(MOV(R1, R10, LT))
       ir.append(BRANCH("_boundsCheck", LLT))
-      ir.append(LDR(LR, R3, -WORDSIZE, DEFAULT))
+      ir.append(LDR(LR, R3, -WORD_SIZE, DEFAULT))
       ir.append(CMP(R10, LR))
       ir.append(MOV(R1, R10, GE))
       ir.append(BRANCH("_boundsCheck", LGE))
@@ -1768,7 +2089,7 @@ class codeGenerator(program: Program) {
       ir.append(CMPImm(R10, 0))
       ir.append(MOV(R1, R10, LT))
       ir.append(BRANCH("_boundsCheck", LLT))
-      ir.append(LDR(LR, R3, -WORDSIZE, DEFAULT))
+      ir.append(LDR(LR, R3, -WORD_SIZE, DEFAULT))
       ir.append(CMP(R10, LR))
       ir.append(MOV(R1, R10, GE))
       ir.append(BRANCH("_boundsCheck", LGE))
