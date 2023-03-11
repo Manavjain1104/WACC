@@ -637,6 +637,9 @@ class codeGenerator(program: Program) {
         }
 
         // now setting up class field members
+        irs.append(PUSH(CP))
+        irs.append(MOV(CP, R12, DEFAULT))
+        curClassName = Some(className)
         for (varDec <- classDefn.getFields) {
           irs.appendAll(generateRvalue(varDec.rvalue, liveMap, localRegs, numParams,
               IdentValue(varDec.ident)(varDec.symbolTable, (0, 0))))
@@ -649,6 +652,9 @@ class codeGenerator(program: Program) {
             irs.append(STR(scratchReg1 ,R12, offset, DEFAULT))
           }
         }
+
+        curClassName = None
+        irs.append(POP(CP))
 
         irs.append(PUSH(R12))
         irs.toList
