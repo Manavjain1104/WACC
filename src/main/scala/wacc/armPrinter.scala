@@ -91,7 +91,7 @@ object armPrinter {
       // Push and Pop Statements
       case PUSHMul(regs) => "push {" + regs.sortWith((r1, r2) => r1.toString.compareTo(r2.toString) < 0).map(reg => reg.toString).mkString(", ") + "}"
       case PUSH(reg) => "push {" + reg + "}"
-      case POPMul(regs) => "pop {" + regs..sortWith((r1, r2) => r1.toString.compareTo(r2.toString) < 0).map(reg => reg.toString).mkString(", ") + "}"
+      case POPMul(regs) => "pop {" + regs.sortWith((r1, r2) => r1.toString.compareTo(r2.toString) < 0).map(reg => reg.toString).mkString(", ") + "}"
       case POP(reg) => "pop {" + reg + "}"
 
       // Unary Operators

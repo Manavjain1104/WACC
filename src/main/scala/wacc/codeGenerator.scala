@@ -1424,6 +1424,9 @@ class codeGenerator(program: Program) {
               case _ => throw new RuntimeException("should not reach here")
             }
 
+            irs.append(PUSH(CP)) // SAVING CLASS POINTER
+            irs.appendAll(getIntoTarget(ident, CP, liveMap))
+
             val isChar = classDefn.getFieldType(member).get == CharSemType
 
             val shouldSave = willClobber(localRegs, liveMap)
@@ -1431,8 +1434,6 @@ class codeGenerator(program: Program) {
               irs.append(PUSHMul(paramRegs))
             }
 
-            irs.append(PUSH(CP)) // SAVING CLASS POINTER
-            irs.appendAll(getIntoTarget(ident, CP, liveMap))
             irs.appendAll(getMemberIntoTarget(member, R0))
 
             // Now R0 contains old value for read
@@ -1451,12 +1452,13 @@ class codeGenerator(program: Program) {
             } else {
               irs.append(STR(R0, CP, offset, DEFAULT))
             }
-            curClassName = tempName
-            irs.append(POP(CP))
 
             if (shouldSave) {
               irs.append(POPMul(paramRegs))
             }
+
+            curClassName = tempName
+            irs.append(POP(CP))
 
             irs.toList
           }
@@ -1643,12 +1645,13 @@ class codeGenerator(program: Program) {
           case classElem @ ClassElem(ident, member) => {
             val irs = ListBuffer.empty[IR]
 
+            irs.append(PUSH(CP)) // save Class Pointer
+            irs.appendAll(getIntoTarget(ident, CP, liveMap)) // put in r0 the thing to be freed
+
             val saveParams = willClobber(localRegs, liveMap)
             if (saveParams) {
               irs.append(PUSHMul(paramRegs))
             }
-
-            irs.append(PUSH(CP)) // clas Class Pointer
 
             val classDefn = classElem.st.get.lookupAll(ident).get match {
               case ClassSemType(className) => {
@@ -1658,8 +1661,6 @@ class codeGenerator(program: Program) {
               case _ => throw new RuntimeException("should not reach here")
             }
 
-            // put in r0 the thing to be freed
-            irs.appendAll(getIntoTarget(ident, CP, liveMap))
             irs.appendAll(getMemberIntoTarget(member, R0))
 
             classDefn.getFieldType(member).get match {
@@ -1675,12 +1676,12 @@ class codeGenerator(program: Program) {
                 irs.append(BRANCH("free", L))
             }
 
-            curClassName = None
-            irs.append(POP(CP)) // saving Class Pointer
-
             if (saveParams) {
               irs.append(POPMul(paramRegs))
             }
+
+            curClassName = None
+            irs.append(POP(CP)) // saving Class Pointer
             irs.toList
           }
         }
