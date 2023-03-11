@@ -749,7 +749,7 @@ class codeGenerator(program: Program) {
           irs.appendAll(generateExprIR(lArgs(i), liveMap, localRegs)) // this leaves the value on top of stack for function call
         }
 
-        for (i <- 0 until math.min(WORD_SIZE, lArgs.length)) {
+        for (i <- 0 until math.min(paramRegs.length, lArgs.length)) {
           irs.append(POP(paramRegs(i)))
         }
 
@@ -778,9 +778,60 @@ class codeGenerator(program: Program) {
         irs.toList
       }
 
-      case MethodCall(ident, methodName, args) => {
-        // TODO null
-        null
+      case mc @ MethodCall(ident, methodName, args) => {
+        val localCount = liveMap.getNestedEntries()
+        val irs = ListBuffer.empty[IR]
+
+        // caller saved
+        if (numParams > 0) {
+          irs.append(PUSHMul(paramRegs.slice(0, numParams)))
+        }
+        val realCount = localCount - numParams
+        if (realCount > 0) {
+          irs.append(PUSHMul(localRegs.slice(0, realCount)))
+        }
+
+        // this leaves the value on top of stack for function call
+        for (i <- args.length - 1 to 0 by -1) {
+          irs.appendAll(generateExprIR(args(i), liveMap, localRegs))
+        }
+
+        for (i <- 0 until math.min(paramRegs.length, args.length)) {
+          irs.append(POP(paramRegs(i)))
+        }
+
+        // setting up curr class pointer and method prefix
+        val tempName = curClassName
+
+        curClassName = mc.symbolTable.get.lookupAll(ident).get match {
+          case ClassSemType(className) => Some(className)
+          case _ => throw new RuntimeException("should not reach here")
+        }
+
+
+        irs.append(PUSH(CP)) // saving class pointer
+        val prefix = CLASS_METHOD_PREFIX + curClassName.get + "_"
+        irs.appendAll(getIntoTarget(ident, CP, liveMap))
+        irs.append(BRANCH(prefix + methodName, L))
+        irs.append(POP(CP))
+        curClassName = tempName
+
+        if (args.length > WORD_SIZE) {
+          irs.append(ADD(SP, SP, (args.length - paramRegs.length) * WORD_SIZE, DEFAULT))
+        }
+
+        irs.append(MOV(scratchReg1, R0, DEFAULT))
+
+        // caller saved
+        if (realCount > 0) {
+          irs.append(POPMul(localRegs.slice(0, realCount)))
+        }
+        if (numParams > 0) {
+          irs.append(POPMul(paramRegs.slice(0, numParams)))
+        }
+
+        irs.append(PUSH(scratchReg1))
+        irs.toList
       }
 
     }
@@ -1163,6 +1214,59 @@ class codeGenerator(program: Program) {
       case ConsecStat(first, next) => generateStatIR(first, liveMap, localRegs, numParams) ++ generateStatIR(next, liveMap, localRegs, numParams)
 
       case ScopeStat(stat) => generateStatIR(stat, new SymbolTable[Location](Some(liveMap)), localRegs, numParams)
+
+      case mc @ MethodStat(ident, methodName, args) => {
+        val localCount = liveMap.getNestedEntries()
+        val irs = ListBuffer.empty[IR]
+
+        // caller saved
+        if (numParams > 0) {
+          irs.append(PUSHMul(paramRegs.slice(0, numParams)))
+        }
+        val realCount = localCount - numParams
+        if (realCount > 0) {
+          irs.append(PUSHMul(localRegs.slice(0, realCount)))
+        }
+
+        // this leaves the value on top of stack for function call
+        for (i <- args.length - 1 to 0 by -1) {
+          irs.appendAll(generateExprIR(args(i), liveMap, localRegs))
+        }
+
+        for (i <- 0 until math.min(paramRegs.length, args.length)) {
+          irs.append(POP(paramRegs(i)))
+        }
+
+        // setting up curr class pointer and method prefix
+        val tempName = curClassName
+
+        curClassName = mc.st.get.lookupAll(ident).get match {
+          case ClassSemType(className) => Some(className)
+          case _ => throw new RuntimeException("should not reach here")
+        }
+
+
+        irs.append(PUSH(CP)) // saving class pointer
+        val prefix = CLASS_METHOD_PREFIX + curClassName.get + "_"
+        irs.appendAll(getIntoTarget(ident, CP, liveMap))
+        irs.append(BRANCH(prefix + methodName, L))
+        irs.append(POP(CP))
+        curClassName = tempName
+
+        if (args.length > WORD_SIZE) {
+          irs.append(ADD(SP, SP, (args.length - paramRegs.length) * WORD_SIZE, DEFAULT))
+        }
+
+        // caller saved
+        if (realCount > 0) {
+          irs.append(POPMul(localRegs.slice(0, realCount)))
+        }
+        if (numParams > 0) {
+          irs.append(POPMul(paramRegs.slice(0, numParams)))
+        }
+
+        irs.toList
+      }
 
       case While(cond, doStat) => {
         val label1: String = getNewLabel

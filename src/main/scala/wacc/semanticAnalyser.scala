@@ -775,6 +775,7 @@ class semanticAnalyser {
                             return Some(InternalPairSemType)
                           }
                         }
+                        mc.symbolTable = Some(symbolTable)
                         Some(retType)
 
                       case Private() =>
@@ -1365,6 +1366,7 @@ class semanticAnalyser {
                             return Some(InternalPairSemType)
                           }
                         }
+                        mc.st = Some(symbolTable)
                         Some(retType)
 
                       case Private() =>
