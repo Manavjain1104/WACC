@@ -291,7 +291,10 @@ class codeGenerator(program: Program) {
           case ClassSemType(className) => {
             irs.append(PUSH(CP))
             irs.appendAll(getIntoTarget(ident, CP, liveMap)) // set class pointer
+            val tempName = curClassName
+            curClassName = Some(className)
             irs.appendAll(getMemberIntoTarget(member, scratchReg1))
+            curClassName = tempName
             irs.append(POP(CP))
             irs.append(PUSH(scratchReg1))
           }
@@ -639,6 +642,7 @@ class codeGenerator(program: Program) {
         // now setting up class field members
         irs.append(PUSH(CP))
         irs.append(MOV(CP, R12, DEFAULT))
+        val tempName = curClassName
         curClassName = Some(className)
         for (varDec <- classDefn.getFields) {
           irs.appendAll(generateRvalue(varDec.rvalue, liveMap, localRegs, numParams,
@@ -653,7 +657,7 @@ class codeGenerator(program: Program) {
           }
         }
 
-        curClassName = None
+        curClassName = tempName
         irs.append(POP(CP))
 
         irs.append(PUSH(R12))
@@ -934,10 +938,18 @@ class codeGenerator(program: Program) {
             }
           }
 
-          case ClassElem(ident, member) => {
+          case classElem @ ClassElem(ident, member) => {
             irs.append(PUSH(CP))
+            val tempName = curClassName
+
+            curClassName = classElem.st.get.lookupAll(ident).get match {
+              case ClassSemType(className) => Some(className)
+              case _ => throw new RuntimeException("should not reach here")
+            }
+
             irs.appendAll(getIntoTarget(ident, CP, liveMap)) // set class pointer
             irs.appendAll(getMemberIntoTarget(member, scratchReg1))
+            curClassName = tempName
             irs.append(POP(CP))
             irs.append(LDR(scratchReg1, scratchReg1, 0, DEFAULT))
           }
@@ -979,10 +991,18 @@ class codeGenerator(program: Program) {
             }
           }
 
-          case ClassElem(ident, member) => {
+          case classElem @ ClassElem(ident, member) => {
             irs.append(PUSH(CP))
+            val tempName = curClassName
+
+            curClassName = classElem.st.get.lookupAll(ident).get match {
+              case ClassSemType(className) => Some(className)
+              case _ => throw new RuntimeException("should not reach here")
+            }
+
             irs.appendAll(getIntoTarget(ident, CP, liveMap)) // set class pointer
             irs.appendAll(getMemberIntoTarget(member, scratchReg1))
+            curClassName = tempName
             irs.append(POP(CP))
             irs.append(LDR(scratchReg1, scratchReg1, WORD_SIZE, DEFAULT))
           }
@@ -1072,6 +1092,8 @@ class codeGenerator(program: Program) {
                 irs.append(POP(scratchReg2))
 
                 irs.append(PUSH(CP))
+                val tempName = curClassName
+                curClassName = Some(className)
                 irs.appendAll(getIntoTarget(ident, CP, liveMap))
                 val offset: Int = classDefn.getFieldOffset(member).get
                 if (classDefn.getFieldType(member).get == CharSemType) {
@@ -1079,6 +1101,7 @@ class codeGenerator(program: Program) {
                 } else {
                   irs.append(STR(scratchReg2, CP, offset, DEFAULT))
                 }
+                curClassName = tempName
                 irs.append(POP(CP))
               }
               case _ => throw new RuntimeException("should not reach here")
@@ -1286,8 +1309,13 @@ class codeGenerator(program: Program) {
           case classElem @ ClassElem(ident, member) => {
             val irs = ListBuffer.empty[IR]
 
+            val tempName = curClassName
+
             val classDefn = classElem.st.get.lookupAll(ident).get match {
-              case StructSemType(structName) => classTable.lookup(structName).get
+              case ClassSemType(className) => {
+                curClassName = Some(className)
+                classTable.lookup(className).get
+              }
               case _ => throw new RuntimeException("should not reach here")
             }
 
@@ -1299,7 +1327,6 @@ class codeGenerator(program: Program) {
             }
 
             irs.append(PUSH(CP)) // SAVING CLASS POINTER
-
             irs.appendAll(getIntoTarget(ident, CP, liveMap))
             irs.appendAll(getMemberIntoTarget(member, R0))
 
@@ -1319,7 +1346,7 @@ class codeGenerator(program: Program) {
             } else {
               irs.append(STR(R0, CP, offset, DEFAULT))
             }
-
+            curClassName = tempName
             irs.append(POP(CP))
 
             if (shouldSave) {
@@ -1516,10 +1543,13 @@ class codeGenerator(program: Program) {
               irs.append(PUSHMul(paramRegs))
             }
 
-            irs.append(PUSH(CP)) // saving Class Pointer
+            irs.append(PUSH(CP)) // clas Class Pointer
 
             val classDefn = classElem.st.get.lookupAll(ident).get match {
-              case ClassSemType(className) => classTable.lookup(className).get
+              case ClassSemType(className) => {
+                curClassName = Some(className)
+                classTable.lookup(className).get
+              }
               case _ => throw new RuntimeException("should not reach here")
             }
 
@@ -1540,6 +1570,7 @@ class codeGenerator(program: Program) {
                 irs.append(BRANCH("free", L))
             }
 
+            curClassName = None
             irs.append(POP(CP)) // saving Class Pointer
 
             if (saveParams) {
