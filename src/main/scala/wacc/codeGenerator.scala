@@ -1223,7 +1223,7 @@ class codeGenerator(program: Program) {
         // setting up curr class pointer and method prefix
         val tempName = curClassName
 
-        curClassName = mc.symbolTable.get.lookupAll(ident).get match {
+        curClassName = mc.st.get.lookupAll(ident).get match {
           case ClassSemType(className) => Some(className)
           case _ => throw new RuntimeException("should not reach here")
         }
