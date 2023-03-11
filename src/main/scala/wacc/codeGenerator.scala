@@ -624,6 +624,10 @@ class codeGenerator(program: Program) {
           irs.append(POPMul(paramRegs))
         }
 
+        // now setting up class field members
+        irs.append(PUSH(CP))
+        irs.append(MOV(CP, R12, DEFAULT))
+
         // R12 is now the pointer to the class in memory
         // setting up class parameters
         val params = classDefn.getParams
@@ -633,15 +637,12 @@ class codeGenerator(program: Program) {
 
           val offset = classDefn.getFieldOffset(params(i).ident).get
           if (classDefn.getFieldType(params(i).ident).get == CharSemType) {
-            irs.append(STR(scratchReg1 ,R12, offset, BYTECONSTOFFSET))
+            irs.append(STR(scratchReg1, CP, offset, BYTECONSTOFFSET))
           } else {
-            irs.append(STR(scratchReg1 ,R12, offset, DEFAULT))
+            irs.append(STR(scratchReg1, CP, offset, DEFAULT))
           }
         }
 
-        // now setting up class field members
-        irs.append(PUSH(CP))
-        irs.append(MOV(CP, R12, DEFAULT))
         val tempName = curClassName
         curClassName = Some(className)
         for (varDec <- classDefn.getFields) {
@@ -651,16 +652,17 @@ class codeGenerator(program: Program) {
 
           val offset = classDefn.getFieldOffset(varDec.ident).get
           if (classDefn.getFieldType(varDec.ident).get == CharSemType) {
-            irs.append(STR(scratchReg1 ,R12, offset, BYTECONSTOFFSET))
+            irs.append(STR(scratchReg1 ,CP, offset, BYTECONSTOFFSET))
           } else {
-            irs.append(STR(scratchReg1 ,R12, offset, DEFAULT))
+            irs.append(STR(scratchReg1 ,CP, offset, DEFAULT))
           }
         }
 
         curClassName = tempName
+        irs.append(MOV(scratchReg1, CP, DEFAULT))
         irs.append(POP(CP))
 
-        irs.append(PUSH(R12))
+        irs.append(PUSH(scratchReg1))
         irs.toList
       }
 
@@ -798,7 +800,6 @@ class codeGenerator(program: Program) {
         }
         val realCount = localCount - numParams
         if (realCount > 0) {
-          println(realCount)
           irs.append(PUSHMul(localRegs.slice(0, realCount)))
         }
 
