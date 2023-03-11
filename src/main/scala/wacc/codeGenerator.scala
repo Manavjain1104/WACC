@@ -782,12 +782,23 @@ class codeGenerator(program: Program) {
         val localCount = liveMap.getNestedEntries()
         val irs = ListBuffer.empty[IR]
 
+        // setting up curr class pointer and method prefix
+        val tempName = curClassName
+
+        curClassName = mc.symbolTable.get.lookupAll(ident).get match {
+          case ClassSemType(className) => Some(className)
+          case _ => throw new RuntimeException("should not reach here")
+        }
+        irs.append(PUSH(CP)) // saving class pointer
+        irs.appendAll(getIntoTarget(ident, CP, liveMap))
+
         // caller saved
         if (numParams > 0) {
           irs.append(PUSHMul(paramRegs.slice(0, numParams)))
         }
         val realCount = localCount - numParams
         if (realCount > 0) {
+          println(realCount)
           irs.append(PUSHMul(localRegs.slice(0, realCount)))
         }
 
@@ -800,21 +811,8 @@ class codeGenerator(program: Program) {
           irs.append(POP(paramRegs(i)))
         }
 
-        // setting up curr class pointer and method prefix
-        val tempName = curClassName
-
-        curClassName = mc.symbolTable.get.lookupAll(ident).get match {
-          case ClassSemType(className) => Some(className)
-          case _ => throw new RuntimeException("should not reach here")
-        }
-
-
-        irs.append(PUSH(CP)) // saving class pointer
         val prefix = CLASS_METHOD_PREFIX + curClassName.get + "_"
-        irs.appendAll(getIntoTarget(ident, CP, liveMap))
         irs.append(BRANCH(prefix + methodName, L))
-        irs.append(POP(CP))
-        curClassName = tempName
 
         if (args.length > WORD_SIZE) {
           irs.append(ADD(SP, SP, (args.length - paramRegs.length) * WORD_SIZE, DEFAULT))
@@ -829,6 +827,9 @@ class codeGenerator(program: Program) {
         if (numParams > 0) {
           irs.append(POPMul(paramRegs.slice(0, numParams)))
         }
+
+        irs.append(POP(CP))
+        curClassName = tempName
 
         irs.append(PUSH(scratchReg1))
         irs.toList
@@ -1219,12 +1220,23 @@ class codeGenerator(program: Program) {
         val localCount = liveMap.getNestedEntries()
         val irs = ListBuffer.empty[IR]
 
+        // setting up curr class pointer and method prefix
+        val tempName = curClassName
+
+        curClassName = mc.symbolTable.get.lookupAll(ident).get match {
+          case ClassSemType(className) => Some(className)
+          case _ => throw new RuntimeException("should not reach here")
+        }
+        irs.append(PUSH(CP)) // saving class pointer
+        irs.appendAll(getIntoTarget(ident, CP, liveMap))
+
         // caller saved
         if (numParams > 0) {
           irs.append(PUSHMul(paramRegs.slice(0, numParams)))
         }
         val realCount = localCount - numParams
         if (realCount > 0) {
+          println(realCount)
           irs.append(PUSHMul(localRegs.slice(0, realCount)))
         }
 
@@ -1237,21 +1249,8 @@ class codeGenerator(program: Program) {
           irs.append(POP(paramRegs(i)))
         }
 
-        // setting up curr class pointer and method prefix
-        val tempName = curClassName
-
-        curClassName = mc.st.get.lookupAll(ident).get match {
-          case ClassSemType(className) => Some(className)
-          case _ => throw new RuntimeException("should not reach here")
-        }
-
-
-        irs.append(PUSH(CP)) // saving class pointer
         val prefix = CLASS_METHOD_PREFIX + curClassName.get + "_"
-        irs.appendAll(getIntoTarget(ident, CP, liveMap))
         irs.append(BRANCH(prefix + methodName, L))
-        irs.append(POP(CP))
-        curClassName = tempName
 
         if (args.length > WORD_SIZE) {
           irs.append(ADD(SP, SP, (args.length - paramRegs.length) * WORD_SIZE, DEFAULT))
@@ -1265,6 +1264,8 @@ class codeGenerator(program: Program) {
           irs.append(POPMul(paramRegs.slice(0, numParams)))
         }
 
+        irs.append(POP(CP))
+        curClassName = tempName
         irs.toList
       }
 
