@@ -36,7 +36,7 @@ class codeGenerator(program: Program) {
     irs += Global(List("main"))
 
     // this is consuming the *Main* body of the program --> R7 is a class pointer
-    val localRegs: List[Reg] = List(R4, R5, R6, R0, R1, R2, R3)
+    val localRegs: List[Reg] = List(R4, R5, R6, R7, R0, R1, R2, R3)
     val numLocalRegs = localRegs.length
 
     irs += Label("main")
