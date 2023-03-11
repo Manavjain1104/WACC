@@ -51,13 +51,15 @@ class semanticAnalyser {
         errorLog += DuplicateIdentifier(waccClass.pos, waccClass.name, Some("Duplicate class definition"))
       }
     }
-    for (waccClass <- classDefinitions) {
-      checkClass(waccClass, classTable)
-    }
 
     // set up classes for semantic/cg analysis
     opClassTable = Some(classTable)
     program.classTable = opClassTable
+
+    for (waccClass <- classDefinitions) {
+      checkClass(waccClass, classTable)
+//      println("Finished check - ", waccClass.name, classTable.lookup(waccClass.name).get.numParams)
+    }
 
     // absorbing structs next
     val structTable = new StructTable()
@@ -696,6 +698,7 @@ class semanticAnalyser {
       val classDefn: ClassDefinition = opClassDefinition.get
 
       // checking that parameter lengths match
+//      println(newClass.className, classDefn.numParams)
       if (newClass.exprs.size == classDefn.numParams) {
         for (i <- newClass.exprs.indices) {
           val expType = checkExpr(newClass.exprs(i), symbolTable)
@@ -710,7 +713,7 @@ class semanticAnalyser {
         }
         return Some(ClassSemType(newClass.className))
       } else {
-        errorLog += ArityMismatch(newClass.pos, classDefn.numParams, newClass.exprs.size, Some("Wrong number of function arguments"))
+        errorLog += ArityMismatch(newClass.pos, classDefn.numParams, newClass.exprs.size, Some("Wrong number of class parameters"))
       }
     } else {
       errorLog += UnknownIdentifierError(newClass.pos, newClass.className, Some("Unknown class name found"))
