@@ -128,7 +128,7 @@ object parser {
   val waccClass: Parsley[Class]
   = Class(attempt(CLASS ~> IDENT <~ OPENPAREN),
     paramList <~ CLOSEDPAREN <~ OPENCURLY,
-    sepBy(classField, SEMICOLON),
+    sepBy(attempt(classField), SEMICOLON),
     many(method) <~ CLOSEDCURLY)
 
   val program: Parsley[Program]
