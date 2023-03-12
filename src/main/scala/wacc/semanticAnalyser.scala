@@ -865,7 +865,6 @@ class semanticAnalyser {
         val identType = symbolTable.lookupAll(name)
         if (identType.isDefined) {
           ident.st = Some(symbolTable)
-          println(ident, identType)
           return identType
         }
         errorLog += UnknownIdentifierError(ident.pos, ident.s, Some("Unknown variable Identifier found"))
