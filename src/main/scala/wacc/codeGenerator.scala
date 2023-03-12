@@ -425,7 +425,11 @@ class codeGenerator(program: Program) {
   def lvalStructName(lval: LValue) : String = {
     lval match {
       case id@IdentValue(s) => {
-        id.st.get.lookupAll(s).get match {
+        var ident = s
+        if (curClassName.isDefined) {
+          ident = CLASS_FIELD_PREFIX + s
+        }
+        id.st.get.lookupAll(ident).get match {
           case StructSemType(ident) => ident
           case _ => throw new RuntimeException("Should not be possible")
         }
@@ -647,7 +651,7 @@ class codeGenerator(program: Program) {
         curClassName = Some(className)
         for (varDec <- classDefn.getFields) {
           irs.appendAll(generateRvalue(varDec.rvalue, liveMap, localRegs, numParams,
-              IdentValue(varDec.ident)(varDec.symbolTable, (0, 0))))
+              IdentValue(varDec.ident)(varDec.symbolTable, varDec.pos)))
           irs.append(POP(scratchReg1))
 
           val offset = classDefn.getFieldOffset(varDec.ident).get
@@ -1091,7 +1095,7 @@ class codeGenerator(program: Program) {
 
       case varDec@VarDec(_, ident, rvalue) => {
         val irs = ListBuffer.empty[IR]
-        irs.appendAll(generateRvalue(rvalue, liveMap, localRegs, numParams, IdentValue(ident)(varDec.symbolTable, (0, 0))))
+        irs.appendAll(generateRvalue(rvalue, liveMap, localRegs, numParams, IdentValue(ident)(varDec.symbolTable, varDec.pos)))
         irs.appendAll(
           assignLocal(ident, liveMap, localRegs, numParams, varDec.symbolTable.get.lookupAll(ident).get == CharSemType))
         irs.toList
@@ -1237,7 +1241,6 @@ class codeGenerator(program: Program) {
         }
         val realCount = localCount - numParams
         if (realCount > 0) {
-          println(realCount)
           irs.append(PUSHMul(localRegs.slice(0, realCount)))
         }
 

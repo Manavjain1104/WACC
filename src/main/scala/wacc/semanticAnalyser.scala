@@ -40,27 +40,6 @@ class semanticAnalyser {
 
   def checkProgram(program: Program, topLevelSymbolTable: SymbolTable[SemType]): Option[ListBuffer[SemanticError]] = {
 
-    // absorbing the classes from the top of the file
-    val classTable = ClassTable()
-    val classDefinitions = mutable.Set.empty[Class]
-    for (waccClass <- program.classes) {
-      if (classTable.lookup(waccClass.name).isEmpty) {
-        classTable.add(waccClass.name)
-        classDefinitions.add(waccClass)
-      } else {
-        errorLog += DuplicateIdentifier(waccClass.pos, waccClass.name, Some("Duplicate class definition"))
-      }
-    }
-
-    // set up classes for semantic/cg analysis
-    opClassTable = Some(classTable)
-    program.classTable = opClassTable
-
-    for (waccClass <- classDefinitions) {
-      checkClass(waccClass, classTable)
-//      println("Finished check - ", waccClass.name, classTable.lookup(waccClass.name).get.numParams)
-    }
-
     // absorbing structs next
     val structTable = new StructTable()
     val structDefinitions = mutable.Set.empty[Struct]
@@ -72,13 +51,33 @@ class semanticAnalyser {
         errorLog += DuplicateIdentifier(struct.pos, struct.name, Some("Duplicate struct definition"))
       }
     }
-    for (struct <- structDefinitions) {
-      checkStruct(struct, structTable)
-    }
-
     // set up struct for semantic/cg analysis
     opStructTable = Some(structTable)
     program.structTable = opStructTable
+
+    // absorbing the classes from the top of the file
+    val classTable = ClassTable()
+    val classDefinitions = mutable.Set.empty[Class]
+    for (waccClass <- program.classes) {
+      if (classTable.lookup(waccClass.name).isEmpty) {
+        classTable.add(waccClass.name)
+        classDefinitions.add(waccClass)
+      } else {
+        errorLog += DuplicateIdentifier(waccClass.pos, waccClass.name, Some("Duplicate class definition"))
+      }
+    }
+    // set up classes for semantic/cg analysis
+    opClassTable = Some(classTable)
+    program.classTable = opClassTable
+
+    // semantics of classes before structs - order important for syntax
+    for (waccClass <- classDefinitions) {
+      checkClass(waccClass, classTable)
+    }
+
+    for (struct <- structDefinitions) {
+      checkStruct(struct, structTable)
+    }
 
     // first pass to develop function names on the top level symbol table
     val funcDefinitions = mutable.Set.empty[Func]
@@ -866,6 +865,7 @@ class semanticAnalyser {
         val identType = symbolTable.lookupAll(name)
         if (identType.isDefined) {
           ident.st = Some(symbolTable)
+          println(ident, identType)
           return identType
         }
         errorLog += UnknownIdentifierError(ident.pos, ident.s, Some("Unknown variable Identifier found"))
@@ -1107,9 +1107,11 @@ class semanticAnalyser {
             case PairSemType(pt1, pt2) =>
               if (is_fst) {
                 attachType(pe, pt1)
+                ident.st = Some(symbolTable)
                 return Some(pt1)
               } else {
                 attachType(pe, pt2)
+                ident.st = Some(symbolTable)
                 return Some(pt2)
               }
             case unexpectedType =>
