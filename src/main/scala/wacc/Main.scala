@@ -8,7 +8,7 @@ import wacc.parser.program
 import wacc.errorPrinter._
 import wacc.StructTable._
 
-import java.io.{File, PrintWriter}
+import java.io.{File, FileNotFoundException, IOException, PrintWriter}
 import scala.collection.mutable.ListBuffer
 
 object Main {
@@ -24,7 +24,24 @@ object Main {
 //    println("-- Compiling...")
 
     val sem: semanticAnalyser = new semanticAnalyser
-    val file: File = new File(args.head)
+
+    var file: File = new File("")
+    try {
+      file = new File(args.head)
+    } catch {
+      case e: FileNotFoundException => {
+        System.err.println("Couldn't find that file.")
+        sys.exit(-1)
+      }
+      case e: IOException => {
+        System.err.println("Had an IOException trying to read that file")
+        sys.exit(-1)
+      }
+      case _: Exception => {
+        System.err.println("Error opening file")
+        sys.exit(-1)
+      }
+    }
 
     implicit val eb: error.SyntaxErrorBuilder = new error.SyntaxErrorBuilder
     fully(program).parseFromFile(file) match {
