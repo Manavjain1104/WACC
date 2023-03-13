@@ -1,0 +1,16 @@
+# a simple function definition and call
+
+# Output:
+# Here
+# There
+#
+
+# Program:
+
+begin
+  void f() is
+    println "Here"
+  end
+  call f();
+  println "There"
+end

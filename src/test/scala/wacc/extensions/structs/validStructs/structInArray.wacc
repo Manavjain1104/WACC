@@ -1,0 +1,19 @@
+# can have an array of structs
+
+# Output:
+# b
+#
+
+begin
+  struct test {
+      int x;
+      char c
+  }
+
+  struct test t1 = {1, 'a'};
+  struct test t2 = {2, 'b'};
+
+  struct test[] a = [t1, t2];
+  struct test first = a[1];
+  println first.c
+end
