@@ -116,7 +116,6 @@ class semanticAnalyser {
         // check validity of fieldDec Statement
         if (!fieldNames.contains(fieldDec.ident)) {
           val ttype = convertToSem(fieldDec.assignType)
-//          if (checkStructType(ttype)) { // TODO --> allowed all types to go thru
           if (true) {
             val size = getSize(ttype)
             structDef.addOffset(fieldDec.ident, currPointer)

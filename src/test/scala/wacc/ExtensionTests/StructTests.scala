@@ -80,11 +80,6 @@ class StructTests extends AnyFlatSpec {
       in ++= x
     }
 
-    if (file == new File("src/test/scala/wacc/valid/advanced/binarySortTree.wacc")) {
-      in ++= "5 3 6 4 7 9"
-      s ++= "3 4 6 7 9"
-    }
-
     var bashOutput = s"./compile_and_run $file ${in}" !!
 
     val exitCode = "echo $?" !!
