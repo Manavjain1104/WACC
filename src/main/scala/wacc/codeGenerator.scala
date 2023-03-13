@@ -1,18 +1,20 @@
 package wacc
 
 import wacc.AST._
-import wacc.IR._
+import wacc.IR.{LOCALCOLLECT, _}
 import wacc.Registers._
 import wacc.SemTypes._
 
+import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
-class codeGenerator(program: Program) {
+class codeGenerator(program: Program, peephole: Boolean, inlineable: Boolean ) {
 
   private val paramRegs = List(R0, R1, R2, R3)
   private var labelOrder = 0
   private val FUNCTION_PREFIX = "wacc_"
   private val WORDSIZE = 4
+  private val MAX_INLINE_LENGTH = 15
 
   private val strings: ListBuffer[String] = ListBuffer.empty[String]
   private var stringNum = 0
@@ -23,7 +25,7 @@ class codeGenerator(program: Program) {
 
   // generate assembly for entire program
   def generateProgIR(): List[IR] = {
-    val irs = ListBuffer.empty[IR]
+    var irs = ListBuffer.empty[IR]
     // assembly hygiene
     irs += Global(List("main"))
 
@@ -47,17 +49,23 @@ class codeGenerator(program: Program) {
     irs += MOVImm(R0, 0, DEFAULT)
     irs += POPMul(List(FP, PC))
 
-    // generate assembly for program functions
-    for (func <- program.funcs) {
-      irs.appendAll(generateFuncIR(func, localRegs))
+    // generate assembly and optimise program for program functions
+    if (inlineable) {
+      irs = inlineAllFunctions(irs, program.funcs, localRegs)
+    } else {
+      program.funcs.map(func => irs.appendAll(generateFuncIR(func, localRegs)) )
+      irs.prepend(Data(strings.toList, 0))
     }
-    irs.prepend(Data(strings.toList, 0))
+    if (peephole) {
+      irs = optimisePeepHole(irs)
+    }
 
     // add all required widgets
     widgets.foreach(w => irs.appendAll(w.getIR()))
 
-    optimisePeepHole(irs.toList)
+    irs.toList
   }
+
 
   // this function writes instructions that calculate the value of the expression
   // and leave them on top of the stack, only use R8 and R9 as temporaries
@@ -239,7 +247,7 @@ class codeGenerator(program: Program) {
         }
       }
 
-      case structElem @ StructElem(ident, field) => {
+      case structElem@StructElem(ident, field) => {
         val irs = ListBuffer.empty[IR]
 
         val identType = structElem.st.get.lookupAll(ident).get
@@ -320,7 +328,7 @@ class codeGenerator(program: Program) {
           case _ => false
         }
       }
-      case structElem @ StructElem(ident, field) => {
+      case structElem@StructElem(ident, field) => {
         val structName = structElem.st.get.lookupAll(ident).get match {
           case StructSemType(structName) => structName
           case _ => throw new RuntimeException("shoudl not be possible")
@@ -362,7 +370,7 @@ class codeGenerator(program: Program) {
     irs.toList
   }
 
-  def lvalStructName(lval: LValue) : String = {
+  def lvalStructName(lval: LValue): String = {
     lval match {
       case id@IdentValue(s) => {
         id.st.get.lookupAll(s).get match {
@@ -392,7 +400,7 @@ class codeGenerator(program: Program) {
           case _ => throw new RuntimeException("Should not be possible")
         }
       }
-      case arrElem : ArrayElem => {
+      case arrElem: ArrayElem => {
         getArrElemType(arrElem) match {
           case StructSemType(ident) => ident
           case _ => throw new RuntimeException("Should not be possible")
@@ -409,7 +417,7 @@ class codeGenerator(program: Program) {
           case _ => WORDSIZE
         }
       }
-      case structElem @ StructElem(ident, field) => {
+      case structElem@StructElem(ident, field) => {
         structElem.st.get.lookupAll(ident).get match {
           case StructSemType(structName) => {
             structTable.lookup(structName).get.lookup(field).get match {
@@ -458,7 +466,7 @@ class codeGenerator(program: Program) {
             }
           }
 
-          case structElem @ StructElem(ident, field) =>
+          case structElem@StructElem(ident, field) =>
             structElem.st.get.lookupAll(ident).get match {
               case StructSemType(structName) => structTable.lookup(structName).get.lookup(field).get == CharSemType
               case _ => throw new RuntimeException("should not reach here")
@@ -684,9 +692,9 @@ class codeGenerator(program: Program) {
   }
 
   private def getArrayElemIr(liveMap: SymbolTable[Location], arrayElem: ArrayElem, localRegs: List[Reg]): List[IR] = {
-    val irs = ListBuffer.empty[IR]
     val ident = arrayElem.ident
     val exprs = arrayElem.exprs
+    val irs = ListBuffer.empty[IR]
 
     irs.append(PUSH(R3))
 
@@ -748,7 +756,7 @@ class codeGenerator(program: Program) {
             irs.append(LDR(scratchReg1, scratchReg1, 0, DEFAULT))
           }
 
-          case structElem @ StructElem(ident, field) => {
+          case structElem@StructElem(ident, field) => {
             structElem.st.get.lookupAll(ident).get match {
               case StructSemType(structName) => {
                 val structDefn = structTable.lookup(structName).get
@@ -785,7 +793,7 @@ class codeGenerator(program: Program) {
             irs.append(LDR(scratchReg1, scratchReg1, WORDSIZE, DEFAULT))
           }
 
-          case structElem @ StructElem(ident, field) => {
+          case structElem@StructElem(ident, field) => {
             structElem.st.get.lookupAll(ident).get match {
               case StructSemType(structName) => {
                 val structDefn = structTable.lookup(structName).get
@@ -900,7 +908,7 @@ class codeGenerator(program: Program) {
                 if (structDefn.lookup(field).get == CharSemType) {
                   irs.append(STR(scratchReg2, scratchReg1, structDefn.getOffset(field).get, BYTECONSTOFFSET))
                 } else {
-                  irs.append(STR(scratchReg2, scratchReg1,structDefn.getOffset(field).get, DEFAULT))
+                  irs.append(STR(scratchReg2, scratchReg1, structDefn.getOffset(field).get, DEFAULT))
                 }
               }
               case _ => throw new RuntimeException("should not reach here")
@@ -1059,7 +1067,7 @@ class codeGenerator(program: Program) {
             irs.toList
           }
 
-          case structElem @ StructElem(ident, field) => {
+          case structElem@StructElem(ident, field) => {
             val irs = ListBuffer.empty[IR]
 
             val structDefn: StructTable.StructDef = structElem.st.get.lookupAll(ident).get match {
@@ -1076,9 +1084,9 @@ class codeGenerator(program: Program) {
 
             irs.appendAll(getIntoTarget(ident, scratchReg1, liveMap))
             if (isChar) {
-              irs.append(LDR(R0, scratchReg1, structDefn.getOffset(field).get ,BYTECONSTOFFSET))
+              irs.append(LDR(R0, scratchReg1, structDefn.getOffset(field).get, BYTECONSTOFFSET))
             } else {
-              irs.append(LDR(R0,scratchReg1, structDefn.getOffset(field).get,DEFAULT))
+              irs.append(LDR(R0, scratchReg1, structDefn.getOffset(field).get, DEFAULT))
             }
 
             // Now R0 contains old value for read
@@ -1092,9 +1100,9 @@ class codeGenerator(program: Program) {
 
             irs.appendAll(getIntoTarget(ident, scratchReg1, liveMap))
             if (isChar) {
-              irs.append(STR(R0, scratchReg1, structDefn.getOffset(field).get ,BYTECONSTOFFSET))
+              irs.append(STR(R0, scratchReg1, structDefn.getOffset(field).get, BYTECONSTOFFSET))
             } else {
-              irs.append(STR(R0, scratchReg1, structDefn.getOffset(field).get,DEFAULT))
+              irs.append(STR(R0, scratchReg1, structDefn.getOffset(field).get, DEFAULT))
             }
 
             if (shouldSave) {
@@ -1194,7 +1202,7 @@ class codeGenerator(program: Program) {
             val irs = ListBuffer.empty[IR]
             val stType = id.st.get.lookupAll(ident).get
             stType match {
-              case _ :ArraySemType => {
+              case _: ArraySemType => {
                 val saveParams = willClobber(localRegs, liveMap)
 
                 if (saveParams) {
@@ -1210,7 +1218,7 @@ class codeGenerator(program: Program) {
                 }
                 irs.toList
               }
-              case _ : StructSemType => {
+              case _: StructSemType => {
                 val saveParams = willClobber(localRegs, liveMap)
 
                 if (saveParams) {
@@ -1245,7 +1253,7 @@ class codeGenerator(program: Program) {
             }
           }
 
-          case structElem @ StructElem(ident, field) => {
+          case structElem@StructElem(ident, field) => {
             val irs = ListBuffer.empty[IR]
 
             val saveParams = willClobber(localRegs, liveMap)
@@ -1271,7 +1279,7 @@ class codeGenerator(program: Program) {
                 irs.append(SUB(R0, R0, WORDSIZE))
                 irs.append(BRANCH("free", L))
               }
-              case _ :StructSemType => {
+              case _: StructSemType => {
                 irs.append(BRANCH("free", L))
               }
             }
@@ -1494,7 +1502,85 @@ class codeGenerator(program: Program) {
     label
   }
 
-  private def optimisePeepHole(irs: List[IR]): List[IR] = {
+  private def inlineAllFunctions(irs: ListBuffer[IR], funcs: List[Func], localRegs: List[Reg]): ListBuffer[IR] = {
+    val (inlinedFuncMap, regularFuncList): (mutable.Map[String, List[IR]], List[List[IR]]) = separateInlineFunctions(funcs, localRegs)
+
+    val convertedIRs: mutable.Map[String, List[IR]] = convertToInline(inlinedFuncMap)
+
+    for (funcIR <- regularFuncList) {
+      irs.appendAll(funcIR)
+    }
+    val inlinedIR = inlineFunctions(irs, convertedIRs)
+    inlinedIR.prepend(Data(strings.toList, 0))
+    inlinedIR
+  }
+
+  private def separateInlineFunctions(funcs: List[Func], localRegs: List[Reg]): (mutable.Map[String, List[IR]], List[List[IR]]) = {
+    val inlineFuncIRsMap: mutable.Map[String, List[IR]] = collection.mutable.Map.empty
+    val normalFuncIRs: ListBuffer[List[IR]] = ListBuffer.empty
+
+    for (func <- funcs) {
+      val funcIR = generateFuncIR(func, localRegs)
+      var inlinable: Boolean = (funcIR.length <= MAX_INLINE_LENGTH) && (!func.ident.startsWith("wacc_class_"))
+      for (instruction <- funcIR) {
+        instruction match {
+          case BRANCH(label, L) =>
+            inlinable &&= !label.startsWith(FUNCTION_PREFIX) || label.startsWith("wacc_class_")
+          case _ =>
+        }
+      }
+
+      if (inlinable) {
+        funcIR.head match {
+          case Label(label) => inlineFuncIRsMap.addOne(label, funcIR)
+          case _ =>
+        }
+      } else normalFuncIRs.append(funcIR)
+    }
+    (inlineFuncIRsMap, normalFuncIRs.toList)
+
+  }
+
+  private def convertToInline(funcIRsMap: mutable.Map[String, List[IR]]): mutable.Map[String, List[IR]] = {
+    val inlineableFuncIRsMap: mutable.Map[String, List[IR]] = collection.mutable.Map.empty
+    val inlinedFunc: ListBuffer[IR] = new mutable.ListBuffer[IR]
+    for (funcIR <- funcIRsMap) {
+      val funcEndLabel = getNewLabel
+      val convFuncIr: List[IR] = funcIR._2.tail
+
+      for (funcIR <- convFuncIr) {
+        funcIR match {
+          case MOV(FP, SP, DEFAULT) =>
+          case PUSHMul(List(FP, LR)) => inlinedFunc.append(PUSH(FP))
+          case POPMul(List(FP, PC)) =>
+            inlinedFunc.append(POP(FP))
+            inlinedFunc.append(BRANCH(funcEndLabel, DEFAULT))
+          case LOCALCOLLECT => inlinedFunc.append(Label(funcEndLabel))
+          case stat: IR => inlinedFunc.append(stat)
+        }
+      }
+      inlineableFuncIRsMap.addOne(funcIR._1, inlinedFunc.toList)
+    }
+    inlineableFuncIRsMap
+  }
+
+  private def inlineFunctions(ir: ListBuffer[IR], funcIRs: mutable.Map[String, List[IR]]): ListBuffer[IR] = {
+    val inlinedIR: ListBuffer[IR] = new ListBuffer[IR]
+    for (instruction <- ir) {
+      instruction match {
+        case branchStat@BRANCH(label, L) => {
+          if (funcIRs.keys.toList.contains(label)) {
+            inlinedIR.appendAll(funcIRs(label))
+          }
+          else inlinedIR.append(branchStat)
+        }
+        case instruction: IR => inlinedIR.append(instruction)
+      }
+    }
+    inlinedIR
+  }
+
+  private def optimisePeepHole(irs: ListBuffer[IR]): ListBuffer[IR] = {
     val newIRs = ListBuffer.empty[IR]
     var i = 0
     while (i < irs.length) {
@@ -1537,34 +1623,12 @@ class codeGenerator(program: Program) {
               }
 
             case LDR(rd1, rs1, offset1, _) =>
-              val irNext = irs(i + 1)
               newIRs.append(ir)
-              irNext match {
-                case STR(rd2, rs2, offset2, _) => {
-                  if (rd1 == rd2 && rs1 == rs2 && offset1 == offset2) i += 2 // same instructions
-                  else i += 1
-                }
-                case LDR(rd2, rs2, offset2, _) => {
-                  if (rd1 == rd2 && rs1 == rs2 && offset1 == offset2) i += 2 // unneccesary assembly
-                  else i += 1
-                }
-                case _ => i += 1
-              }
+              i += checkIfSameMemoryIR(rd1, rs1, offset1, irs(i+1))
 
             case STR(rd1, rs1, offset1, _) =>
-              val irNext = irs(i + 1)
               newIRs.append(ir)
-              irNext match {
-                case STR(rd2, rs2, offset2, _) => {
-                  if (rd1 == rd2 && rs1 == rs2 && offset1 == offset2) i += 2 // same instructions
-                  else i += 1
-                }
-                case LDR(rd2, rs2, offset2, _) => {
-                  if (rd1 == rd2 && rs1 == rs2 && offset1 == offset2) i += 2 // not needed assembly
-                  else i += 1
-                }
-                case _ => i += 1
-              }
+              i += checkIfSameMemoryIR(rd1, rs1, offset1, irs(i + 1))
 
             case _ =>
               newIRs.append(ir)
@@ -1577,7 +1641,7 @@ class codeGenerator(program: Program) {
       }
 
     }
-    newIRs.toList
+    newIRs
   }
 
   private sealed trait Widget {
@@ -1900,4 +1964,17 @@ class codeGenerator(program: Program) {
     }
   }
 
+  private def checkIfSameMemoryIR(rd1: Registers.Reg, rs1: Registers.Reg, offset1: Int, irNext: IR): Int = {
+    irNext match {
+      case STR(rd2, rs2, offset2, _) => {
+        if (rd1 == rd2 && rs1 == rs2 && offset1 == offset2) 2 // same instructions
+        else 1
+      }
+      case LDR(rd2, rs2, offset2, _) => {
+        if (rd1 == rd2 && rs1 == rs2 && offset1 == offset2) 2 // unnecessary assembly
+        else 1
+      }
+      case _ => 1
+    }
+  }
 }
