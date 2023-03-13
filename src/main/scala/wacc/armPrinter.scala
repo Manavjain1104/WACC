@@ -7,6 +7,7 @@ object armPrinter {
 
   private val NewLineChar = "\n"
 
+
   def print(cg: codeGenerator): String = {
     val sb = new StringBuilder()
     cg.generateProgIR().foreach(ir => sb.append(printIR(ir) + NewLineChar))

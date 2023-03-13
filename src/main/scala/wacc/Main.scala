@@ -27,6 +27,19 @@ object Main {
     val file: File = new File(args.head)
 
     implicit val eb: error.SyntaxErrorBuilder = new error.SyntaxErrorBuilder
+
+    var optimiseFlag = true
+    var inliningFlag = true
+
+    // optimiseFlag is FIRST argument AFTER file.
+    // inliningFlag is SECOND argument AFTER file.
+
+    if (args.length >= 2) {
+      optimiseFlag = args(1).toBoolean
+    }
+    if (args.length == 3) {
+      inliningFlag = args(2).toBoolean
+    }
     fully(program).parseFromFile(file) match {
       case util.Success(value) => {
         value match {
@@ -55,7 +68,7 @@ object Main {
               }
               generateOutputMessages(ListBuffer.empty[error.SemanticError], None, file.getPath, OK_EXIT_CODE)
 
-              val output = armPrinter.print(new codeGenerator(prog))
+              val output = armPrinter.print(new codeGenerator(prog, optimiseFlag, inliningFlag))
 
               // Write assembly to .s file
               if (!file.getName.endsWith(".wacc")) {
