@@ -1554,8 +1554,8 @@ class codeGenerator(program: Program, peephole: Boolean, inlineable: Boolean ) {
           case PUSHMul(List(FP, LR)) => inlinedFunc.append(PUSH(FP))
           case POPMul(List(FP, PC)) =>
             inlinedFunc.append(POP(FP))
-            inlinedFunc.append(BRANCH(funcEndLabel, DEFAULT))
-          case LOCALCOLLECT => inlinedFunc.append(Label(funcEndLabel))
+            inlinedFunc.append(BRANCH("LABEL PLACEHOLDER", DEFAULT))
+          case LOCALCOLLECT => inlinedFunc.append(Label("LABEL PLACEHOLDER"))
           case stat: IR => inlinedFunc.append(stat)
         }
       }
@@ -1564,13 +1564,29 @@ class codeGenerator(program: Program, peephole: Boolean, inlineable: Boolean ) {
     inlineableFuncIRsMap
   }
 
+  private def replaceLabelPlaceHolders(funcIR: List[IR]): List[IR] = {
+    val replacedIR: ListBuffer[IR] = new ListBuffer[IR]
+    val newLabel = getNewLabel
+    for (instruction <- funcIR) {
+      instruction match {
+        case BRANCH("LABEL PLACEHOLDER", DEFAULT) => {
+          replacedIR.append(BRANCH(newLabel, DEFAULT))
+        }
+        case Label("LABEL PLACEHOLDER") => replacedIR.append(Label(newLabel))
+        case instruction: IR => replacedIR.append(instruction)
+      }
+    }
+  replacedIR.toList
+  }
+
+
   private def inlineFunctions(ir: ListBuffer[IR], funcIRs: mutable.Map[String, List[IR]]): ListBuffer[IR] = {
     val inlinedIR: ListBuffer[IR] = new ListBuffer[IR]
     for (instruction <- ir) {
       instruction match {
         case branchStat@BRANCH(label, L) => {
           if (funcIRs.keys.toList.contains(label)) {
-            inlinedIR.appendAll(funcIRs(label))
+            inlinedIR.appendAll(replaceLabelPlaceHolders(funcIRs(label)))
           }
           else inlinedIR.append(branchStat)
         }
