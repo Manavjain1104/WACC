@@ -54,8 +54,10 @@ class codeGenerator(program: Program, peephole: Boolean, inlineable: Boolean ) {
       irs = inlineAllFunctions(irs, program.funcs, localRegs)
     } else {
       program.funcs.map(func => irs.appendAll(generateFuncIR(func, localRegs)) )
-      irs.prepend(Data(strings.toList, 0))
     }
+
+    irs.prepend(Data(strings.toList, 0))
+
     if (peephole) {
       irs = optimisePeepHole(irs)
     }
@@ -1504,15 +1506,11 @@ class codeGenerator(program: Program, peephole: Boolean, inlineable: Boolean ) {
 
   private def inlineAllFunctions(irs: ListBuffer[IR], funcs: List[Func], localRegs: List[Reg]): ListBuffer[IR] = {
     val (inlinedFuncMap, regularFuncList): (mutable.Map[String, List[IR]], List[List[IR]]) = separateInlineFunctions(funcs, localRegs)
-
-    val convertedIRs: mutable.Map[String, List[IR]] = convertToInline(inlinedFuncMap)
-
+    val convertedIRs: Map[String, List[IR]] = convertToInline(inlinedFuncMap)
     for (funcIR <- regularFuncList) {
       irs.appendAll(funcIR)
     }
-    val inlinedIR = inlineFunctions(irs, convertedIRs)
-    inlinedIR.prepend(Data(strings.toList, 0))
-    inlinedIR
+    ListBuffer.from(inlineFunctions(irs, convertedIRs))
   }
 
   private def separateInlineFunctions(funcs: List[Func], localRegs: List[Reg]): (mutable.Map[String, List[IR]], List[List[IR]]) = {
@@ -1541,11 +1539,11 @@ class codeGenerator(program: Program, peephole: Boolean, inlineable: Boolean ) {
 
   }
 
-  private def convertToInline(funcIRsMap: mutable.Map[String, List[IR]]): mutable.Map[String, List[IR]] = {
+  private def convertToInline(funcIRsMap: mutable.Map[String, List[IR]]): Map[String, List[IR]] = {
     val inlineableFuncIRsMap: mutable.Map[String, List[IR]] = collection.mutable.Map.empty
-    val inlinedFunc: ListBuffer[IR] = new mutable.ListBuffer[IR]
+
     for (funcIR <- funcIRsMap) {
-      val funcEndLabel = getNewLabel
+      val inlinedFunc: ListBuffer[IR] = new mutable.ListBuffer[IR]
       val convFuncIr: List[IR] = funcIR._2.tail
 
       for (funcIR <- convFuncIr) {
@@ -1561,7 +1559,7 @@ class codeGenerator(program: Program, peephole: Boolean, inlineable: Boolean ) {
       }
       inlineableFuncIRsMap.addOne(funcIR._1, inlinedFunc.toList)
     }
-    inlineableFuncIRsMap
+    inlineableFuncIRsMap.toMap
   }
 
   private def replaceLabelPlaceHolders(funcIR: List[IR]): List[IR] = {
@@ -1580,12 +1578,12 @@ class codeGenerator(program: Program, peephole: Boolean, inlineable: Boolean ) {
   }
 
 
-  private def inlineFunctions(ir: ListBuffer[IR], funcIRs: mutable.Map[String, List[IR]]): ListBuffer[IR] = {
+  private def inlineFunctions(ir: ListBuffer[IR], funcIRs: Map[String, List[IR]]): List[IR] = {
     val inlinedIR: ListBuffer[IR] = new ListBuffer[IR]
     for (instruction <- ir) {
       instruction match {
         case branchStat@BRANCH(label, L) => {
-          if (funcIRs.keys.toList.contains(label)) {
+          if (funcIRs.contains(label)) {
             inlinedIR.appendAll(replaceLabelPlaceHolders(funcIRs(label)))
           }
           else inlinedIR.append(branchStat)
@@ -1593,7 +1591,7 @@ class codeGenerator(program: Program, peephole: Boolean, inlineable: Boolean ) {
         case instruction: IR => inlinedIR.append(instruction)
       }
     }
-    inlinedIR
+    inlinedIR.toList
   }
 
   private def optimisePeepHole(irs: ListBuffer[IR]): ListBuffer[IR] = {
