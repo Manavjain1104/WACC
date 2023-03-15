@@ -25,11 +25,13 @@ class VoidTypeTests extends AnyFlatSpec {
           if (!java.nio.file.Files.isSymbolicLink(file.toPath) && file.isDirectory) listAndProcess(file)
         })
       }
+
     }
+
     listAndProcess(new File(dir))
   }
 
-  def testDirectory(file: File) = {
+  def exampleFn(file: File) = {
     val source = Source.fromFile(file)
     val lb = ListBuffer[String]()
     val out = ListBuffer[String]()
@@ -78,13 +80,15 @@ class VoidTypeTests extends AnyFlatSpec {
       in ++= x
     }
 
-    val bashOutput = s"./compile_and_run $file ${in}" !!
+    var bashOutput = s"./compile_and_run $file ${in}" !!
 
     val exitCode = "echo $?" !!
 
+    var bashOutputNoAddr = bashOutput.replaceAll("\\b0x\\w*", "#addrs#")
+
     if (exitCode != "100" || exitCode != "200") {
 
-      if (s.toString() != bashOutput) {
+      if (s.toString() != bashOutputNoAddr) {
         fail("Wrong output")
       }
     }
@@ -109,7 +113,8 @@ class VoidTypeTests extends AnyFlatSpec {
 
   behavior of "valid void type extension tests"
   it should "succeed with exit code 0" taggedAs (VoidTypeTests) in {
-    applyRecursively("src/test/scala/wacc/extensions/voidTypes/validVoid", testDirectory)
+    applyRecursively("src/test/scala/wacc/extensions/voidTypes/validVoid", exampleFn)
+    //exampleFn(new File("src/test/scala/wacc/extensions/voidTypes/validVoid/voidFunctionWithParameter.wacc"))
   }
 
   behavior of "invalid void type extension tests"
