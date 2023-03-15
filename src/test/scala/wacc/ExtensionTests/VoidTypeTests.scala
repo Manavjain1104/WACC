@@ -124,7 +124,7 @@ class VoidTypeTests extends AnyFlatSpec {
 
     val s = new StringBuilder()
     s.append("Here\n")
-    s.append("There")
+    s.append("There\n")
     println(s.toString())
 
     if (s.toString() != bashOutput) {
@@ -171,7 +171,7 @@ class VoidTypeTests extends AnyFlatSpec {
     val s = new StringBuilder()
     s.append("5\n")
     s.append("Here\n")
-    s.append("There")
+    s.append("There\n")
     println(s.toString())
 
     if (s.toString() != bashOutput) {
