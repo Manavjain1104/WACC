@@ -120,7 +120,22 @@ class VoidTypeTests extends AnyFlatSpec {
 
   behavior of "valid functionReturningVoid extension test"
   it should "succeed with exit code 0" taggedAs (VoidTypeTests) in {
-    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/voidTypes/validVoid/voidFunctionWithParameter.wacc" !!
+    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/voidTypes/validVoid/functionReturningVoid.wacc" !!
+
+    val s = new StringBuilder()
+    s.append("Here\n")
+    s.append("There")
+    println(s.toString())
+
+    if (s.toString() != bashOutput) {
+      fail("WRONG OUTPUT")
+    }
+
+  }
+
+  behavior of "valid voidFunctionCall extension test"
+  it should "succeed with exit code 0" taggedAs (VoidTypeTests) in {
+    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/voidTypes/validVoid/voidFunctionCall.wacc" !!
 
     val s = new StringBuilder()
     s.append("Here\n")
@@ -134,6 +149,37 @@ class VoidTypeTests extends AnyFlatSpec {
 
   }
 
+  behavior of "valid voidFunctionEmptyReturn extension test"
+  it should "succeed with exit code 0" taggedAs (VoidTypeTests) in {
+    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/voidTypes/validVoid/voidFunctionEmptyReturn.wacc" !!
+
+    val s = new StringBuilder()
+    s.append("\n")
+    println(s.toString())
+
+    if (s.toString() != bashOutput) {
+      fail("WRONG OUTPUT")
+    }
+
+
+  }
+
+  behavior of "valid voidFunctionWithParameter extension test"
+  it should "succeed with exit code 0" taggedAs (VoidTypeTests) in {
+    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/voidTypes/validVoid/voidFunctionWithParameter.wacc" !!
+
+    val s = new StringBuilder()
+    s.append("5\n")
+    s.append("Here\n")
+    s.append("There")
+    println(s.toString())
+
+    if (s.toString() != bashOutput) {
+      fail("WRONG OUTPUT")
+    }
+
+
+  }
 
   behavior of "invalid void type extension tests"
   it should "succeed with exit code 0" taggedAs (VoidTypeTests) in {
