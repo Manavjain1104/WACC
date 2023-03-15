@@ -175,6 +175,7 @@ class codeGenerator(program: Program, peephole: Boolean, inlineable: Boolean ) {
                   widgets.add(arrLoad)
                 }
               }
+            case _ => {}
             }
             irs.toList
           }
@@ -1345,6 +1346,7 @@ class codeGenerator(program: Program, peephole: Boolean, inlineable: Boolean ) {
             irs.append(POP(R3)) // save R3
             irs.toList
           }
+          case _ => List.empty
         }
       }
 

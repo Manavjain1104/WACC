@@ -109,12 +109,12 @@ class VoidTypeTests extends AnyFlatSpec {
 
   behavior of "valid void type extension tests"
   it should "succeed with exit code 0" taggedAs (VoidTypeTests) in {
-    applyRecursively("/src/test/scala/wacc/extensions/voidTypes/validVoid", testDirectory)
+    applyRecursively("src/test/scala/wacc/extensions/voidTypes/validVoid", testDirectory)
   }
 
   behavior of "invalid void type extension tests"
   it should "succeed with exit code 0" taggedAs (VoidTypeTests) in {
-    applyRecursively("/src/test/scala/wacc/extensions/voidTypes/invalidVoid", checkCompileFailure)
+    applyRecursively("src/test/scala/wacc/extensions/voidTypes/invalidVoid", checkCompileFailure)
   }
 
 }

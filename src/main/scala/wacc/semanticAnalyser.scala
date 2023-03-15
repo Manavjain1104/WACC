@@ -232,20 +232,21 @@ class semanticAnalyser {
       case StructSemType(ident1) => {
         type2 match {
           case StructSemType(ident2) => {
-
-            if (ident1 equals ident2) return true
-
-            val structTable = opStructTable.get
-            val structDef1 = structTable.lookup(ident1).get
-            val structDef2 = structTable.lookup(ident1).get
-            val fields1 = structDef1.getKeys()
-            val fields2 = structDef2.getKeys()
-            for (i <- fields1.indices) {
-              if (!matchTypes(structDef1.lookup(fields1(i)).get, structDef2.lookup(fields2(i)).get)) {
-                return false
+            if (ident1 equals ident2) true
+            else {
+              val structTable = opStructTable.get
+              val structDef1 = structTable.lookup(ident1).get
+              val structDef2 = structTable.lookup(ident1).get
+              val fields1 = structDef1.getKeys()
+              val fields2 = structDef2.getKeys()
+              var out = true
+              for (i <- fields1.indices) {
+                if (!matchTypes(structDef1.lookup(fields1(i)).get, structDef2.lookup(fields2(i)).get)) {
+                  out = false
+                }
               }
+              out
             }
-            true
           }
 
           case InternalPairSemType => true
@@ -620,6 +621,7 @@ class semanticAnalyser {
             }
 
             // parameters and arguments type match
+            var err = false
             for (i <- args.indices) {
               val expType = checkExpr(args(i), symbolTable)
               if (!matchTypes(expType.get, funcType.paramTypes(i))) {
@@ -627,16 +629,22 @@ class semanticAnalyser {
                 errorLog += new TypeError(argPos._1,
                   Set(funcType.paramTypes(i)), expType.get,
                   Some("Argument type does not match with parameter"))(argPos._2)
-                return Some(InternalPairSemType)
+                err =  true
               }
             }
-            Some(funcType.retType)
+            if (err){
+              Some(InternalPairSemType)
+            } else {
+              Some(funcType.retType)
+            }
+
           case unexpectedType =>
             errorLog += TypeError(call.pos,
               Set(FuncSemType(InternalPairSemType, List.empty, 0)), unexpectedType,
               Some("Cannot call a non function identifier"))
             Some(InternalPairSemType)
         }
+
       }
 
       case elem: PairElem => checkPairElem(elem, symbolTable)
@@ -1105,6 +1113,7 @@ class semanticAnalyser {
             }
 
             // parameters and arguments type match
+            var err = false
             for (i <- args.indices) {
               val expType = checkExpr(args(i), symbolTable)
               if (!matchTypes(expType.get, funcType.paramTypes(i))) {
@@ -1112,10 +1121,11 @@ class semanticAnalyser {
                 errorLog += new TypeError(argPos._1,
                   Set(funcType.paramTypes(i)), expType.get,
                   Some("Argument type does not match with parameter"))(argPos._2)
-                return Some(InternalPairSemType)
+                err = true
               }
             }
-            Some(funcType.retType)
+            if (err) Some(InternalPairSemType) else Some(funcType.retType)
+
           case unexpectedType =>
             errorLog += TypeError(cs.pos,
               Set(FuncSemType(InternalPairSemType, List.empty, 0)), unexpectedType,
@@ -1123,24 +1133,23 @@ class semanticAnalyser {
             Some(InternalPairSemType)
         }
       }
-
-
     }
   }
 
   private def checkParams(params: List[Param], symbolTable: SymbolTable[SemType], paramNames: mutable.Set[String]): Boolean = {
+    var out = true
     for (param <- params) {
       if (paramNames.contains(param.ident)) {
         errorLog += DuplicateIdentifier(param.pos,
           param.ident,
           Some("Duplicate identifier found in function definition."))
-        return false // duplicate func names
+        out = false // duplicate func names
       } else {
         paramNames.add(param.ident)
         symbolTable.add(param.ident, convertToSem(param.paramType))
       }
     }
-    true
+    out
   }
 
   private def isConcrete(pt1: SemType): Boolean = pt1 != InternalPairSemType
@@ -1190,6 +1199,7 @@ class semanticAnalyser {
 
   private def checkArrayLiteral(arrayLit: ArrayLiter, symbolTable: GenericTable[SemType]): Option[SemType] = {
     if (arrayLit.exprs.nonEmpty) {
+      var err = false
       val expType = checkExpr(arrayLit.exprs.head, symbolTable)
       for (expr <- arrayLit.exprs.tail) {
         val expTypeRest = checkExpr(expr, symbolTable)
@@ -1199,11 +1209,12 @@ class semanticAnalyser {
             Set(expType.get),
             expTypeRest.get,
             Some("Arrays must contain elements of the same type"))(exprPos._2)
-          return Some(InternalPairSemType)
+          err = true
         }
       }
-      return Some(ArraySemType(expType.get))
+      if (err) Some(InternalPairSemType) else Some(ArraySemType(expType.get))
+    } else {
+      Some(ArraySemType(InternalPairSemType))
     }
-    Some(ArraySemType(InternalPairSemType))
   }
 }
