@@ -64,13 +64,6 @@ object errorPrinter {
             sb.append("Unknown Identifier error in " + filename + " " + "(line " + newPos._1 + ", column " + newPos._2 + "):\n")
             sb.append(printForInvalidToken(newPos, ident, context))
           }
-          case InvalidStructTypeError(pos, foundType, context) => {
-            sb.append("Invalid Struct Type error in " + filename + " " + "(line " + pos._1 + ", column " + pos._2 + "):\n")
-            if (context.isDefined) {
-              sb.append(context.get + "\n")
-            }
-            sb.append(printForTypeError(pos, StructTable.allowedTypes.toList, foundType))
-          }
           case DuplicateIdentifier(pos, ident, context) => {
             val newPos = getIdentPos(pos, ident)
             sb.append("Duplicate Identifier error in " + filename + " " + "(line " + newPos._1 + ", column " + newPos._2 + "):\n")

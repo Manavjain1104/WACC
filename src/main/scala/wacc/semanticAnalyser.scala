@@ -107,34 +107,6 @@ class semanticAnalyser {
     }
   }
 
-  private def checkStructType(tType: SemType): Boolean = {
-    tType match {
-      case SemTypes.CharSemType => true
-      case SemTypes.BoolSemType => true
-      case SemTypes.StringSemType => true
-      case SemTypes.IntSemType => true
-      case ArraySemType(t) => {
-        t match {
-          case ArraySemType(_) => false
-          case PairSemType(_, _) => false
-          case _ => true
-        }
-      }
-      case PairSemType(pt1, pt2) => {
-        (pt1 match {
-          case ArraySemType(_) => false
-          case PairSemType(_, _) => false
-          case _ => true
-        }) && (pt2 match {
-          case ArraySemType(_) => false
-          case PairSemType(_, _) => false
-          case _ => true
-        })
-      }
-      case _ => false
-    }
-  }
-
   private def checkClass(waccClass: Class, classTable: ClassTable) : Unit = {
     curClassName = Some(waccClass.name)
 
@@ -216,14 +188,9 @@ class semanticAnalyser {
         // check validity of fieldDec Statement
         if (!fieldNames.contains(fieldDec.ident)) {
           val tType = convertToSem(fieldDec.assignType)
-//          if (checkStructType(tType)) { // TODO --> allowed all types to go through
-          if (true) {
-            val size = getSize(tType)
-            structDef.add(fieldDec.ident, tType, currPointer)
-            currPointer += size
-          } else {
-            errorLog += InvalidStructTypeError(fieldDec.pos, tType, Some("Struct can only have simple base type and non nested array/pair fields"))
-          }
+          val size = getSize(tType)
+          structDef.add(fieldDec.ident, tType, currPointer)
+          currPointer += size
         } else {
           errorLog += DuplicateIdentifier(fieldDec.pos, fieldDec.ident, Some("Duplicate field found in struct " + struct.name))
         }
