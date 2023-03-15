@@ -1,0 +1,42 @@
+# method get() in class Test is private, so cannot be accessed from class Test2.
+# see corresponding working example in validClasses/privatePublic.wacc where method get() is public.
+
+# Exit:
+# 200
+
+begin
+  class Test2(int x, int y) {
+    char c = 'k';
+    private class Test t = new Test(7)
+
+    private char get() is
+      return this.c
+    end
+
+    public int getArea(int a, int b) is
+      class Test gh = this.t;
+      int out = gh.get();
+      return out
+    end
+  }
+
+  class Test(int a) {
+      private int b = this.a * 2
+
+      private int get() is
+        return 25
+      end
+  }
+
+  class Test2 m1 = new Test2(69, 79);
+  class Test2 m2 = new Test2(44, 55);
+  pair(class Test2, class Test2) p = newpair(m1, m2);
+  class Test2 m3 = fst p;
+  int x2 =  m3.getArea(2, 3);
+  class Test2[] arr = [m1, m2];
+  println m3;
+  println arr[0];
+  class Test2 var = arr[0];
+  var.getArea(67, 9);
+  println x2
+end

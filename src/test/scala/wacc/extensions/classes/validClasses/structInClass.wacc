@@ -1,0 +1,23 @@
+begin
+  class rt(bool singular) {
+    string password = "jimjim";
+    struct pintos g = {2}
+
+    bool topper() is
+      return true
+    end
+
+    bool isSingular() is
+      return this.singular
+    end
+
+  }
+
+  struct pintos {
+    int x
+  }
+
+  class rt rtobject = new rt(true);
+  bool singularhai = rtobject.isSingular()
+
+end
