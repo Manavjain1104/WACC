@@ -1,0 +1,15 @@
+# match expression types must all be correct
+
+# Exit:
+# 200
+#
+
+begin
+  pair(char, char) p = newpair('a', 'b');
+  char c = fst p;
+
+  match c:
+    {case 'a' => println "it is a"}
+    {case 'b' => println "it is b"}
+    {case 5 => println "wrong type"}
+end

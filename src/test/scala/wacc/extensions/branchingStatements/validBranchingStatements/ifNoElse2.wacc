@@ -1,0 +1,14 @@
+# if expression without an else case, within match case
+
+# Output:
+# it is 4
+#
+
+# Program:
+
+begin
+  int x = 4;
+  match x:
+    {case 4 => if true then println "it is 4" fi}
+    {case 5 => println "hi"}
+end

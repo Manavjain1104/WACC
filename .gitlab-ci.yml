@@ -38,6 +38,7 @@ extension-tests:
   script:
     - make
     - sbt "testOnly -- -n FullPairTypeTests"
+    - sbt "testOnly -- -n BranchingStatementTests"
 
 # Don't test everything
 # Tag tests and use "PENDING" using scala test

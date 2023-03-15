@@ -1,0 +1,12 @@
+# simple match case statement functionality
+
+# Output:
+# bye
+#
+
+begin
+  int x = 4;
+  match x:
+    {case 4 => println "bye"}
+    {case 5 => println "hi"}
+end
