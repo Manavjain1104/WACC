@@ -6,6 +6,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 
 import java.io.File
 import scala.Console.{in, out}
+import scala.collection.mutable
 import scala.language.postfixOps
 import scala.io.Source
 import scala.collection.mutable.ListBuffer
@@ -89,7 +90,7 @@ class VoidTypeTests extends AnyFlatSpec {
     if (exitCode != "100" || exitCode != "200") {
 
       if (s.toString() != bashOutputNoAddr) {
-        //fail("Wrong output")
+        fail("Wrong output")
       }
     }
   }
@@ -111,11 +112,28 @@ class VoidTypeTests extends AnyFlatSpec {
     }
   }
 
-  behavior of "valid void type extension tests"
+//  behavior of "valid void type extension tests"
+//  it should "succeed with exit code 0" taggedAs (VoidTypeTests) in {
+//    //applyRecursively("src/test/scala/wacc/extensions/voidTypes/validVoid", exampleFn)
+//    exampleFn(new File("src/test/scala/wacc/extensions/voidTypes/validVoid/voidFunctionWithParameter.wacc"))
+//  }
+
+  behavior of "valid functionReturningVoid extension test"
   it should "succeed with exit code 0" taggedAs (VoidTypeTests) in {
-    applyRecursively("src/test/scala/wacc/extensions/voidTypes/validVoid", exampleFn)
-    //exampleFn(new File("src/test/scala/wacc/extensions/voidTypes/validVoid/voidFunctionWithParameter.wacc"))
+    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/voidTypes/validVoid/voidFunctionWithParameter.wacc" !!
+
+    val s = new StringBuilder()
+    s.append("Here\n")
+    s.append("There")
+    println(s.toString())
+
+    if (s.toString() != bashOutput) {
+      fail("WRONG OUTPUT")
+    }
+
+
   }
+
 
   behavior of "invalid void type extension tests"
   it should "succeed with exit code 0" taggedAs (VoidTypeTests) in {
