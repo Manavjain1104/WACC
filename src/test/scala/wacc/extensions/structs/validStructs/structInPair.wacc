@@ -13,5 +13,5 @@ begin
     struct test t = {1, 'a'};
     pair(struct test, char) p = newpair(t, 'b');
     struct test t1 = fst p;
-    println t1.x
+    println t1->x
 end

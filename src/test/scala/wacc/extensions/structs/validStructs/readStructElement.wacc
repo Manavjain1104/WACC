@@ -10,5 +10,5 @@ begin
     }
 
     struct test t1 = {1, 'd'};
-    read t1.x
+    read t1->x
 end

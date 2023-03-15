@@ -15,5 +15,5 @@ begin
 
   struct test[] a = [t1, t2];
   struct test first = a[1];
-  println first.c
+  println first->c
 end

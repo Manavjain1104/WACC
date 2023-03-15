@@ -16,6 +16,6 @@ begin
         return x
     end
     struct test t = {1, 'a'};
-    int tmp = call f(t.x, t.c);
+    int tmp = call f(t->x, t->c);
     println tmp
 end

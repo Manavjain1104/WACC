@@ -26,9 +26,9 @@ begin
     struct test2 t2 = {2, t1};
     struct test3 t3 = {'e', t1, t2};
 
-    println t3.c;
-    struct test2 inner = t3.t2;
-    struct test1 inner2 = inner.t;
-    println inner2.c
+    println t3->c;
+    struct test2 inner = t3->t2;
+    struct test1 inner2 = inner->t;
+    println inner2->c
 
 end
