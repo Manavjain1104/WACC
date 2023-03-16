@@ -2,6 +2,7 @@
 
 # Output:
 # 14
+#
 
 begin
   class Test2(int x, int y) {

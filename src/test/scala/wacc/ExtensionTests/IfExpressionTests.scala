@@ -112,12 +112,12 @@ class IfExpressionTests extends AnyFlatSpec {
 
   behavior of "valid if expression extension tests"
   it should "succeed with exit code 0" in {
-    applyRecursively("src/test/scala/wacc/extensions/ifExpressions/validIfExprs", testDirectory)
+    applyRecursively("/src/test/scala/wacc/extensions/ifExpressions/validIfExprs", testDirectory)
   }
 
   behavior of "invalid if expression extension tests"
   it should "succeed with exit code 0" in {
-    applyRecursively("src/test/scala/wacc/extensions/ifExpressions/invalidIfExprs", checkCompileFailure)
+    applyRecursively("/src/test/scala/wacc/extensions/ifExpressions/invalidIfExprs", checkCompileFailure)
   }
 
 }
