@@ -1792,6 +1792,7 @@ class codeGenerator(program: Program, peephole: Boolean, inlineable: Boolean) {
         }
       }
 
+
       case _: PairSemType => {
         val saveParams = willClobber(localRegs, liveMap)
         val irs = ListBuffer.empty[IR]
