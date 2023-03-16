@@ -108,9 +108,74 @@ class IfExpressionTests extends AnyFlatSpec {
     }
   }
 
-  behavior of "valid if expression extension tests"
-  it should "succeed with exit code 0" taggedAs(IfExpressionTests) in {
-    applyRecursively("/src/test/scala/wacc/extensions/ifExpressions/validIfExprs", testDirectory)
+  behavior of "valid exitIfExpression ifExpr extension test"
+  it should "succeed with exit code 0" taggedAs (IfExpressionTests) in {
+    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/ifExpressions/validIfExprs/exitIfExpression.wacc" !!
+
+    val s = new StringBuilder()
+    s.append("")
+    println(s.toString())
+
+    if (s.toString() != bashOutput) {
+      fail("WRONG OUTPUT")
+    }
+
+  }
+
+  behavior of "valid nestedIfExpression1 ifExpr extension test"
+  it should "succeed with exit code 0" taggedAs (IfExpressionTests) in {
+    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/ifExpressions/validIfExprs/nestedIfExpression1.wacc" !!
+
+    val s = new StringBuilder()
+    s.append("3\n")
+    println(s.toString())
+
+    if (s.toString() != bashOutput) {
+      fail("WRONG OUTPUT")
+    }
+
+  }
+
+  behavior of "valid nestedIfExpression2 ifExpr extension test"
+  it should "succeed with exit code 0" taggedAs (IfExpressionTests) in {
+    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/ifExpressions/validIfExprs/nestedIfExpression2.wacc" !!
+
+    val s = new StringBuilder()
+    s.append("10\n")
+    println(s.toString())
+
+    if (s.toString() != bashOutput) {
+      fail("WRONG OUTPUT")
+    }
+
+  }
+
+  behavior of "valid nestedIfExpression3 ifExpr extension test"
+  it should "succeed with exit code 0" taggedAs (IfExpressionTests) in {
+    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/ifExpressions/validIfExprs/nestedIfExpression3.wacc" !!
+
+    val s = new StringBuilder()
+    s.append("10\n")
+    println(s.toString())
+
+    if (s.toString() != bashOutput) {
+      fail("WRONG OUTPUT")
+    }
+
+  }
+
+  behavior of "valid printlnIfExpression ifExpr extension test"
+  it should "succeed with exit code 0" taggedAs (IfExpressionTests) in {
+    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/ifExpressions/validIfExprs/printlnIfExpression.wacc" !!
+
+    val s = new StringBuilder()
+    s.append("bye\n")
+    println(s.toString())
+
+    if (s.toString() != bashOutput) {
+      fail("WRONG OUTPUT")
+    }
+
   }
 
   behavior of "invalid if expression extension tests"
