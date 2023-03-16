@@ -1,3 +1,9 @@
+# Basic class functionality
+
+# Output:
+# 14
+#
+
 begin
   class Test2(int x, int y) {
     char c = 'k';

@@ -1,3 +1,8 @@
+# classes can contain struct
+
+# Output:
+#
+
 begin
   class rt(bool singular) {
     string password = "jimjim";

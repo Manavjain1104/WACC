@@ -1,7 +1,8 @@
 # method get() in class Test is public, so can be accessed from class Test2
 
 # Output:
-# 25
+# 14
+#
 
 begin
   class Test2(int x, int y) {
