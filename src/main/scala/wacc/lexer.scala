@@ -45,8 +45,8 @@ object lexer {
     symbolDesc     = SymbolDesc.plain.copy(
       hardKeywords = Set[String]("begin", "end", "is", "skip", "free", "read",
         "return", "exit", "print", "println", "if", "then", "else", "fi", "while", "do", "done",
-        "snd", "fst", "newpair", "call", "int", "bool", "char", "string", "pair","void", "true", "false",
-        "null", "public", "private", "class", "this", "new"
+        "snd", "fst", "newpair", "call", "int", "bool", "char", "string", "pair", "true", "false",
+        "null", "public", "private", "class", "this", "new", "match", "case"
       ),
       hardOperators = Set[String]("!", "-", "len", "ord", "chr", "*", "/", "%", "+", ">", ">=",
         "<", "<=", "==", "!=", "&&", "||"),
@@ -73,41 +73,46 @@ object lexer {
   private val lexer = new Lexer(desc)
 
   // token definitions
-  val BEGIN: Parsley[Unit]        = symbol("begin")
-  val END: Parsley[Unit]          = symbol("end")
+  val BEGIN: Parsley[Unit] = symbol("begin")
+  val END: Parsley[Unit] = symbol("end")
+  val OPENPAREN: Parsley[Unit] = lexer.lexeme.symbol.openParen.label("\'(\'")
+  val CLOSEDPAREN: Parsley[Unit] = lexer.lexeme.symbol.closingParen.label("\')\'")
+  val IS: Parsley[Unit] = symbol("is")
+  val COMMA: Parsley[Unit] = symbol(",")
+  val SKIP: Parsley[Unit] = symbol("skip")
+  val ASSIGN_EQ: Parsley[Unit] = symbol("=")
+  val READ: Parsley[Unit] = symbol("read")
+  val FREE: Parsley[Unit] = symbol("free")
+  val RETURN: Parsley[Unit] = symbol("return")
+  val EXIT: Parsley[Unit] = symbol("exit")
+  val PRINT: Parsley[Unit] = symbol("print")
+  val PRINTLN: Parsley[Unit] = symbol("println")
+  val IF: Parsley[Unit] = symbol("if")
+  val THEN: Parsley[Unit] = symbol("then")
+  val ELSE: Parsley[Unit] = symbol("else")
+  val FI: Parsley[Unit] = symbol("fi")
+  val WHILE: Parsley[Unit] = symbol("while")
+  val DO: Parsley[Unit] = symbol("do")
+  val DONE: Parsley[Unit] = symbol("done")
+  val SEMICOLON: Parsley[Unit] = symbol(";")
+  val FST: Parsley[Unit] = symbol("fst")
+  val SND: Parsley[Unit] = symbol("snd")
+  val NEWPAIR: Parsley[Unit] = symbol("newpair")
+  val CALL: Parsley[Unit] = symbol("call")
+  val MATCH: Parsley[Unit] = symbol("match")
+  val CASE: Parsley[Unit] = symbol("case")
+  val MATCHARROW: Parsley[Unit] = symbol("=>")
+  val COLON: Parsley[Unit] = symbol(":")
   val PUBLIC: Parsley[Unit]       = symbol("public")
   val PRIVATE: Parsley[Unit]      = symbol("private")
   val CLASS: Parsley[Unit]        = symbol("class")
-  val OPENPAREN: Parsley[Unit]    = lexer.lexeme.symbol.openParen.label("\'(\'")
-  val CLOSEDPAREN: Parsley[Unit]  = lexer.lexeme.symbol.closingParen.label("\')\'")
-  val IS: Parsley[Unit]           = symbol("is")
-  val DOT: Parsley[Unit]          = symbol(".")
-  val COMMA: Parsley[Unit]        = symbol(",")
-  val SKIP: Parsley[Unit]         = symbol("skip")
-  val ASSIGN_EQ: Parsley[Unit]    = symbol("=")
-  val READ: Parsley[Unit]         = symbol("read")
-  val FREE: Parsley[Unit]         = symbol("free")
-  val RETURN: Parsley[Unit]       = symbol("return")
-  val EXIT: Parsley[Unit]         = symbol("exit")
-  val PRINT: Parsley[Unit]        = symbol("print")
-  val PRINTLN: Parsley[Unit]      = symbol("println")
-  val IF: Parsley[Unit]           = symbol("if")
-  val THEN: Parsley[Unit]         = symbol("then")
-  val ELSE: Parsley[Unit]         = symbol("else")
-  val FI: Parsley[Unit]           = symbol("fi")
-  val WHILE: Parsley[Unit]        = symbol("while")
-  val DO: Parsley[Unit]           = symbol("do")
-  val DONE: Parsley[Unit]         = symbol("done")
-  val SEMICOLON: Parsley[Unit]    = symbol(";")
-  val FST: Parsley[Unit]          = symbol("fst")
-  val SND: Parsley[Unit]          = symbol("snd")
-  val NEWPAIR: Parsley[Unit]      = symbol("newpair")
-  val CALL: Parsley[Unit]         = symbol("call")
   val STRUCT: Parsley[Unit]       = symbol("struct")
   val THIS: Parsley[Unit]         = symbol("this")
   val NEW: Parsley[Unit]          = symbol("new")
   val OPENCURLY: Parsley[Unit]    = lexer.lexeme.symbol.openBrace.label("\'{\'")
   val CLOSEDCURLY: Parsley[Unit]  = lexer.lexeme.symbol.closingBrace.label("\'}\'")
+  val DOT: Parsley[Unit]          = symbol(".")
+
 
   // making lexer for Expr branch
   val INT: Parsley[Int] = lexer.lexeme.numeric.signed.decimal32.filter(validInt).explain("Only 32-bit signed intergers allowed ")
