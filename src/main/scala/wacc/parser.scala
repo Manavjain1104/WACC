@@ -1,7 +1,7 @@
 package wacc
 
-import parsley.Parsley.attempt
-import parsley.combinator.{many, sepBy}
+import parsley.Parsley.{attempt, lookAhead}
+import parsley.combinator.{ifP, many, sepBy, sepBy1}
 import parsley.errors.combinator.ErrorMethods
 import parsley.expr.{Prefix, chain, precedence}
 
@@ -25,7 +25,7 @@ object parser {
     IfExpr(IF ~> expr, THEN ~> expr, ELSE ~> expr <~ FI).label("If expression") <|>
     (PairExpr <# PAIR_LITER)).label("Atomic Literal")
     .explain("--> Atomic Literals includes booleans, chars, strings, " +
-      "array-elems `identifier[]` or identifiers")
+      "array-elems, struct-elems or `identifier[]` or identifiers")
 
   lazy val expr: Parsley[Expr] =
     precedence(atomExpr, OPENPAREN ~> expr <~ CLOSEDPAREN)(
@@ -98,9 +98,14 @@ object parser {
   = Func(attempt(waccType <~> IDENT <~ OPENPAREN), paramList <~ CLOSEDPAREN,
     IS ~> statement.filter(isValidFuncStatement).explain("Function body starting here must" +
       " have a return/exit statement on all paths and must end with one") <~ END)
+  val func: Parsley[Func] = ifP(lookAhead(voidType) #> true <|> lookAhead(waccType) #> false, voidFunc, regFunc)
+
+  val struct : Parsley[Struct] = Struct(attempt(STRUCT ~> IDENT <~ OPENCURLY),
+    (sepBy1(fieldDec, SEMICOLON).explain("Expected non empty struct field variable declaration")
+      <~ CLOSEDCURLY).explain("Invalid Struct Definition. Check Syntax."))
 
   val program: Parsley[Program]
-  = Program(BEGIN ~> many(func), statement <~ END)
+  = Program(BEGIN ~> many(struct), many(func), statement <~ END)
 
   private def isValidFuncStatement(stat: Statement): Boolean = {
     stat match {
@@ -117,4 +122,19 @@ object parser {
     }
   }
 
+  private def isValidVoidFuncStatement(stat: Statement): Boolean = {
+    stat match {
+      case ConsecStat(first, next) =>
+        isValidVoidFuncStatement(next) && isValidVoidFuncStatement(first)
+      case If(_, thenStat, elseStat) =>
+        isValidVoidFuncStatement(thenStat) && isValidVoidFuncStatement(elseStat)
+      case While(_, doStat) => isValidFuncStatement(doStat)
+      case ScopeStat(stat) => isValidFuncStatement(stat)
+      case _: Return => false
+      case _ => true
+    }
+  }
+
+
 }
+

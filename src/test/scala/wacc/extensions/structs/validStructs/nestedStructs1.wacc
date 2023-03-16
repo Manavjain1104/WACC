@@ -1,0 +1,23 @@
+# can nest structs
+
+# Output:
+# 1
+#
+
+begin
+    struct test1 {
+        int x;
+        char c
+    }
+
+    struct test2 {
+        int x;
+        struct test1 t
+    }
+
+    struct test1 t1 = {1, 'd'};
+    struct test2 t2 = {2, t1};
+    struct test1 t3 = t2->t;
+    println t3->x
+
+end

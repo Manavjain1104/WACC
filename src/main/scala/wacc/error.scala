@@ -97,6 +97,8 @@ object error {
 
   case class UnknownIdentifierError(pos: (Int, Int), ident: String, context: Option[String]) extends SemanticError
 
+  case class InvalidStructTypeError(pos : (Int, Int), foundType : SemType, context: Option[String]) extends SemanticError
+
   case class TypeError(pos: (Int, Int), expectedTypes: Set[SemType], foundType: SemType, context: Option[String])(var offset: Int) extends SemanticError
 
   object TypeError {
@@ -110,6 +112,8 @@ object error {
   }
 
   case class TypeErasureError(pos: (Int, Int), context: Option[String]) extends SemanticError
+
+  case class UnknownStructError(pos: (Int, Int), context: Option[String]) extends SemanticError
 
   case class ArityMismatch(pos: (Int, Int), expectedArity: Int, foundArity: Int, context: Option[String]) extends SemanticError
 

@@ -1,0 +1,11 @@
+# can have an if expression in an exit statement
+
+# Output:
+#
+
+# Exit:
+# 0
+
+begin
+  exit(if false then 1 else 0 fi)
+end

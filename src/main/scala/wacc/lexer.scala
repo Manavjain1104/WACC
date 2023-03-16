@@ -109,6 +109,7 @@ object lexer {
   val STRING: Parsley[String] = lexer.lexeme.text.string.ascii
   val IDENT: Parsley[String] = lexer.lexeme.names.identifier
   val PAIR_LITER: Parsley[Unit] = symbol("null")
+  val VOID: Parsley[Unit] = symbol("void")
 
   val OPENSQUAREBRAC: Parsley[Unit] = lexer.lexeme.symbol.openSquare.label("\'[\'")
   val CLOSESQUAREBRAC: Parsley[Unit] = lexer.lexeme.symbol.closingSquare.label("\']\'")

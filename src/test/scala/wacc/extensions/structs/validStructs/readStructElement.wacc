@@ -1,0 +1,14 @@
+# can read elements from struct
+
+# Output:
+#
+
+begin
+    struct test {
+        int x;
+        char c
+    }
+
+    struct test t1 = {1, 'd'};
+    read t1->x
+end

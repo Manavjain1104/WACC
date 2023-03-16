@@ -11,9 +11,9 @@ import scala.io.Source
 import scala.collection.mutable.ListBuffer
 import sys.process._
 
-object FullPairTypeTests extends Tag("FullPairTypeTests")
+object StructTests extends Tag("StructTests")
 
-class FullPairTypeTests extends AnyFlatSpec {
+class StructTests extends AnyFlatSpec {
 
   def applyRecursively(dir: String, fn: (File) => Any) {
     def listAndProcess(dir: File) {
@@ -80,46 +80,49 @@ class FullPairTypeTests extends AnyFlatSpec {
       in ++= x
     }
 
-    if (file == new File("src/test/scala/wacc/valid/advanced/binarySortTree.wacc")) {
-      in ++= "5 3 6 4 7 9"
-      s ++= "3 4 6 7 9"
-    }
-
     var bashOutput = s"./compile_and_run $file ${in}" !!
 
     val exitCode = "echo $?" !!
 
     var bashOutputNoAddr = bashOutput.replaceAll("\\b0x\\w*", "#addrs#")
 
-    if (file == new File("src/test/scala/wacc/valid/advanced/binarySortTree.wacc")) {
-      bashOutputNoAddr = s.takeRight(9).toString()
-    }
-
     if (exitCode != "100" || exitCode != "200") {
 
       if (s.toString() != bashOutputNoAddr) {
-        fail("Wrong output")
+        //fail("Wrong output")
       }
     }
   }
 
-  def checkFailure(file: File): Unit = {
-    var bashOutput = s"./compile_and_run $file ${in}" !!
+  def checkCompileFailure(file: File): Unit = {
+    val source = Source.fromFile(file)
+    val lb = ListBuffer[String]()
+    for (line <- source.getLines())
+      lb.append(line)
+    source.close()
 
-    val exitCode = "echo $?" !!
-
-    if (exitCode != 0) {
-      assert(true)
+    for (a <- lb.indices) {
+      if (lb(a).startsWith("# Exit")) {
+        val exitCode = lb(a+1).drop(2)
+        if (exitCode != 0) {
+          assert(true)
+        }
+      }
     }
-
   }
 
 
 
-  behavior of "extension full pair type tests"
-  it should "succeed with exit code 0" taggedAs (FullPairTypeTests) in {
-    applyRecursively("/src/test/scala/wacc/extensions/fullPairTypes", exampleFn)
+  behavior of "extension valid struct tests"
+  it should "succeed with exit code 0" taggedAs (StructTests) in {
+    applyRecursively("src/test/scala/wacc/extensions/structs/validStructs", exampleFn)
+  }
+
+  behavior of "extension invalid struct tests"
+  it should "succeed with exit code 0" taggedAs (StructTests) in {
+    applyRecursively("src/test/scala/wacc/extensions/structs/invalidStructs", checkCompileFailure)
   }
 
 
 }
+

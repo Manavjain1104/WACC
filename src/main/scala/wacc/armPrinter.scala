@@ -7,6 +7,7 @@ object armPrinter {
 
   private val NewLineChar = "\n"
 
+
   def print(cg: codeGenerator): String = {
     val sb = new StringBuilder()
     cg.generateProgIR().foreach(ir => sb.append(printIR(ir) + NewLineChar))
@@ -120,7 +121,7 @@ object armPrinter {
       case ADDREG(rd, rn, rm) => {
         val sb = new StringBuilder
         sb.append(printInstr("adds ", List(rd, rn, rm)) + NewLineChar)
-        sb.append(printIR(BRANCH("_errOverflow", LVS)) + NewLineChar)
+        sb.append(printIR(BRANCH("_errOverflow", LVS)))
         sb.toString()
       }
       case SUB(rd, rn, i) => {

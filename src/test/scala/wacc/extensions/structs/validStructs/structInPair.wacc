@@ -1,0 +1,17 @@
+# can have a struct in a pair
+
+# Output:
+# 1
+#
+
+begin
+    struct test {
+        int x;
+        char c
+    }
+
+    struct test t = {1, 'a'};
+    pair(struct test, char) p = newpair(t, 'b');
+    struct test t1 = fst p;
+    println t1->x
+end

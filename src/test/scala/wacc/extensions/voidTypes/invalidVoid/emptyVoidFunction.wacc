@@ -1,0 +1,12 @@
+# Void functions cannot be empty
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+  void f() is
+  end
+  call f()
+end

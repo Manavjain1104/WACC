@@ -1,0 +1,34 @@
+# can nest structs more than one level
+
+# Output:
+# e
+# d
+#
+
+begin
+    struct test1 {
+        int x;
+        char c
+    }
+
+    struct test2 {
+        int x;
+        struct test1 t
+    }
+
+    struct test3 {
+        char c;
+        struct test1 t1;
+        struct test2 t2
+    }
+
+    struct test1 t1 = {1, 'd'};
+    struct test2 t2 = {2, t1};
+    struct test3 t3 = {'e', t1, t2};
+
+    println t3->c;
+    struct test2 inner = t3->t2;
+    struct test1 inner2 = inner->t;
+    println inner2->c
+
+end

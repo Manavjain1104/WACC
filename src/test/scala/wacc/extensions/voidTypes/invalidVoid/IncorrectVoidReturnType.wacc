@@ -1,0 +1,14 @@
+# wrong return type in void function call
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+  void f() is
+    return 0
+  end
+  int x = call f() ;
+  println x
+end
