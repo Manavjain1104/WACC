@@ -118,9 +118,108 @@ class ClassesTests extends AnyFlatSpec {
 
 
 
-  behavior of "extension valid classes tests"
+//  behavior of "extension valid classes tests"
+//  it should "succeed with exit code 0" taggedAs (ClassesTests) in {
+//    applyRecursively("src/test/scala/wacc/extensions/classes/validClasses", exampleFn)
+//
+//  }
+
+  behavior of "valid arrayOfClasses class extension test"
   it should "succeed with exit code 0" taggedAs (ClassesTests) in {
-    applyRecursively("src/test/scala/wacc/extensions/classes/validClasses", exampleFn)
+    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/structs/validStructs/arrayOfClasses.wacc" !!
+
+    val s = new StringBuilder()
+    s.append("21\n")
+    println(s.toString())
+
+    if (s.toString() != bashOutput) {
+      fail("WRONG OUTPUT")
+    }
+
+  }
+
+  behavior of "valid classFunctionality class extension test"
+  it should "succeed with exit code 0" taggedAs (ClassesTests) in {
+    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/structs/validStructs/classFunctionality.wacc" !!
+
+    val s = new StringBuilder()
+    s.append("14\n")
+    println(s.toString())
+
+    if (s.toString() != bashOutput) {
+      fail("WRONG OUTPUT")
+    }
+
+  }
+
+  behavior of "valid classInstantiation class extension test"
+  it should "succeed with exit code 0" taggedAs (ClassesTests) in {
+    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/structs/validStructs/classInstantiation.wacc" !!
+
+    val s = new StringBuilder()
+    s.append("k\n")
+    s.append("k\n")
+    println(s.toString())
+
+    if (s.toString() != bashOutput) {
+      fail("WRONG OUTPUT")
+    }
+
+  }
+
+  behavior of "valid pairOfClasses class extension test"
+  it should "succeed with exit code 0" taggedAs (ClassesTests) in {
+    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/structs/validStructs/pairOfClasses.wacc" !!
+
+    val s = new StringBuilder()
+    s.append("79\n")
+    println(s.toString())
+
+    if (s.toString() != bashOutput) {
+      fail("WRONG OUTPUT")
+    }
+
+  }
+
+  behavior of "valid privatePublic class extension test"
+  it should "succeed with exit code 0" taggedAs (ClassesTests) in {
+    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/structs/validStructs/privatePublic.wacc" !!
+
+    val s = new StringBuilder()
+    s.append("14\n")
+    println(s.toString())
+
+    if (s.toString() != bashOutput) {
+      fail("WRONG OUTPUT")
+    }
+
+  }
+
+  behavior of "valid publicDefault class extension test"
+  it should "succeed with exit code 0" taggedAs (ClassesTests) in {
+    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/structs/validStructs/publicDefault.wacc" !!
+
+    val s = new StringBuilder()
+    s.append("14\n")
+    println(s.toString())
+
+    if (s.toString() != bashOutput) {
+      fail("WRONG OUTPUT")
+    }
+
+  }
+
+  behavior of "valid structInClass class extension test"
+  it should "succeed with exit code 0" taggedAs (ClassesTests) in {
+    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/structs/validStructs/structInClass.wacc" !!
+
+    val s = new StringBuilder()
+    s.append("")
+    println(s.toString())
+
+    if (s.toString() != bashOutput) {
+      fail("WRONG OUTPUT")
+    }
 
   }
 
