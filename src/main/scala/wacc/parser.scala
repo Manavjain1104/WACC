@@ -67,7 +67,6 @@ object parser {
   val structLiter: Parsley[RValue] = StructLiter(OPENCURLY ~> expList <~ CLOSEDCURLY)
   val methodCall: Parsley[RValue] = MethodCall(IDENT <~ DOT, IDENT <~ OPENPAREN, expList <~ CLOSEDPAREN)
   lazy val expList: Parsley[List[Expr]] = sepBy(expr, ",")
-
   // type hierarchy parsers
   lazy val waccType: Parsley[Type] = attempt(arrayType) <|> baseType <|> pairType <|> structType <|> classType
   val structType: Parsley[StructType] = StructType(STRUCT ~> IDENT)
@@ -110,15 +109,38 @@ object parser {
 
   lazy val statement: Parsley[Statement]
   = chain.left1[Statement](statAtoms <|> terminalStat, SEMICOLON #> ConsecStat)
-
-
   // highest level parsers
   lazy val param: Parsley[Param] = Param(waccType, IDENT)
   lazy val paramList: Parsley[List[Param]] = sepBy(param, ",")
+  val call: Parsley[RValue] = Call((CALL ~> IDENT <~ OPENPAREN), expList <~ CLOSEDPAREN)
+  val newPair: Parsley[RValue] = NewPair((NEWPAIR ~> OPENPAREN ~> expr), COMMA ~> expr <~ CLOSEDPAREN)
+  val arrayLiter: Parsley[RValue] = ArrayLiter(OPENSQUAREBRAC ~> expList <~ CLOSESQUAREBRAC)
+  val baseType: Parsley[BaseType] = ((IntType <# "int") <|>
+    (BoolType <# "bool") <|>
+    (CharType <# "char") <|>
+    (StringType <# "string")).label("primitive_base_type")
+  val pairType: Parsley[Type] = PairType(PAIR ~> OPENPAREN ~> pairElemType, COMMA ~> pairElemType <~ CLOSEDPAREN)
+  // Statement Parsers
+  val skip: Parsley[Statement] = Skip <# "skip".label("Statement_beginning")
+  val varDec: Parsley[Statement] = VarDec(waccType, IDENT, ("=" ~> rvalue))
+  val assign: Parsley[Statement] = Assign(lvalue, ("=" ~> rvalue))
+  val read: Parsley[Statement] = Read(READ.label("Statement_beginning") ~> lvalue)
+  val free: Parsley[Statement] = Free(FREE.label("Statement_beginning") ~> expr)
+  val print: Parsley[Statement] = Print(PRINT.label("Statement_beginning") ~> expr)
+  val println: Parsley[Statement] = Println(PRINTLN.label("Statement_beginning") ~> expr)
+  val ifStat: Parsley[Statement] = If((IF.label("Statement_beginning") ~> expr), (THEN ~> statement), (ELSE ~> statement <~ FI))
+  val ifThenStat: Parsley[Statement] = IfThen((IF.label("Statement_beginning") ~> expr), (THEN ~> statement <~ FI))
+  val whileStat: Parsley[Statement] = While((WHILE.label("Statement_beginning") ~> expr), (DO ~> statement <~ DONE))
+  val scopeStat: Parsley[Statement] = ScopeStat(BEGIN.label("Statement_beginning") ~> statement <~ END)
+  val matchStat: Parsley[Statement] = MatchStat(MATCH ~> expr <~ COLON , some(OPENCURLY ~> CASE ~> expr <~ ARROW <~> statement <~ CLOSEDCURLY))
+  val returnStat: Parsley[Statement] = Return(RETURN ~> expr)
+  val exit: Parsley[Statement] = Exit(EXIT ~> expr)
 
-  val voidFunc: Parsley[Func] = Func(attempt(voidType <~> IDENT <~ OPENPAREN), paramList <~ CLOSEDPAREN,
-    IS ~> statement.filter(isValidVoidFuncStatement).explain("Void functions starting here must not have return statements") <~ END)
-  val regFunc: Parsley[Func] = Func(attempt(waccType <~> IDENT <~ OPENPAREN), paramList <~ CLOSEDPAREN,
+  val statAtoms: Parsley[Statement] = skip <|> varDec <|> assign <|> read <|>
+    free <|> attempt(println) <|> print <|> attempt(ifStat) <|> ifThenStat <|>
+    whileStat <|> scopeStat <|> matchStat
+  val func: Parsley[Func]
+  = Func(attempt(waccType <~> IDENT <~ OPENPAREN), paramList <~ CLOSEDPAREN,
     IS ~> statement.filter(isValidFuncStatement).explain("Function body starting here must" +
       " have a return/exit statement on all paths and must end with one") <~ END)
 
@@ -148,6 +170,7 @@ object parser {
         isValidFuncStatement(next)
       case If(_, thenStat, elseStat) =>
         isValidFuncStatement(thenStat) && isValidFuncStatement(elseStat)
+      case IfThen(_, thenStat) => false
       case While(_, doStat) => isValidFuncStatement(doStat)
       case ScopeStat(stat) => isValidFuncStatement(stat)
       case Exit(_) => true

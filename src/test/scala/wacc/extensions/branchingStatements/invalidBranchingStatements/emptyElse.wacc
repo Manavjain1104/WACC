@@ -1,0 +1,16 @@
+# Cannot have empty else case like this
+
+# Exit:
+# 100
+#
+
+# Program:
+
+begin
+  int a = 13;
+  if a == 13
+  then
+    println "correct"
+  else
+  fi
+end
