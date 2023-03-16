@@ -4,6 +4,7 @@ import parsley.Parsley
 import parsley.genericbridges.ParserBridge0
 import parsley.implicits.zipped.{Zipped2, Zipped3, Zipped4}
 import parsley.position.pos
+import wacc.ClassTable.ClassTable
 import wacc.SemTypes.InternalPairSemType
 import wacc.StructTable.StructTable
 
@@ -97,11 +98,14 @@ object AST {
   sealed trait AST
 
   // * Highest Level Program Branch of the Abstract Syntax Tree * //
-  case class Program(structs : List[Struct], funcs: List[Func], stat: Statement)(val pos: (Int, Int))(var structTable : Option[StructTable]) extends AST
+  case class Program(classes : List[Class], structs : List[Struct], funcs: List[Func], stat: Statement)
+                    (val pos: (Int, Int))
+                    (var classTable : Option[ClassTable])
+                    (var structTable : Option[StructTable]) extends AST
 
-  object Program extends ParserBridgePos3[List[Struct], List[Func], Statement, Program] {
-    override def apply(structs: List[Struct], funcs: List[Func], stat: Statement)(pos: (Int, Int)): Program = {
-      new Program(structs, funcs, stat)(pos)(None)
+  object Program extends ParserBridgePos4[List[Class], List[Struct], List[Func], Statement, Program] {
+    override def apply(classes: List[Class], structs: List[Struct], funcs: List[Func], stat: Statement)(pos: (Int, Int)): Program = {
+      new Program(classes, structs, funcs, stat)(pos)(None)(None)
     }
   }
 
@@ -160,6 +164,10 @@ object AST {
 
   case object StructType extends ParserBridgePos1[String, StructType]
 
+  case class ClassType(className : String)(val pos: (Int, Int)) extends Type with PairElemType
+
+  case object ClassType extends ParserBridgePos1[String, ClassType]
+
   // Expr hierarchy
   sealed trait Expr extends RValue
 
@@ -190,6 +198,10 @@ object AST {
   case class IdentExpr(ident: String)(var st: Option[GenericTable[SemTypes.SemType]], val pos: (Int, Int)) extends Expr
 
   object IdentExpr extends ParserBridgeSymPos1[String, Expr]
+
+  case class ThisExpr(ident: String)(var st: Option[GenericTable[SemTypes.SemType]], val pos: (Int, Int)) extends Expr
+
+  object ThisExpr extends ParserBridgeSymPos1[String, Expr]
 
   sealed trait UnopExpr extends Expr
 
@@ -293,10 +305,6 @@ object AST {
 
   object VarDec extends ParserBridgeSymPos3[Type, String, RValue, Statement]
 
-  case class FieldDec(assignType: Type, ident: String)(var symbolTable: Option[GenericTable[SemTypes.SemType]], val pos: (Int, Int)) extends AST
-
-  object FieldDec extends ParserBridgeSymPos2[Type, String, FieldDec]
-
   case class Assign(lvalue: LValue, rvalue: RValue)(val pos: (Int, Int)) extends Statement
 
   object Assign extends ParserBridgePos2[LValue, RValue, Statement]
@@ -345,6 +353,17 @@ object AST {
 
   object ScopeStat extends ParserBridgePos1[Statement, ScopeStat]
 
+  case class MethodStat(ident: String,
+                        methodName : String,
+                        args: List[Expr])
+                       (var st : Option[GenericTable[SemTypes.SemType]], val pos: (Int, Int))(var className : Option[String]) extends Statement
+
+  object MethodStat extends ParserBridgeSymPos3[String, String, List[Expr], Statement] {
+    override def apply(ident: String, methodName: String, args: List[Expr])
+                      (st: Option[GenericTable[SemTypes.SemType]], pos: (Int, Int)): Statement = {
+      new MethodStat(ident, methodName, args)(st, pos)(None)
+    }
+  }
 
   case class ConsecStat(first: Statement, next: Statement) extends Statement
 
@@ -363,6 +382,14 @@ object AST {
 
   object StructElem extends ParserBridgeSymPos2[String, String, StructElem]
 
+  case class ClassElem(ident: String, member: String)(var st: Option[GenericTable[SemTypes.SemType]], val pos: (Int, Int))(var className : Option[String]) extends LValue with Expr
+
+  object ClassElem extends ParserBridgeSymPos2[String, String, ClassElem] {
+    override def apply(ident: String, member: String)(st: Option[GenericTable[SemTypes.SemType]], pos: (Int, Int)): ClassElem = {
+      new ClassElem(ident, member)(st, pos)(None)
+    }
+  }
+
   // RValue branch of AST
   sealed trait RValue extends AST
 
@@ -374,6 +401,10 @@ object AST {
 
   object StructLiter extends ParserBridgePos1[List[Expr], RValue]
 
+  case class NewClass(className : String, exprs: List[Expr])(var symbolTable: Option[GenericTable[SemTypes.SemType]], val pos: (Int, Int)) extends RValue
+
+  object NewClass extends ParserBridgeSymPos2[String, List[Expr], RValue]
+
   case class NewPair(expr1: Expr, expr2: Expr)(val pos: (Int, Int)) extends RValue
 
   object NewPair extends ParserBridgePos2[Expr, Expr, RValue]
@@ -382,13 +413,47 @@ object AST {
 
   object Call extends ParserBridgePos2[String, List[Expr], RValue]
 
+<<<<<<< HEAD
   case class CallStat(ident: String, args: List[Expr])(val pos: (Int, Int)) extends Statement
 
   object CallStat extends ParserBridgePos2[String, List[Expr], Statement]
+=======
+  case class MethodCall(ident: String, methodName: String ,args: List[Expr])(var symbolTable: Option[GenericTable[SemTypes.SemType]], val pos: (Int, Int))(var className : Option[String]) extends RValue
+
+  object MethodCall extends ParserBridgeSymPos3[String, String, List[Expr], RValue] {
+    override def apply(ident: String, methodName: String, args: List[Expr])
+                      (st: Option[GenericTable[SemTypes.SemType]], pos: (Int, Int)): RValue = {
+      new MethodCall(ident, methodName, args)(st, pos)(None)
+    }
+  }
+>>>>>>> Classes
 
   // Struct - AST
   case class Struct(name : String, fields : List[FieldDec])(val pos: (Int, Int)) extends AST
 
   object Struct extends ParserBridgePos2[String, List[FieldDec], Struct]
+
+  case class FieldDec(assignType: Type, ident: String)(var symbolTable: Option[GenericTable[SemTypes.SemType]], val pos: (Int, Int)) extends AST
+
+  object FieldDec extends ParserBridgeSymPos2[Type, String, FieldDec]
+
+  // Classes
+  sealed trait Scope extends AST
+
+  case class Public()(val pos: (Int, Int)) extends Scope
+  object Public extends ParserBridgePos0[Scope]
+
+  case class Private()(val pos: (Int, Int)) extends Scope
+  case object Private extends ParserBridgePos0[Scope]
+
+
+  case class ClassField(scope: Scope, varDec: Statement)(var symbolTable: Option[GenericTable[SemTypes.SemType]], val pos: (Int, Int)) extends AST
+  object ClassField extends ParserBridgeSymPos2[Scope, Statement, ClassField]
+
+  case class Method(scope: Scope, func: Func)(var st: Option[GenericTable[SemTypes.SemType]], val pos: (Int, Int)) extends AST
+  object Method extends ParserBridgeSymPos2[Scope, Func, Method]
+
+  case class Class(name : String, params: List[Param], fields : List[ClassField], methods : List[Method])(var st: Option[GenericTable[SemTypes.SemType]], val pos: (Int, Int))
+  object Class extends ParserBridgeSymPos4[String, List[Param], List[ClassField], List[Method], Class]
 
 }

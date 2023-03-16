@@ -18,49 +18,28 @@ object StructTable {
   }
   val allowedTypes: Set[SemType] = allowedTypeBuilder.toSet
 
-  class StructDef() extends GenericTable[SemType] {
+  class StructDef() {
 
     var structSize = 0
-    private val offsetMap: mutable.Map[String, Int] = mutable.Map.empty[String, Int]
-    private val typeMap: mutable.Map[String, SemType] = mutable.Map.empty[String, SemType]
+    private val structMap : mutable.Map[String, (SemType, Int)] = mutable.Map.empty[String, (SemType, Int)]
     private val keys : mutable.ListBuffer[String] = mutable.ListBuffer.empty[String]
 
-    def addOffset(field: String, offset: Int) = offsetMap(field) = offset
+    def getOffset(field: String): Option[Int] = {
+      val opVal = structMap.get(field)
+      if (opVal.isDefined) Some(opVal.get._2) else None
+    }
 
-    def getOffset(field: String) = offsetMap.get(field)
+    def lookup(field: String) : Option[SemType] = {
+      val value = structMap.get(field)
+      if (value.isDefined) Some(value.get._1) else None
+    }
 
-    def add(field: String, tType: SemType) = {
-      typeMap(field) = tType
+    def add(field: String, tType: SemType, offset : Int) : Unit = {
+      structMap(field) = (tType, offset)
       keys.append(field)
     }
 
     def getKeys(): List[String] = keys.toList
-
-    override def lookup(name: String): Option[SemType] = typeMap.get(name)
-
-    override def lookupAll(name: String): Option[SemType] = {
-      assert(assertion = false, "LookupAll executed in Struct table")
-      None
-    }
-
-    override def getNestedEntries(): Int = {
-      assert(assertion = false, "getNestedEntries executed in Struct table")
-      0
-    }
-
-    override def getParent(): Option[GenericTable[SemType]] = {
-      assert(assertion = false, "LookupAll executed in Struct table")
-      None
-    }
-
-    override def incrementCount(): Unit = {
-      assert(assertion = false, "LookupAll executed in Struct table")
-    }
-
-    override def getCount(): Int = {
-      assert(assertion = false, "LookupAll executed in Struct table")
-      -1
-    }
   }
 
   class StructTable() {

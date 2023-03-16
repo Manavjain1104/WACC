@@ -1,0 +1,23 @@
+# Class instantiation with methods
+
+# Output:
+# k
+# k
+#
+
+begin
+  class Test2(int x, int y) {
+    char c = 'k'
+
+    char get(int x) is
+      return this.c
+    end
+
+  }
+
+
+  class Test2 m1 = new Test2(69, 79);
+  println m1.c;
+  char z = m1.get(5);
+  println z
+end
