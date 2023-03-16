@@ -1,7 +1,6 @@
 package wacc
 
 import wacc.AST.{Param, Public, Scope, VarDec}
-import wacc.SemTypes.CharSemType
 
 import scala.collection.mutable.ListBuffer
 
