@@ -73,9 +73,9 @@ object ClassTable {
     }
 
     def addFieldOffsetScope(name : String, offset : Int, scope: Scope) : Unit
-    = addOffsetScope(CLASS_FIELD_PREFIX + name, Some(offset), scope)
+      = addOffsetScope(CLASS_FIELD_PREFIX + name, Some(offset), scope)
     def addMethodOffsetScope(name : String, scope: Scope) : Unit
-    = addOffsetScope(CLASS_METHOD_PREFIX + name, None, scope)
+      = addOffsetScope(CLASS_METHOD_PREFIX + name, None, scope)
 
     private def addOffsetScope(name : String,  offset : Option[Int], scope: Scope) : Unit = offsetScope.add(name, (offset, scope))
 

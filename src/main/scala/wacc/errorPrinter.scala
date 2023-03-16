@@ -17,7 +17,7 @@ object errorPrinter {
                              syntaxError: Option[SyntaxError],
                              filename: String, exitCode: Int): Unit = {
     if (exitCode == OK_EXIT_CODE) {
-      //      println("---- Compilation success. Exit code 0 returned ---- \n")
+//      println("---- Compilation success. Exit code 0 returned ---- \n")
       return
     }
 
@@ -229,7 +229,7 @@ object errorPrinter {
       var col = pos._2 - 1
       val len = ident.length
       while (line < fileLines.length && ((!fileLines(line).slice(col, col + len).equals(ident))
-        || ((col + len) < fileLines(line).length && fileLines(line)(col + len).isLetter))) {
+          || ((col + len) < fileLines(line).length && fileLines(line)(col + len).isLetter))) {
         col += 1
         if (col >= fileLines(line).length || fileLines(line).charAt(col) == '\n') {
           col = 0
