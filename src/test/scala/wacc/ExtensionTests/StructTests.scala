@@ -89,7 +89,7 @@ class StructTests extends AnyFlatSpec {
     if (exitCode != "100" || exitCode != "200") {
 
       if (s.toString() != bashOutputNoAddr) {
-        //fail("Wrong output")
+        fail("Wrong output")
       }
     }
   }
