@@ -118,11 +118,11 @@ class ClassesTests extends AnyFlatSpec {
 
 
 
-//  behavior of "extension valid classes tests"
-//  it should "succeed with exit code 0" taggedAs (ClassesTests) in {
-//    applyRecursively("src/test/scala/wacc/extensions/classes/validClasses", exampleFn)
-//
-//  }
+  //  behavior of "extension valid classes tests"
+  //  it should "succeed with exit code 0" taggedAs (ClassesTests) in {
+  //    applyRecursively("src/test/scala/wacc/extensions/classes/validClasses", exampleFn)
+  //
+  //  }
 
   behavior of "valid arrayOfClasses class extension test"
   it should "succeed with exit code 0" taggedAs (ClassesTests) in {
