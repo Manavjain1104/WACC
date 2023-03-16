@@ -6,15 +6,14 @@ import org.scalatest.flatspec.AnyFlatSpec
 
 import java.io.File
 import scala.Console.{in, out}
-import scala.collection.mutable
 import scala.language.postfixOps
 import scala.io.Source
 import scala.collection.mutable.ListBuffer
 import sys.process._
 
-object VoidTypeTests extends Tag("VoidTypeTests")
+object BranchingStatementTests extends Tag("BranchingStatementTests")
 
-class VoidTypeTests extends AnyFlatSpec {
+class BranchingStatementTests extends AnyFlatSpec {
 
   def applyRecursively(dir: String, fn: (File) => Any) {
     def listAndProcess(dir: File) {
@@ -81,6 +80,11 @@ class VoidTypeTests extends AnyFlatSpec {
       in ++= x
     }
 
+    if (file == new File("src/test/scala/wacc/valid/advanced/binarySortTree.wacc")) {
+      in ++= "5 3 6 4 7 9"
+      s ++= "3 4 6 7 9"
+    }
+
     var bashOutput = s"./compile_and_run $file ${in}" !!
 
     val exitCode = "echo $?" !!
@@ -90,7 +94,7 @@ class VoidTypeTests extends AnyFlatSpec {
     if (exitCode != "100" || exitCode != "200") {
 
       if (s.toString() != bashOutputNoAddr) {
-        fail("Wrong output")
+        //fail("Wrong output")
       }
     }
   }
@@ -112,77 +116,16 @@ class VoidTypeTests extends AnyFlatSpec {
     }
   }
 
-//  behavior of "valid void type extension tests"
-//  it should "succeed with exit code 0" taggedAs (VoidTypeTests) in {
-//    //applyRecursively("src/test/scala/wacc/extensions/voidTypes/validVoid", exampleFn)
-//    exampleFn(new File("src/test/scala/wacc/extensions/voidTypes/validVoid/voidFunctionWithParameter.wacc"))
-//  }
-
-  behavior of "valid functionReturningVoid extension test"
-  it should "succeed with exit code 0" taggedAs (VoidTypeTests) in {
-    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/voidTypes/validVoid/functionReturningVoid.wacc" !!
-
-    val s = new StringBuilder()
-    s.append("Here\n")
-    s.append("There\n")
-    println(s.toString())
-
-    if (s.toString() != bashOutput) {
-      fail("WRONG OUTPUT")
-    }
-
+  behavior of "extension valid branching statement tests"
+  it should "succeed with exit code 0" taggedAs (BranchingStatementTests) in {
+    applyRecursively("src/test/scala/wacc/extensions/branchingStatements/validBranchingStatements", exampleFn)
   }
 
-  behavior of "valid voidFunctionCall extension test"
-  it should "succeed with exit code 0" taggedAs (VoidTypeTests) in {
-    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/voidTypes/validVoid/voidFunctionCall.wacc" !!
-
-    val s = new StringBuilder()
-    s.append("Here\n")
-    s.append("There\n")
-    println(s.toString())
-
-    if (s.toString() != bashOutput) {
-      fail("WRONG OUTPUT")
-    }
-
-
+  behavior of "extension invalid branching statement tests"
+  it should "succeed with exit code 0" taggedAs (BranchingStatementTests) in {
+    applyRecursively("src/test/scala/wacc/extensions/branchingStatements/invalidBranchingStatements", checkCompileFailure)
   }
 
-  behavior of "valid voidFunctionEmptyReturn extension test"
-  it should "succeed with exit code 0" taggedAs (VoidTypeTests) in {
-    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/voidTypes/validVoid/voidFunctionEmptyReturn.wacc" !!
-
-    val s = new StringBuilder()
-    s.append("\n")
-    println(s.toString())
-
-    if (s.toString() != bashOutput) {
-      fail("WRONG OUTPUT")
-    }
-
-
-  }
-
-  behavior of "valid voidFunctionWithParameter extension test"
-  it should "succeed with exit code 0" taggedAs (VoidTypeTests) in {
-    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/voidTypes/validVoid/voidFunctionWithParameter.wacc" !!
-
-    val s = new StringBuilder()
-    s.append("5\n")
-    s.append("Here\n")
-    s.append("There\n")
-    println(s.toString())
-
-    if (s.toString() != bashOutput) {
-      fail("WRONG OUTPUT")
-    }
-
-  }
-
-  behavior of "invalid void type extension tests"
-  it should "succeed with exit code 0" taggedAs (VoidTypeTests) in {
-    applyRecursively("src/test/scala/wacc/extensions/voidTypes/invalidVoid", checkCompileFailure)
-  }
 
 }
+

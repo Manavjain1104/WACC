@@ -341,6 +341,14 @@ object AST {
     }
   }
 
+  case class MatchStat(cond: Expr, condStatList: List[(Expr, Statement)])(val pos: (Int, Int)) extends Statement
+
+  object MatchStat extends ParserBridgePos2[Expr, List[(Expr, Statement)], Statement]
+
+  case class IfThen(cond: Expr, thenStat: Statement)(val pos: (Int, Int)) extends Statement
+
+  object IfThen extends ParserBridgePos2[Expr, Statement, Statement]
+
   case class If(cond: Expr, thenStat: Statement, elseStat: Statement)(val pos: (Int, Int)) extends Statement
 
   object If extends ParserBridgePos3[Expr, Statement, Statement, Statement]

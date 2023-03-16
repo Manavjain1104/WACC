@@ -161,10 +161,11 @@ class semanticAnalyser {
                                classDef: ClassDefinition,
                                paramNames: mutable.Set[String]): Option[Int] = {
     var offset = 0
+    var err =  false
     for (param <- params) {
       if (paramNames.contains(param.ident)) {
         errorLog += DuplicateIdentifier(param.pos, param.ident, Some("Duplicate identifier found in class definition"))
-        return None // duplicate param names
+        err = true
       } else {
 
         paramNames.add(param.ident)
@@ -177,7 +178,7 @@ class semanticAnalyser {
         offset += size
       }
     }
-    Some(offset)
+    if (err) None else Some(offset)
   }
 
   private def checkStruct(struct: Struct, structTable: StructTable): Unit = {
@@ -761,7 +762,7 @@ class semanticAnalyser {
                             Some("Wrong number of method arguments"))
                           return Some(InternalPairSemType)
                         }
-
+                        var err  = false
                         // parameters and arguments type match
                         for (i <- args.indices) {
                           val expType = checkExpr(args(i), symbolTable)
@@ -770,11 +771,11 @@ class semanticAnalyser {
                             errorLog += new TypeError(argPos._1,
                               Set(paramTypes(i)), expType.get,
                               Some("Argument type does not match with parameter"))(argPos._2)
-                            return Some(InternalPairSemType)
+                              err = true
                           }
                         }
                         mc.symbolTable = Some(symbolTable)
-                        Some(retType)
+                        if (err) Some(InternalPairSemType) else Some(retType)
 
                       case Private() =>
                         errorLog +=
@@ -1145,8 +1146,26 @@ class semanticAnalyser {
   }
 
   private def checkStatement(node: Statement, symbolTable: GenericTable[SemType], prefix: Option[String]): Option[SemType] = {
+    var err = false
     node match {
       case Skip => Some(InternalPairSemType)
+      case MatchStat(cond, condStatList) =>{
+        val condType: Option[SemType] = checkExpr(cond, symbolTable)
+        for (condStat <- condStatList) {
+          checkStatement(condStat._2, symbolTable, None)
+          val condStatType: Option[SemType] = checkExpr(condStat._1, symbolTable)
+          if (!matchTypes(condType.get, condStatType.get)) {
+            val condPos = getExprPos(condStat._1)
+            errorLog += TypeError(condPos._1, Set(condStatType.get), condType.get, Some("Expression Type doesn't match type of match expression"))
+            err = true
+          }
+        }
+        if (err) {
+          Some(InternalPairSemType)
+        } else {
+          condType
+        }
+      }
       case varDec@VarDec(assignType, ident, rvalue) =>
 
         if (symbolTable.lookup(ident).isDefined) {
@@ -1364,6 +1383,7 @@ class semanticAnalyser {
                           return Some(InternalPairSemType)
                         }
 
+                        var err = false
                         // parameters and arguments type match
                         for (i <- args.indices) {
                           val expType = checkExpr(args(i), symbolTable)
@@ -1372,11 +1392,13 @@ class semanticAnalyser {
                             errorLog += new TypeError(argPos._1,
                               Set(paramTypes(i)), expType.get,
                               Some("Argument type does not match with parameter"))(argPos._2)
-                            return Some(InternalPairSemType)
+                              err = true
+
                           }
                         }
                         mc.st = Some(symbolTable)
-                        Some(retType)
+                        if (err) Some(InternalPairSemType) else Some(retType)
+
 
                       case Private() =>
                         errorLog +=
@@ -1427,6 +1449,16 @@ class semanticAnalyser {
           val elseScope = new SymbolTable(Some(symbolTable))
           checkStatement(elseStat, elseScope, prefix)
           return checkStatement(thenStat, thenScope, prefix)
+        }
+        val condPos = getExprPos(cond)
+        errorLog += TypeError(condPos._1, Set(BoolSemType), condType.get, Some("If expects a bool condition type"))
+        Some(InternalPairSemType)
+
+      case IfThen(cond, thenStat) =>
+        val condType: Option[SemType] = checkExpr(cond, symbolTable)
+        if (matchTypes(condType.get, BoolSemType)) {
+          val thenScope = new SymbolTable(Some(symbolTable))
+          return checkStatement(thenStat, thenScope, None)
         }
         val condPos = getExprPos(cond)
         errorLog += TypeError(condPos._1, Set(BoolSemType), condType.get, Some("If expects a bool condition type"))

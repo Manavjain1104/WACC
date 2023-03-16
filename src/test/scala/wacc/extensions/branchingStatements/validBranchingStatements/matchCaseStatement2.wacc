@@ -1,0 +1,14 @@
+# match on a pair element
+
+# Output:
+# it is a
+#
+
+begin
+  pair(char, char) p = newpair('a', 'b');
+  char c = fst p;
+
+  match c:
+    {case 'a' => println "it is a"}
+    {case 'b' => println "it is b"}
+end
