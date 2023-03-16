@@ -6,15 +6,14 @@ import org.scalatest.flatspec.AnyFlatSpec
 
 import java.io.File
 import scala.Console.{in, out}
-import scala.collection.mutable
 import scala.language.postfixOps
 import scala.io.Source
 import scala.collection.mutable.ListBuffer
 import sys.process._
 
-object VoidTypeTests extends Tag("VoidTypeTests")
+object ClassesTests extends Tag("ClassesTests")
 
-class VoidTypeTests extends AnyFlatSpec {
+class ClassesTests extends AnyFlatSpec {
 
   def applyRecursively(dir: String, fn: (File) => Any) {
     def listAndProcess(dir: File) {
@@ -81,6 +80,11 @@ class VoidTypeTests extends AnyFlatSpec {
       in ++= x
     }
 
+    if (file == new File("src/test/scala/wacc/valid/advanced/binarySortTree.wacc")) {
+      in ++= "5 3 6 4 7 9"
+      s ++= "3 4 6 7 9"
+    }
+
     var bashOutput = s"./compile_and_run $file ${in}" !!
 
     val exitCode = "echo $?" !!
@@ -104,7 +108,7 @@ class VoidTypeTests extends AnyFlatSpec {
 
     for (a <- lb.indices) {
       if (lb(a).startsWith("# Exit")) {
-        val exitCode = lb(a + 1).drop(2)
+        val exitCode = lb(a+1).drop(2)
         if (exitCode != 0) {
           assert(true)
         }
@@ -112,19 +116,20 @@ class VoidTypeTests extends AnyFlatSpec {
     }
   }
 
-//  behavior of "valid void type extension tests"
-//  it should "succeed with exit code 0" taggedAs (VoidTypeTests) in {
-//    //applyRecursively("src/test/scala/wacc/extensions/voidTypes/validVoid", exampleFn)
-//    exampleFn(new File("src/test/scala/wacc/extensions/voidTypes/validVoid/voidFunctionWithParameter.wacc"))
-//  }
 
-  behavior of "valid functionReturningVoid extension test"
-  it should "succeed with exit code 0" taggedAs (VoidTypeTests) in {
-    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/voidTypes/validVoid/functionReturningVoid.wacc" !!
+
+  //  behavior of "extension valid classes tests"
+  //  it should "succeed with exit code 0" taggedAs (ClassesTests) in {
+  //    applyRecursively("src/test/scala/wacc/extensions/classes/validClasses", exampleFn)
+  //
+  //  }
+
+  behavior of "valid arrayOfClasses class extension test"
+  it should "succeed with exit code 0" taggedAs (ClassesTests) in {
+    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/classes/validClasses/arrayOfClasses.wacc" !!
 
     val s = new StringBuilder()
-    s.append("Here\n")
-    s.append("There\n")
+    s.append("21\n")
     println(s.toString())
 
     if (s.toString() != bashOutput) {
@@ -133,45 +138,12 @@ class VoidTypeTests extends AnyFlatSpec {
 
   }
 
-  behavior of "valid voidFunctionCall extension test"
-  it should "succeed with exit code 0" taggedAs (VoidTypeTests) in {
-    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/voidTypes/validVoid/voidFunctionCall.wacc" !!
+  behavior of "valid classFunctionality class extension test"
+  it should "succeed with exit code 0" taggedAs (ClassesTests) in {
+    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/classes/validClasses/classFunctionality.wacc" !!
 
     val s = new StringBuilder()
-    s.append("Here\n")
-    s.append("There\n")
-    println(s.toString())
-
-    if (s.toString() != bashOutput) {
-      fail("WRONG OUTPUT")
-    }
-
-
-  }
-
-  behavior of "valid voidFunctionEmptyReturn extension test"
-  it should "succeed with exit code 0" taggedAs (VoidTypeTests) in {
-    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/voidTypes/validVoid/voidFunctionEmptyReturn.wacc" !!
-
-    val s = new StringBuilder()
-    s.append("\n")
-    println(s.toString())
-
-    if (s.toString() != bashOutput) {
-      fail("WRONG OUTPUT")
-    }
-
-
-  }
-
-  behavior of "valid voidFunctionWithParameter extension test"
-  it should "succeed with exit code 0" taggedAs (VoidTypeTests) in {
-    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/voidTypes/validVoid/voidFunctionWithParameter.wacc" !!
-
-    val s = new StringBuilder()
-    s.append("5\n")
-    s.append("Here\n")
-    s.append("There\n")
+    s.append("14\n")
     println(s.toString())
 
     if (s.toString() != bashOutput) {
@@ -180,9 +152,82 @@ class VoidTypeTests extends AnyFlatSpec {
 
   }
 
-  behavior of "invalid void type extension tests"
-  it should "succeed with exit code 0" taggedAs (VoidTypeTests) in {
-    applyRecursively("src/test/scala/wacc/extensions/voidTypes/invalidVoid", checkCompileFailure)
+  behavior of "valid classInstantiation class extension test"
+  it should "succeed with exit code 0" taggedAs (ClassesTests) in {
+    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/classes/validClasses/classInstantiation.wacc" !!
+
+    val s = new StringBuilder()
+    s.append("k\n")
+    s.append("k\n")
+    println(s.toString())
+
+    if (s.toString() != bashOutput) {
+      fail("WRONG OUTPUT")
+    }
+
   }
+
+  behavior of "valid pairOfClasses class extension test"
+  it should "succeed with exit code 0" taggedAs (ClassesTests) in {
+    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/classes/validClasses/pairOfClasses.wacc" !!
+
+    val s = new StringBuilder()
+    s.append("79\n")
+    println(s.toString())
+
+    if (s.toString() != bashOutput) {
+      fail("WRONG OUTPUT")
+    }
+
+  }
+
+  behavior of "valid privatePublic class extension test"
+  it should "succeed with exit code 0" taggedAs (ClassesTests) in {
+    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/classes/validClasses/privatePublic.wacc" !!
+
+    val s = new StringBuilder()
+    s.append("14\n")
+    println(s.toString())
+
+    if (s.toString() != bashOutput) {
+      fail("WRONG OUTPUT")
+    }
+
+  }
+
+  behavior of "valid publicDefault class extension test"
+  it should "succeed with exit code 0" taggedAs (ClassesTests) in {
+    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/classes/validClasses/publicDefault.wacc" !!
+
+    val s = new StringBuilder()
+    s.append("14\n")
+    println(s.toString())
+
+    if (s.toString() != bashOutput) {
+      fail("WRONG OUTPUT")
+    }
+
+  }
+
+  behavior of "valid structInClass class extension test"
+  it should "succeed with exit code 0" taggedAs (ClassesTests) in {
+    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/classes/validClasses/structInClass.wacc" !!
+
+    val s = new StringBuilder()
+    s.append("")
+    println(s.toString())
+
+    if (s.toString() != bashOutput) {
+      fail("WRONG OUTPUT")
+    }
+
+  }
+
+  behavior of "extension invalid struct tests"
+  it should "succeed with exit code 0" taggedAs (ClassesTests) in {
+    applyRecursively("src/test/scala/wacc/extensions/classes/invalidClasses", checkCompileFailure)
+  }
+
 
 }
+

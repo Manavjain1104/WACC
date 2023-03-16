@@ -1,7 +1,5 @@
 package wacc.ExtensionTests
 
-package wacc.ExtensionTests
-
 import org.scalatest.Assertions.fail
 import org.scalatest.Tag
 import org.scalatest.flatspec.AnyFlatSpec
@@ -13,7 +11,7 @@ import scala.io.Source
 import scala.collection.mutable.ListBuffer
 import sys.process._
 
-object VoidTypeTests extends Tag("IfExprTests")
+object IfExpressionTests extends Tag("IfExpressionTests")
 
 class IfExpressionTests extends AnyFlatSpec {
 
@@ -111,13 +109,13 @@ class IfExpressionTests extends AnyFlatSpec {
   }
 
   behavior of "valid if expression extension tests"
-  it should "succeed with exit code 0" in {
-    applyRecursively("src/test/scala/wacc/extensions/ifExpressions/validIfExprs", testDirectory)
+  it should "succeed with exit code 0" taggedAs(IfExpressionTests) in {
+    applyRecursively("/src/test/scala/wacc/extensions/ifExpressions/validIfExprs", testDirectory)
   }
 
   behavior of "invalid if expression extension tests"
-  it should "succeed with exit code 0" in {
-    applyRecursively("src/test/scala/wacc/extensions/ifExpressions/invalidIfExprs", checkCompileFailure)
+  it should "succeed with exit code 0" taggedAs(IfExpressionTests) in {
+    applyRecursively("/src/test/scala/wacc/extensions/ifExpressions/invalidIfExprs", checkCompileFailure)
   }
 
 }

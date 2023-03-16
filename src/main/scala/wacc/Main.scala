@@ -6,9 +6,8 @@ import wacc.SemTypes.SemType
 import wacc.lexer.fully
 import wacc.parser.program
 import wacc.errorPrinter._
-import wacc.StructTable._
 
-import java.io.{File, PrintWriter}
+import java.io.{File, FileNotFoundException, IOException, PrintWriter}
 import scala.collection.mutable.ListBuffer
 
 object Main {
@@ -21,10 +20,27 @@ object Main {
 
   def main(args: Array[String]): Unit = {
 
-//    println("-- Compiling...")
+    //    println("-- Compiling...")
 
     val sem: semanticAnalyser = new semanticAnalyser
-    val file: File = new File(args.head)
+
+    var file: File = new File("")
+    try {
+      file = new File(args.head)
+    } catch {
+      case e: FileNotFoundException => {
+        System.err.println("Couldn't find that file.")
+        sys.exit(-1)
+      }
+      case e: IOException => {
+        System.err.println("Had an IOException trying to read that file")
+        sys.exit(-1)
+      }
+      case _: Exception => {
+        System.err.println("Error opening file")
+        sys.exit(-1)
+      }
+    }
 
     implicit val eb: error.SyntaxErrorBuilder = new error.SyntaxErrorBuilder
 
@@ -45,8 +61,7 @@ object Main {
         value match {
           case Success(prog) => {
             val topST = new SymbolTable[SemType](None)
-            val structTable = new StructTable()
-            val errLog: Option[ListBuffer[error.SemanticError]] = sem.checkProgram(prog, topST, structTable)
+            val errLog: Option[ListBuffer[error.SemanticError]] = sem.checkProgram(prog, topST)
 
             if (errLog.isDefined) {
               if (args.length > 1) {

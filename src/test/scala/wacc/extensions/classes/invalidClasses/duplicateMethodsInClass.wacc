@@ -1,0 +1,22 @@
+# Duplicate method names within same class
+
+# Exit:
+# 200
+#
+
+begin
+  class Test(int x, int y) {
+    char c = 'k'
+
+    char get(int x) is
+      return this.c
+    end
+
+    int get(char y) is
+      return 5
+    end
+
+  }
+
+  println "hi"
+end
