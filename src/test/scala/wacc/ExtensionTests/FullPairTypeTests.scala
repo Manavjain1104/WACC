@@ -108,7 +108,7 @@ class FullPairTypeTests extends AnyFlatSpec {
 
     val exitCode = "echo $?" !!
 
-    if (exitCode != 0) {
+    if (exitCode != "0") {
       assert(true)
     }
 

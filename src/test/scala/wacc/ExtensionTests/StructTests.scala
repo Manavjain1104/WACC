@@ -5,22 +5,23 @@ import org.scalatest.Tag
 import org.scalatest.flatspec.AnyFlatSpec
 
 import java.io.File
-import scala.Console.out
-import scala.collection.mutable.ListBuffer
-import scala.io.Source
+import scala.Console.{in, out}
 import scala.language.postfixOps
+import scala.io.Source
+import scala.collection.mutable.ListBuffer
 import sys.process._
 
-object InliningTests extends Tag("InliningTests")
-class InliningTests extends AnyFlatSpec {
+object StructTests extends Tag("StructTests")
 
-  def applyRecursively(lookFor: String, dir: String, fn: (String, File) => Any) {
+class StructTests extends AnyFlatSpec {
+
+  def applyRecursively(dir: String, fn: (File) => Any) {
     def listAndProcess(dir: File) {
       dir.listFiles match {
         case null => out.println("exception: dir cannot be listed: " + dir.getPath); List[File]()
         case files => files.toList.sortBy(_.getName).foreach(file => {
           println(s"processing $file")
-          fn(lookFor, file)
+          fn(file)
           if (!java.nio.file.Files.isSymbolicLink(file.toPath) && file.isDirectory) listAndProcess(file)
         })
       }
@@ -30,52 +31,211 @@ class InliningTests extends AnyFlatSpec {
     listAndProcess(new File(dir))
   }
 
-  def checkInlinable(lookFor: String, file: File) = {
-    s"./compile $file" !!
+  def exampleFn(file: File) = {
+    val source = Source.fromFile(file)
+    val lb = ListBuffer[String]()
+    val out = ListBuffer[String]()
+    val input = ListBuffer[String]()
 
-    val assemblyFile = new File(file.getName.dropRight(4) + "s")
+    for (line <- source.getLines())
+      lb.append(line)
+    source.close()
+    var start = 0
+    var end = 0
 
-    for (line <- Source.fromFile(assemblyFile).getLines) {
-      if (line.contains(lookFor)) {
-        fail("Should be inlinable but isn't")
+    for (a <- lb.indices) {
+      if (lb(a).startsWith("# Output") && lb(a + 1) == "") {
+        start = a
+        end = a
+      }
+      if (lb(a).startsWith("# Output")) {
+        start = a + 1
+      }
+      if (lb(a) == "#") {
+        end = a
+      }
+    }
+    for (a <- start until end) {
+      out.append(lb(a).drop(2))
+      out.append("\n")
+    }
+
+    var inputLine = 0
+
+    for (a <- lb.indices) {
+      if (lb(a).startsWith("# Input")) {
+        inputLine = a
+      }
+    }
+    input.append(lb(inputLine).drop(9))
+
+
+    val s = new StringBuilder()
+    for (x <- out) {
+      s ++= x
+    }
+
+    val in = new StringBuilder()
+    for (x <- input) {
+      in ++= x
+    }
+
+    var bashOutput = s"./compile_and_run $file ${in}" !!
+
+    val exitCode = "echo $?" !!
+
+    var bashOutputNoAddr = bashOutput.replaceAll("\\b0x\\w*", "#addrs#")
+
+    if (exitCode != "100" || exitCode != "200") {
+
+      if (s.toString() != bashOutputNoAddr) {
+        fail("Wrong output")
       }
     }
   }
 
-  def checkNonInlinable(lookFor: String, file: File) = {
-    s"./compile $file" !!
+  def checkCompileFailure(file: File): Unit = {
+    val source = Source.fromFile(file)
+    val lb = ListBuffer[String]()
+    for (line <- source.getLines())
+      lb.append(line)
+    source.close()
 
-    val assemblyFile = new File(file.getName.dropRight(4) + "s")
-
-    var contains = false
-    for (line <- Source.fromFile(assemblyFile).getLines) {
-      if (line.contains(lookFor)) {
-        contains = true
+    for (a <- lb.indices) {
+      if (lb(a).startsWith("# Exit")) {
+        val exitCode = lb(a+1).drop(2)
+        if (exitCode != "0") {
+          assert(true)
+        }
       }
     }
-    if (!contains) {
-      fail("Should be non-inlinable but is inlinable")
+  }
+
+
+
+  //  behavior of "extension valid struct tests"
+  //  it should "succeed with exit code 0" taggedAs (StructTests) in {
+  //    applyRecursively("src/test/scala/wacc/extensions/structs/validStructs", exampleFn)
+  //  }
+
+  behavior of "valid elementAccess struct extension test"
+  it should "succeed with exit code 0" taggedAs (StructTests) in {
+    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/structs/validStructs/elementAccess.wacc" !!
+
+    val s = new StringBuilder()
+    s.append("d\n")
+    s.append("1\n")
+    println(s.toString())
+
+    if (s.toString() != bashOutput) {
+      fail("WRONG OUTPUT")
     }
+
   }
 
-  behavior of "extension inlinable test 1"
-  it should "succeed with exit code 0" taggedAs (InliningTests) in {
-    checkInlinable("neg", new File("src/test/scala/wacc/extensions/inlining/inlinable/inlinable1.wacc"))
+  behavior of "valid nestedStructs1 struct extension test"
+  it should "succeed with exit code 0" taggedAs (StructTests) in {
+    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/structs/validStructs/nestedStructs1.wacc" !!
+
+    val s = new StringBuilder()
+    s.append("1\n")
+    println(s.toString())
+
+    if (s.toString() != bashOutput) {
+      fail("WRONG OUTPUT")
+    }
+
   }
 
-  behavior of "extension inlinable test 2"
-  it should "succeed with exit code 0" taggedAs (InliningTests) in {
-    checkInlinable("inc", new File("src/test/scala/wacc/extensions/inlining/inlinable/inlinable2.wacc"))
+  behavior of "valid nestedStructs2 struct extension test"
+  it should "succeed with exit code 0" taggedAs (StructTests) in {
+    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/structs/validStructs/nestedStructs2.wacc" !!
+
+    val s = new StringBuilder()
+    s.append("e\n")
+    s.append("d\n")
+    println(s.toString())
+
+    if (s.toString() != bashOutput) {
+      fail("WRONG OUTPUT")
+    }
+
   }
 
-  behavior of "extension noninlinable test"
-  it should "succeed with exit code 0" taggedAs (InliningTests) in {
-    checkNonInlinable("rec", new File("src/test/scala/wacc/extensions/inlining/nonInlinable/nonInlinable.wacc"))
+  behavior of "valid passStructElemToFunction struct extension test"
+  it should "succeed with exit code 0" taggedAs (StructTests) in {
+    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/structs/validStructs/passStructElemToFunction.wacc" !!
+
+    val s = new StringBuilder()
+    s.append("a\n")
+    s.append("1\n")
+    println(s.toString())
+
+    if (s.toString() != bashOutput) {
+      fail("WRONG OUTPUT")
+    }
+
+  }
+  behavior of "valid readStructElement struct extension test"
+  it should "succeed with exit code 0" taggedAs (StructTests) in {
+    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/structs/validStructs/readStructElement.wacc" !!
+
+    val s = new StringBuilder()
+    s.append("")
+    println(s.toString())
+
+    if (s.toString() != bashOutput) {
+      fail("WRONG OUTPUT")
+    }
+
+  }
+  behavior of "valid structInArray struct extension test"
+  it should "succeed with exit code 0" taggedAs (StructTests) in {
+    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/structs/validStructs/structInArray.wacc" !!
+
+    val s = new StringBuilder()
+    s.append("b\n")
+    println(s.toString())
+
+    if (s.toString() != bashOutput) {
+      fail("WRONG OUTPUT")
+    }
+
   }
 
-  behavior of "extension too long to inline test"
-  it should "succeed with exit code 0" taggedAs (InliningTests) in {
-    checkNonInlinable("wacc_f", new File("src/test/scala/wacc/extensions/inlining/nonInlinable/tooLong.wacc"))
+  behavior of "valid structInPair struct extension test"
+  it should "succeed with exit code 0" taggedAs (StructTests) in {
+    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/structs/validStructs/structInPair.wacc" !!
+
+    val s = new StringBuilder()
+    s.append("1\n")
+    println(s.toString())
+
+    if (s.toString() != bashOutput) {
+      fail("WRONG OUTPUT")
+    }
+
   }
+
+  behavior of "valid structInstantiation struct extension test"
+  it should "succeed with exit code 0" taggedAs (StructTests) in {
+    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/structs/validStructs/structInstantiation.wacc" !!
+
+    val s = new StringBuilder()
+    s.append("")
+    println(s.toString())
+
+    if (s.toString() != bashOutput) {
+      fail("WRONG OUTPUT")
+    }
+
+  }
+
+  behavior of "extension invalid struct tests"
+  it should "succeed with exit code 0" taggedAs (StructTests) in {
+    applyRecursively("src/test/scala/wacc/extensions/structs/invalidStructs", checkCompileFailure)
+  }
+
 
 }
+
