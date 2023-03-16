@@ -105,7 +105,7 @@ object parser {
 
   val statAtoms: Parsley[Statement] = skip <|> attempt(callStat) <|> vardec <|> attempt(methodStat) <|> assign <|> read <|>
     free <|> attempt(println) <|> print <|>
-      ifStat <|> whileStat <|> scopeStat
+    ifStat <|> whileStat <|> scopeStat
 
 
   lazy val statement: Parsley[Statement]
