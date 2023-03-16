@@ -113,13 +113,13 @@ class ValidTests extends AnyFlatSpec {
 
   behavior of "valid binarySortTree advanced test"
   it should "succeed with exit code 0" taggedAs(ValidTests) in {
-    exampleFn(new File("/src/test/scala/wacc/valid/advanced/binarySortTree.wacc"))
+    exampleFn(new File("src/test/scala/wacc/valid/advanced/binarySortTree.wacc"))
   }
 
   behavior of "valid array tests"
   it should "succeed with exit code 0" taggedAs(ValidTests) in {
     //applyRecursively("src/test/scala/wacc/valid/array/", exampleFn)
-    exampleFn(new File("/src/test/scala/wacc/valid/array/emptyArrayScope.wacc"))
+    exampleFn(new File("src/test/scala/wacc/valid/array/emptyArrayScope.wacc"))
   }
 
   behavior of "valid basic exit tests"
