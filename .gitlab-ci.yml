@@ -43,6 +43,7 @@ extension-tests:
     - sbt "testOnly -- -n StructTests"
     - sbt "testOnly -- -n VoidTypeTests"
     - sbt "testOnly -- -n ClassesTests"
+    - sbt "testOnly -- -n BranchingStatementTests"
 
 # Don't test everything
 # Tag tests and use "PENDING" using scala test
