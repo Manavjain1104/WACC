@@ -178,7 +178,6 @@ class VoidTypeTests extends AnyFlatSpec {
       fail("WRONG OUTPUT")
     }
 
-
   }
 
   behavior of "invalid void type extension tests"

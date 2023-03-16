@@ -113,11 +113,123 @@ class StructTests extends AnyFlatSpec {
 
 
 
-  behavior of "extension valid struct tests"
-  it should "succeed with exit code 0" taggedAs (StructTests) in {
-    applyRecursively("src/test/scala/wacc/extensions/structs/validStructs", exampleFn)
+//  behavior of "extension valid struct tests"
+//  it should "succeed with exit code 0" taggedAs (StructTests) in {
+//    applyRecursively("src/test/scala/wacc/extensions/structs/validStructs", exampleFn)
+//  }
+
+  behavior of "valid elementAccess struct extension test"
+  it should "succeed with exit code 0" taggedAs (VoidTypeTests) in {
+    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/structs/validStructs/elementAccess.wacc" !!
+
+    val s = new StringBuilder()
+    s.append("d\n")
+    s.append("1\n")
+    println(s.toString())
+
+    if (s.toString() != bashOutput) {
+      fail("WRONG OUTPUT")
+    }
+
   }
 
+  behavior of "valid nestedStructs1 struct extension test"
+  it should "succeed with exit code 0" taggedAs (VoidTypeTests) in {
+    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/structs/validStructs/nestedStructs1.wacc" !!
+
+    val s = new StringBuilder()
+    s.append("1\n")
+    println(s.toString())
+
+    if (s.toString() != bashOutput) {
+      fail("WRONG OUTPUT")
+    }
+
+  }
+
+  behavior of "valid nestedStructs2 struct extension test"
+  it should "succeed with exit code 0" taggedAs (VoidTypeTests) in {
+    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/structs/validStructs/nestedStructs2.wacc" !!
+
+    val s = new StringBuilder()
+    s.append("e\n")
+    s.append("d\n")
+    println(s.toString())
+
+    if (s.toString() != bashOutput) {
+      fail("WRONG OUTPUT")
+    }
+
+  }
+
+  behavior of "valid passStructElemToFunction struct extension test"
+  it should "succeed with exit code 0" taggedAs (VoidTypeTests) in {
+    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/structs/validStructs/passStructElemToFunction.wacc" !!
+
+    val s = new StringBuilder()
+    s.append("a\n")
+    s.append("1\n")
+    println(s.toString())
+
+    if (s.toString() != bashOutput) {
+      fail("WRONG OUTPUT")
+    }
+
+  }
+  behavior of "valid readStructElement struct extension test"
+  it should "succeed with exit code 0" taggedAs (VoidTypeTests) in {
+    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/structs/validStructs/readStructElement.wacc" !!
+
+    val s = new StringBuilder()
+    s.append("\n")
+    println(s.toString())
+
+    if (s.toString() != bashOutput) {
+      fail("WRONG OUTPUT")
+    }
+
+  }
+  behavior of "valid structInArray struct extension test"
+  it should "succeed with exit code 0" taggedAs (VoidTypeTests) in {
+    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/structs/validStructs/structInArray.wacc" !!
+
+    val s = new StringBuilder()
+    s.append("b\n")
+    println(s.toString())
+
+    if (s.toString() != bashOutput) {
+      fail("WRONG OUTPUT")
+    }
+
+  }
+
+  behavior of "valid structInPair struct extension test"
+  it should "succeed with exit code 0" taggedAs (VoidTypeTests) in {
+    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/structs/validStructs/structInPair.wacc" !!
+
+    val s = new StringBuilder()
+    s.append("1\n")
+    println(s.toString())
+
+    if (s.toString() != bashOutput) {
+      fail("WRONG OUTPUT")
+    }
+
+  }
+
+  behavior of "valid structInstantiation struct extension test"
+  it should "succeed with exit code 0" taggedAs (VoidTypeTests) in {
+    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/structs/validStructs/structInstantiation.wacc" !!
+
+    val s = new StringBuilder()
+    s.append("\n")
+    println(s.toString())
+
+    if (s.toString() != bashOutput) {
+      fail("WRONG OUTPUT")
+    }
+
+  }
   behavior of "extension invalid struct tests"
   it should "succeed with exit code 0" taggedAs (StructTests) in {
     applyRecursively("src/test/scala/wacc/extensions/structs/invalidStructs", checkCompileFailure)
