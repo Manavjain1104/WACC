@@ -1791,7 +1791,6 @@ class codeGenerator(program: Program, peephole: Boolean, inlineable: Boolean) {
         }
       }
 
-
       case _: PairSemType => {
         if (saveParams) {
           irs.append(PUSHMul(paramRegs))
