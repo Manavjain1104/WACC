@@ -181,7 +181,7 @@ class StructTests extends AnyFlatSpec {
     var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/structs/validStructs/readStructElement.wacc" !!
 
     val s = new StringBuilder()
-    s.append("\n")
+    s.append("")
     println(s.toString())
 
     if (s.toString() != bashOutput) {
@@ -222,7 +222,7 @@ class StructTests extends AnyFlatSpec {
     var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/structs/validStructs/structInstantiation.wacc" !!
 
     val s = new StringBuilder()
-    s.append("\n")
+    s.append("")
     println(s.toString())
 
     if (s.toString() != bashOutput) {
