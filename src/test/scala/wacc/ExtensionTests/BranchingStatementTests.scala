@@ -116,9 +116,65 @@ class BranchingStatementTests extends AnyFlatSpec {
     }
   }
 
-  behavior of "extension valid branching statement tests"
-  it should "succeed with exit code 0" taggedAs (BranchingStatementTests) in {
-    applyRecursively("src/test/scala/wacc/extensions/branchingStatements/validBranchingStatements", exampleFn)
+//  behavior of "extension valid branching statement tests"
+//  it should "succeed with exit code 0" taggedAs (BranchingStatementTests) in {
+//    applyRecursively("src/test/scala/wacc/extensions/branchingStatements/validBranchingStatements", exampleFn)
+//  }
+
+  behavior of "valid ifNoElse valid branching statement extension test"
+  it should "succeed with exit code 0" taggedAs (ClassesTests) in {
+    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/branchingStatements/validBranchingStatements/ifNoElse.wacc" !!
+
+    val s = new StringBuilder()
+    s.append("correct\n")
+    println(s.toString())
+
+    if (s.toString() != bashOutput) {
+      fail("WRONG OUTPUT")
+    }
+
+  }
+
+  behavior of "valid ifNoElse2 valid branching statement extension test"
+  it should "succeed with exit code 0" taggedAs (ClassesTests) in {
+    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/branchingStatements/validBranchingStatements/ifNoElse2.wacc" !!
+
+    val s = new StringBuilder()
+    s.append("it is 4\n")
+    println(s.toString())
+
+    if (s.toString() != bashOutput) {
+      fail("WRONG OUTPUT")
+    }
+
+  }
+
+  behavior of "valid matchCaseStatement valid branching statement extension test"
+  it should "succeed with exit code 0" taggedAs (ClassesTests) in {
+    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/branchingStatements/validBranchingStatements/matchCaseStatement.wacc" !!
+
+    val s = new StringBuilder()
+    s.append("bye\n")
+    println(s.toString())
+
+    if (s.toString() != bashOutput) {
+      fail("WRONG OUTPUT")
+    }
+
+  }
+
+  behavior of "valid matchCaseStatement2 valid branching statement extension test"
+  it should "succeed with exit code 0" taggedAs (ClassesTests) in {
+    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/branchingStatements/validBranchingStatements/matchCaseStatement2.wacc" !!
+
+    val s = new StringBuilder()
+    s.append("it is a\n")
+    println(s.toString())
+
+    if (s.toString() != bashOutput) {
+      fail("WRONG OUTPUT")
+    }
+
   }
 
   behavior of "extension invalid branching statement tests"
