@@ -413,11 +413,10 @@ object AST {
 
   object Call extends ParserBridgePos2[String, List[Expr], RValue]
 
-<<<<<<< HEAD
   case class CallStat(ident: String, args: List[Expr])(val pos: (Int, Int)) extends Statement
 
   object CallStat extends ParserBridgePos2[String, List[Expr], Statement]
-=======
+
   case class MethodCall(ident: String, methodName: String ,args: List[Expr])(var symbolTable: Option[GenericTable[SemTypes.SemType]], val pos: (Int, Int))(var className : Option[String]) extends RValue
 
   object MethodCall extends ParserBridgeSymPos3[String, String, List[Expr], RValue] {
@@ -426,7 +425,6 @@ object AST {
       new MethodCall(ident, methodName, args)(st, pos)(None)
     }
   }
->>>>>>> Classes
 
   // Struct - AST
   case class Struct(name : String, fields : List[FieldDec])(val pos: (Int, Int)) extends AST
