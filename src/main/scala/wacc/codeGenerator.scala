@@ -1775,9 +1775,10 @@ class codeGenerator(program: Program, peephole: Boolean, inlineable: Boolean) {
                                            liveMap: SymbolTable[Location]): List[IR] = {
     val irs = ListBuffer.empty[IR]
     val stType = st.lookupAll(ident).get
-    val saveParams = willClobber(localRegs, liveMap)
+    //val saveParams = willClobber(localRegs, liveMap)
     stType match {
       case _: ArraySemType => {
+        val saveParams = willClobber(localRegs, liveMap)
         if (saveParams) {
           irs.append(PUSHMul(paramRegs))
         }
@@ -1792,6 +1793,9 @@ class codeGenerator(program: Program, peephole: Boolean, inlineable: Boolean) {
       }
 
       case _: PairSemType => {
+        val saveParams = willClobber(localRegs, liveMap)
+        val irs = ListBuffer.empty[IR]
+
         if (saveParams) {
           irs.append(PUSHMul(paramRegs))
         }
@@ -1807,6 +1811,7 @@ class codeGenerator(program: Program, peephole: Boolean, inlineable: Boolean) {
 
       // for structs and classes
       case _ => {
+        val saveParams = willClobber(localRegs, liveMap)
         if (saveParams) {
           irs.append(PUSHMul(paramRegs))
         }
