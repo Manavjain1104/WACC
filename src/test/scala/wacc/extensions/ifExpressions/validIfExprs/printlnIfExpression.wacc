@@ -1,0 +1,9 @@
+# can have an if expression in an println statement
+
+# Output:
+# bye
+#
+
+begin
+  println if false then "hi" else "bye" fi
+end

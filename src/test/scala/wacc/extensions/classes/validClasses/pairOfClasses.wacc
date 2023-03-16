@@ -1,0 +1,36 @@
+# can have a pair of classes
+
+# Output:
+# 79
+#
+
+begin
+  class Test2(int x, int y) {
+    char c = 'k';
+    private class Test t = new Test(7)
+
+    private char get() is
+      return this.c
+    end
+
+    public int getArea(int a, int b) is
+      class Test gh = this.t;
+      int out = gh.get();
+      return out
+    end
+  }
+
+  class Test(int a) {
+      private int b = this.a * 2
+
+      int get() is
+        return this.b
+      end
+  }
+
+  class Test2 m1 = new Test2(69, 79);
+  class Test2 m2 = new Test2(44, 55);
+  pair(class Test2, class Test2) p = newpair(m1, m2);
+  class Test2 m3 = fst p;
+  println m3.y
+end

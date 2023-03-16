@@ -161,6 +161,10 @@ object Registers {
     override def toString = "r6"
   }
 
+  case object CP extends Reg {
+    override def toString = "r7"
+  }
+
   case object R7 extends Reg {
     override def toString = "r7"
   }

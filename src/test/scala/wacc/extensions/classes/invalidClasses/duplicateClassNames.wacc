@@ -1,0 +1,37 @@
+# Cannot have duplicate class names
+
+# Exit:
+# 200
+#
+
+begin
+  class Test(int x, int y) {
+    char c = 'k';
+    class Test t = new Test(7)
+
+    private char get() is
+      return this.c
+    end
+
+    public int getArea(int a, int b) is
+      class Test gh = this.t;
+      int out = gh.get();
+      return out
+    end
+  }
+
+  class Test(int a) {
+      private int b = this.a * 2
+
+      int get() is
+        return this.b
+      end
+  }
+
+  class Test m1 = new Test(69, 79);
+  class Test m2 = new Test(44, 55);
+  pair(class Test, class Test) p = newpair(m1, m2);
+  class Test m3 = fst p;
+  int x2 =  m3.getArea(2, 3);
+  println x2
+end

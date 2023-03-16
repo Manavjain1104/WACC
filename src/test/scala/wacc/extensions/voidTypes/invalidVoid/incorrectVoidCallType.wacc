@@ -1,0 +1,14 @@
+# wrong type in void function call
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+  void f() is
+    println "Here"
+  end
+  int x = call f() ;
+  println x
+end

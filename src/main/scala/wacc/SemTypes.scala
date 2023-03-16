@@ -5,10 +5,15 @@ object SemTypes {
   // WACC SEMANTIC type hierarchy
   trait SemType
 
+  case object VoidSemType extends SemType
   case object IntSemType extends SemType
   case object BoolSemType extends SemType
   case object CharSemType extends SemType
   case object StringSemType extends SemType
+
+
+  case class StructSemType(structName: String) extends SemType
+  case class ClassSemType(className: String) extends SemType
 
   case class ArraySemType(t : SemType) extends SemType
 

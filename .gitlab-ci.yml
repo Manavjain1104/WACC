@@ -39,7 +39,12 @@ extension-tests:
     - make
     - sbt "testOnly -- -n FullPairTypeTests"
     - sbt "testOnly -- -n BranchingStatementTests"
-
+    - sbt "testOnly -- -n IfExprTests"
+    - sbt "testOnly -- -n InliningTests"
+    - sbt "testOnly -- -n StructTests"
+    - sbt "testOnly -- -n VoidTypeTests"
+    - sbt "testOnly -- -n ClassesTests"
+    
 # Don't test everything
 # Tag tests and use "PENDING" using scala test
 # test pass rate and coverage

@@ -1,0 +1,8 @@
+# if expressions must evaluate to correct type
+
+# Exit:
+# 100
+
+begin
+  exit(if false then println 1 else 0)
+end

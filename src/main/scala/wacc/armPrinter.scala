@@ -7,6 +7,7 @@ object armPrinter {
 
   private val NewLineChar = "\n"
 
+
   def print(cg: codeGenerator): String = {
     val sb = new StringBuilder()
     cg.generateProgIR().foreach(ir => sb.append(printIR(ir) + NewLineChar))
@@ -89,9 +90,9 @@ object armPrinter {
       }
 
       // Push and Pop Statements
-      case PUSHMul(regs) => "push {" + regs.map(reg => reg.toString).mkString(", ") + "}"
+      case PUSHMul(regs) => "push {" + regs.sortWith((r1, r2) => r1.toString.compareTo(r2.toString) < 0).map(reg => reg.toString).mkString(", ") + "}"
       case PUSH(reg) => "push {" + reg + "}"
-      case POPMul(regs) => "pop {" + regs.map(reg => reg.toString).mkString(", ") + "}"
+      case POPMul(regs) => "pop {" + regs.sortWith((r1, r2) => r1.toString.compareTo(r2.toString) < 0).map(reg => reg.toString).mkString(", ") + "}"
       case POP(reg) => "pop {" + reg + "}"
 
       // Unary Operators
@@ -120,7 +121,7 @@ object armPrinter {
       case ADDREG(rd, rn, rm) => {
         val sb = new StringBuilder
         sb.append(printInstr("adds ", List(rd, rn, rm)) + NewLineChar)
-        sb.append(printIR(BRANCH("_errOverflow", LVS)) + NewLineChar)
+        sb.append(printIR(BRANCH("_errOverflow", LVS)))
         sb.toString()
       }
       case SUB(rd, rn, i) => {

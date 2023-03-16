@@ -1,0 +1,17 @@
+# can access struct elements
+
+# Output:
+# d
+# 1
+#
+
+begin
+    struct test {
+        int x;
+        char c
+    }
+
+    struct test t1 = {1, 'd'};
+    println t1->c;
+    println t1->x
+end

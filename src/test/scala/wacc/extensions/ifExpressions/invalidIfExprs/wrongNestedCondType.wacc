@@ -1,0 +1,8 @@
+# wrong condition type in nested if expression
+
+# Exit:
+# 200
+
+begin
+  if false then if 3 then println 1 else println 2 fi else println 3 fi
+end

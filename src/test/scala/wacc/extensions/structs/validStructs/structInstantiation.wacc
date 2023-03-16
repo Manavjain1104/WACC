@@ -1,0 +1,13 @@
+# Struct definition and instantiation
+
+# Output:
+#
+
+begin
+    struct test {
+        int x;
+        char c
+    }
+
+    struct test t1 = {1, 'd'}
+end

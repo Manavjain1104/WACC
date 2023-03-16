@@ -92,6 +92,15 @@ object errorPrinter {
             sb.append("Found number of arguments: " + foundArity + "\n")
             sb.append(printForInvalidToken(pos, fileLines(pos._1 - 1), None))
           }
+
+          case InvalidScopeError(pos, member, context) => {
+            sb.append("Invalid Scope Access error in " + filename + " " + "(line " + pos._1 + ", column " + pos._2 + ") on " + member + " :\n")
+            if (context.isDefined) {
+              sb.append(context.get + "\n")
+            }
+            sb.append(printForInvalidToken(pos, fileLines(pos._1 - 1), None))
+          }
+
           case ArrayError(pos, arrName, maxDimension, context) => {
             sb.append("Array Out of Bounds error in " + filename + " " + "(line " + pos._1 + ", column " + pos._2 + "):\n")
             if (context.isDefined) {
@@ -107,6 +116,13 @@ object errorPrinter {
               sb.append(context.get + "\n")
             }
             sb.append(printForTypeError(pos, expectedTypes.toList, foundType))
+          }
+          case UnknownObjectError(pos, context) => {
+            sb.append("Unknown Object Type error starting here in " + filename + " " + "(line " + pos._1 + ", column " + pos._2 + ") starting here:\n")
+            if (context.isDefined) {
+              sb.append(context.get + "\n")
+            }
+            sb.append(printForInvalidToken(pos, fileLines(pos._1 - 1), None))
           }
 
         }
@@ -164,6 +180,7 @@ object errorPrinter {
         case BoolSemType => "bool"
         case CharSemType => "char"
         case StringSemType => "string"
+        case VoidSemType => "void"
         case PairSemType(pt1, pt2) => {
           if (pt1 == InternalPairSemType && pt2 == InternalPairSemType) {
             "pair type"
@@ -178,10 +195,26 @@ object errorPrinter {
             "array [ " + typeToString(t) + " ]"
           }
         }
+        case StructSemType(ident) => {
+          if (ident.isEmpty) {
+            "`struct type`"
+          } else {
+            "`struct " + ident + "`"
+          }
+        }
+
+        case ClassSemType(className) => {
+          if (className.isEmpty) {
+            "`class type`"
+          } else {
+            "`class " + className + "`"
+          }
+        }
+
         case InternalPairSemType => "pair"
         case FuncSemType(retType, paramTypes, _) => {
           val sb = new StringBuilder()
-          sb.append("Function: ")
+          sb.append("Function/Method: ")
           for (paramType <- paramTypes) {
             sb.append(typeToString(paramType) + " -> ")
           }
@@ -195,7 +228,8 @@ object errorPrinter {
       var line = pos._1 - 1
       var col = pos._2 - 1
       val len = ident.length
-      while (line < fileLines.length && !fileLines(line).slice(col, col + len).equals(ident)) {
+      while (line < fileLines.length && ((!fileLines(line).slice(col, col + len).equals(ident))
+          || ((col + len) < fileLines(line).length && fileLines(line)(col + len).isLetter))) {
         col += 1
         if (col >= fileLines(line).length || fileLines(line).charAt(col) == '\n') {
           col = 0

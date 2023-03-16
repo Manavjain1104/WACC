@@ -7,7 +7,7 @@ import wacc.lexer.fully
 import wacc.parser.program
 import wacc.errorPrinter._
 
-import java.io.{File, PrintWriter}
+import java.io.{File, FileNotFoundException, IOException, PrintWriter}
 import scala.collection.mutable.ListBuffer
 
 object Main {
@@ -20,12 +20,42 @@ object Main {
 
   def main(args: Array[String]): Unit = {
 
-//    println("-- Compiling...")
+    //    println("-- Compiling...")
 
     val sem: semanticAnalyser = new semanticAnalyser
-    val file: File = new File(args.head)
+
+    var file: File = new File("")
+    try {
+      file = new File(args.head)
+    } catch {
+      case e: FileNotFoundException => {
+        System.err.println("Couldn't find that file.")
+        sys.exit(-1)
+      }
+      case e: IOException => {
+        System.err.println("Had an IOException trying to read that file")
+        sys.exit(-1)
+      }
+      case _: Exception => {
+        System.err.println("Error opening file")
+        sys.exit(-1)
+      }
+    }
 
     implicit val eb: error.SyntaxErrorBuilder = new error.SyntaxErrorBuilder
+
+    var optimiseFlag = true
+    var inliningFlag = true
+
+    // optimiseFlag is FIRST argument AFTER file.
+    // inliningFlag is SECOND argument AFTER file.
+
+    if (args.length >= 2) {
+      optimiseFlag = args(1).toBoolean
+    }
+    if (args.length == 3) {
+      inliningFlag = args(2).toBoolean
+    }
     fully(program).parseFromFile(file) match {
       case util.Success(value) => {
         value match {
@@ -48,14 +78,12 @@ object Main {
               if (args.length > 1) {
                 val test = args(1)
                 if (test == "check") {
-
-                  //println("recheckturning 0")
                   return
                 }
               }
               generateOutputMessages(ListBuffer.empty[error.SemanticError], None, file.getPath, OK_EXIT_CODE)
 
-              val output = armPrinter.print(new codeGenerator(prog))
+              val output = armPrinter.print(new codeGenerator(prog, optimiseFlag, inliningFlag))
 
               // Write assembly to .s file
               if (!file.getName.endsWith(".wacc")) {

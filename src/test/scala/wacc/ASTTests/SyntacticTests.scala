@@ -6,4 +6,5 @@ import org.scalatest.flatspec.AnyFlatSpec
 
 object SyntacticTests extends Tag("SyntacticTests")
 trait SyntacticTests extends AnyFunSuite  {
+
 }

@@ -1,6 +1,5 @@
 package src.main.scala.wacc
 
-
 import org.scalatest.Tag
 import wacc.AST._
 import org.scalatest.funsuite.AnyFunSuite

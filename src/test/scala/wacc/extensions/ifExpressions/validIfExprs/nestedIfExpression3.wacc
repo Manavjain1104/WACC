@@ -1,0 +1,9 @@
+# can have multiple levels of nesting in if expressions
+
+# Output:
+# 10
+#
+
+begin
+  if true then if false then if false then println 20 else println 21 fi else println 10 fi else println 3 fi
+end

@@ -1,0 +1,18 @@
+# Simple void function with parameter and call
+
+# Output:
+# 5
+# Here
+# There
+#
+
+# Program:
+
+begin
+  void f(int x) is
+    println x;
+    println "Here"
+  end
+  call f(5) ;
+  println "There"
+end
