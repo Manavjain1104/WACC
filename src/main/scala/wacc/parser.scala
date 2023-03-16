@@ -52,7 +52,7 @@ object parser {
         " unary, binary, logical and comparison operators")
 
   // Lvalue parsers
-  lazy val lvalue: Parsley[LValue] = attempt(arrayelem) <|> IdentValue(IDENT) <|> pairelem
+  lazy val lvalue: Parsley[LValue] = attempt(arrayelem) <|> attempt(structelem) <|> attempt(classelem) <|> IdentValue(IDENT) <|> pairelem
   lazy val pairelem: Parsley[PairElem] = (FST ~> Fst(lvalue)) <|> (SND ~> Snd(lvalue))
   lazy val arrayelem: Parsley[ArrayElem] = ArrayElem(IDENT, some(OPENSQUAREBRAC ~> expr <~ CLOSESQUAREBRAC))
   lazy val structelem: Parsley[StructElem] = StructElem(IDENT <~ ARROW, IDENT)
