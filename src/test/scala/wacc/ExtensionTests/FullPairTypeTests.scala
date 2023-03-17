@@ -117,7 +117,7 @@ class FullPairTypeTests extends AnyFlatSpec {
 
   behavior of "extension full pair type tests"
   it should "succeed with exit code 0" taggedAs FullPairTypeTests in {
-    applyRecursively("/src/test/scala/wacc/extensions/fullPairTypes", exampleFn)
+    applyRecursively("src/test/scala/wacc/extensions/fullPairTypes", exampleFn)
   }
 
 
