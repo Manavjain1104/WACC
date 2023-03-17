@@ -52,7 +52,7 @@ object Main {
 
     if (args.length >= 2 && args(1).contains("-true")) {
       try {
-        optimiseFlag = args(1).toBoolean
+        optimiseFlag = args(1).tail.toBoolean
       } catch {
         case _: IllegalArgumentException =>
       }
