@@ -2,9 +2,7 @@ package wacc
 
 import org.scalatest.Tag
 import org.scalatest.flatspec.AnyFlatSpec
-
 import java.io.File
-import scala.Console.out
 import scala.language.postfixOps
 import sys.process._
 
@@ -15,12 +13,11 @@ class ChecksAllValid extends AnyFlatSpec {
   def applyRecursively(dir: String, fn: (File) => Any): Unit = {
     def listAndProcess(dir: File): Unit = {
       dir.listFiles match {
-        case null => out.println(s"Processing $dir ...")
+        case null =>
         case files => files.toList.sortBy(_.getName).foreach(file => {
           fn(file)
           if (!java.nio.file.Files.isSymbolicLink(file.toPath) && file.isDirectory) listAndProcess(file)
         })
-        case _ =>
       }
     }
     listAndProcess(new File(dir))
@@ -29,16 +26,15 @@ class ChecksAllValid extends AnyFlatSpec {
 
 
   def exampleFn(file: File): Unit = {
-    file.toString.endsWith(".wacc") match {
-      case true => {
-        println(s"processing $file")
-        val o = s"./compileFrontend.sh $file check" !!
+    if (file.toString.endsWith(".wacc")) {
+      println(s"processing $file")
+      val o = s"./compileFrontend.sh $file check" !!
 
-        if (o.contains("returning 100") || o.contains("returning 200")) {
-          fail("Wrong exit code")
-        }
+      if (o.contains("returning 100") || o.contains("returning 200")) {
+        fail("Wrong exit code")
       }
-      case false =>
+    } else {
+
     }
   }
 

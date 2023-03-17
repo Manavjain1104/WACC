@@ -2,7 +2,7 @@ import org.scalatest.Tag
 import org.scalatest.flatspec.AnyFlatSpec
 
 import java.io.File
-import scala.Console.{in, out}
+import scala.Console.in
 import scala.collection.mutable
 import scala.language.postfixOps
 import scala.io.Source
@@ -16,13 +16,12 @@ class ValidTests extends AnyFlatSpec {
   def applyRecursively(dir: String, fn: (File) => Any): Unit = {
     def listAndProcess(dir: File): Unit = {
       dir.listFiles match {
-        case null => out.println(s"Processing $dir ...")
+        case null =>
         case files => files.toList.sortBy(_.getName).foreach(file => {
           println(s"processing $file")
           fn(file)
           if (!java.nio.file.Files.isSymbolicLink(file.toPath) && file.isDirectory) listAndProcess(file)
         })
-        case _ =>
       }
 
     }
@@ -88,7 +87,7 @@ class ValidTests extends AnyFlatSpec {
 
     val exitCode = "echo $?" !!
 
-    var bashOutputNoAddr = bashOutput.replaceAll("\\b0x\\w*", "#addrs#")
+    val bashOutputNoAddr = bashOutput.replaceAll("\\b0x\\w*", "#addrs#")
 
 //    if (file == new File("src/test/scala/wacc/valid/advanced/binarySortTree.wacc")) {
 //      bashOutputNoAddr = s.takeRight(9).toString()

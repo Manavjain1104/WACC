@@ -3,7 +3,6 @@ package wacc.ExtensionTests
 import org.scalatest.Tag
 import org.scalatest.flatspec.AnyFlatSpec
 import java.io.File
-import scala.Console.out
 import scala.io.Source
 import scala.language.postfixOps
 import sys.process._
@@ -14,12 +13,11 @@ class InliningTests extends AnyFlatSpec {
   def applyRecursively(lookFor: String, dir: String, fn: (String, File) => Any): Unit = {
     def listAndProcess(dir: File): Unit = {
       dir.listFiles match {
-        case null => out.println(s"Processing $dir ...")
+        case null =>
         case files => files.toList.sortBy(_.getName).foreach(file => {
           fn(lookFor, file)
           if (!java.nio.file.Files.isSymbolicLink(file.toPath) && file.isDirectory) listAndProcess(file)
         })
-        case _ =>
       }
 
     }

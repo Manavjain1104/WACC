@@ -4,7 +4,6 @@ import org.scalatest.Tag
 import org.scalatest.flatspec.AnyFlatSpec
 
 import java.io.File
-import scala.Console.out
 import scala.collection.mutable
 import scala.language.postfixOps
 import scala.io.Source
@@ -18,12 +17,11 @@ class IfExpressionTests extends AnyFlatSpec {
   def applyRecursively(dir: String, fn: File => Any): Unit = {
     def listAndProcess(dir: File): Unit = {
       dir.listFiles match {
-        case null => out.println(s"Processing $dir ...")
+        case null =>
         case files => files.toList.sortBy(_.getName).foreach(file => {
           fn(file)
           if (!java.nio.file.Files.isSymbolicLink(file.toPath) && file.isDirectory) listAndProcess(file)
         })
-        case _ =>
       }
     }
 

@@ -3,8 +3,6 @@ package wacc
 import java.io.File
 import org.scalatest.Tag
 import org.scalatest.flatspec.AnyFlatSpec
-
-import scala.Console.out
 import scala.language.postfixOps
 import sys.process._
 
@@ -15,9 +13,7 @@ class ChecksAllSyntaxInvalid extends AnyFlatSpec {
   def applyRecursively(dir: String, fn: (File) => Any): Unit = {
     def listAndProcess(dir: File): Unit = {
       dir.listFiles match {
-        case null => {
-          println(dir.getPath + " couldn't find files")
-        }
+        case null =>
         case files => files.toList.sortBy(_.getName).foreach(file => {
           fn(file)
           if (!java.nio.file.Files.isSymbolicLink(file.toPath) && file.isDirectory) listAndProcess(file)
