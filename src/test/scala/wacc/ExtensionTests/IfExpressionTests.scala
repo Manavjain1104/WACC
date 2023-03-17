@@ -1,11 +1,11 @@
 package wacc.ExtensionTests
 
-import org.scalatest.Assertions.fail
 import org.scalatest.Tag
 import org.scalatest.flatspec.AnyFlatSpec
 
 import java.io.File
-import scala.Console.{in, out}
+import scala.Console.out
+import scala.collection.mutable
 import scala.language.postfixOps
 import scala.io.Source
 import scala.collection.mutable.ListBuffer
@@ -15,8 +15,8 @@ object IfExpressionTests extends Tag("IfExpressionTests")
 
 class IfExpressionTests extends AnyFlatSpec {
 
-  def applyRecursively(dir: String, fn: (File) => Any) {
-    def listAndProcess(dir: File) {
+  def applyRecursively(dir: String, fn: File => Any): Unit = {
+    def listAndProcess(dir: File): Unit = {
       dir.listFiles match {
         case null => out.println("exception: dir cannot be listed: " + dir.getPath); List[File]()
         case files => files.toList.sortBy(_.getName).foreach(file => {
@@ -30,7 +30,7 @@ class IfExpressionTests extends AnyFlatSpec {
     listAndProcess(new File(dir))
   }
 
-  def testDirectory(file: File) = {
+  def testDirectory(file: File): Unit = {
     val source = Source.fromFile(file)
     val lb = ListBuffer[String]()
     val out = ListBuffer[String]()
@@ -69,17 +69,17 @@ class IfExpressionTests extends AnyFlatSpec {
     input.append(lb(inputLine).drop(9))
 
 
-    val s = new StringBuilder()
+    val s = new mutable.StringBuilder()
     for (x <- out) {
       s ++= x
     }
 
-    val in = new StringBuilder()
+    val in = new mutable.StringBuilder()
     for (x <- input) {
       in ++= x
     }
 
-    val bashOutput = s"./compile_and_run $file ${in}" !!
+    val bashOutput = s"./compile_and_run $file $in" !!
 
     val exitCode = "echo $?" !!
 
@@ -102,17 +102,17 @@ class IfExpressionTests extends AnyFlatSpec {
       if (lb(a).startsWith("# Exit")) {
         val exitCode = lb(a + 1).drop(2)
         if (exitCode != "0") {
-          assert(true)
+          assert(condition = true)
         }
       }
     }
   }
 
   behavior of "valid exitIfExpression if expression extension test"
-  it should "succeed with exit code 0" taggedAs (IfExpressionTests) in {
-    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/ifExpressions/validIfExprs/exitIfExpression.wacc" !!
+  it should "succeed with exit code 0" taggedAs IfExpressionTests in {
+    val bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/ifExpressions/validIfExprs/exitIfExpression.wacc" !!
 
-    val s = new StringBuilder()
+    val s = new mutable.StringBuilder()
     s.append("\n")
     println(s.toString())
 
@@ -123,10 +123,10 @@ class IfExpressionTests extends AnyFlatSpec {
   }
 
   behavior of "valid nestedIfExpression1 if expression extension test"
-  it should "succeed with exit code 0" taggedAs (IfExpressionTests) in {
-    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/ifExpressions/validIfExprs/nestedIfExpression1.wacc" !!
+  it should "succeed with exit code 0" taggedAs IfExpressionTests in {
+    val bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/ifExpressions/validIfExprs/nestedIfExpression1.wacc" !!
 
-    val s = new StringBuilder()
+    val s = new mutable.StringBuilder()
     s.append("3\n")
     println(s.toString())
 
@@ -137,10 +137,10 @@ class IfExpressionTests extends AnyFlatSpec {
   }
 
   behavior of "valid nestedIfExpression2 if expression extension test"
-  it should "succeed with exit code 0" taggedAs (IfExpressionTests) in {
-    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/ifExpressions/validIfExprs/nestedIfExpression2.wacc" !!
+  it should "succeed with exit code 0" taggedAs IfExpressionTests in {
+    val bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/ifExpressions/validIfExprs/nestedIfExpression2.wacc" !!
 
-    val s = new StringBuilder()
+    val s = new mutable.StringBuilder()
     s.append("10\n")
     println(s.toString())
 
@@ -151,10 +151,10 @@ class IfExpressionTests extends AnyFlatSpec {
   }
 
   behavior of "valid nestedIfExpression3 if expression extension test"
-  it should "succeed with exit code 0" taggedAs (IfExpressionTests) in {
-    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/ifExpressions/validIfExprs/nestedIfExpression3.wacc" !!
+  it should "succeed with exit code 0" taggedAs IfExpressionTests in {
+    val bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/ifExpressions/validIfExprs/nestedIfExpression3.wacc" !!
 
-    val s = new StringBuilder()
+    val s = new mutable.StringBuilder()
     s.append("10\n")
     println(s.toString())
 
@@ -165,10 +165,10 @@ class IfExpressionTests extends AnyFlatSpec {
   }
 
   behavior of "valid printlnIfExpression if expression extension test"
-  it should "succeed with exit code 0" taggedAs (IfExpressionTests) in {
-    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/ifExpressions/validIfExprs/printlnIfExpression.wacc" !!
+  it should "succeed with exit code 0" taggedAs IfExpressionTests in {
+    val bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/ifExpressions/validIfExprs/printlnIfExpression.wacc" !!
 
-    val s = new StringBuilder()
+    val s = new mutable.StringBuilder()
     s.append("bye\n")
     println(s.toString())
 
@@ -179,7 +179,7 @@ class IfExpressionTests extends AnyFlatSpec {
   }
 
   behavior of "invalid if expression extension tests"
-  it should "succeed with exit code 0" taggedAs(IfExpressionTests) in {
+  it should "succeed with exit code 0" taggedAs IfExpressionTests in {
     applyRecursively("src/test/scala/wacc/extensions/ifExpressions/invalidIfExprs", checkCompileFailure)
   }
 

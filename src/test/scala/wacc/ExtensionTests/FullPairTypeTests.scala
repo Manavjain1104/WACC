@@ -1,11 +1,11 @@
 package wacc.ExtensionTests
 
-import org.scalatest.Assertions.fail
 import org.scalatest.Tag
 import org.scalatest.flatspec.AnyFlatSpec
 
 import java.io.File
 import scala.Console.{in, out}
+import scala.collection.mutable
 import scala.language.postfixOps
 import scala.io.Source
 import scala.collection.mutable.ListBuffer
@@ -15,8 +15,8 @@ object FullPairTypeTests extends Tag("FullPairTypeTests")
 
 class FullPairTypeTests extends AnyFlatSpec {
 
-  def applyRecursively(dir: String, fn: (File) => Any) {
-    def listAndProcess(dir: File) {
+  def applyRecursively(dir: String, fn: File => Any): Unit = {
+    def listAndProcess(dir: File): Unit = {
       dir.listFiles match {
         case null => out.println("exception: dir cannot be listed: " + dir.getPath); List[File]()
         case files => files.toList.sortBy(_.getName).foreach(file => {
@@ -31,7 +31,7 @@ class FullPairTypeTests extends AnyFlatSpec {
     listAndProcess(new File(dir))
   }
 
-  def exampleFn(file: File) = {
+  def exampleFn(file: File): Unit = {
     val source = Source.fromFile(file)
     val lb = ListBuffer[String]()
     val out = ListBuffer[String]()
@@ -70,12 +70,12 @@ class FullPairTypeTests extends AnyFlatSpec {
     input.append(lb(inputLine).drop(9))
 
 
-    val s = new StringBuilder()
+    val s = new mutable.StringBuilder()
     for (x <- out) {
       s ++= x
     }
 
-    val in = new StringBuilder()
+    val in = new mutable.StringBuilder()
     for (x <- input) {
       in ++= x
     }
@@ -85,11 +85,11 @@ class FullPairTypeTests extends AnyFlatSpec {
       s ++= "3 4 6 7 9"
     }
 
-    var bashOutput = s"./compile_and_run $file ${in}" !!
+    var bashOutput = s"./compile_and_run $file $in" !!
 
     val exitCode = "echo $?" !!
 
-    var bashOutputNoAddr = bashOutput.replaceAll("\\b0x\\w*", "#addrs#")
+    var bashOutputNoAddr = bashOutput.replaceAll("""\b0x\w*""", "#addrs#")
 
     if (file == new File("src/test/scala/wacc/valid/advanced/binarySortTree.wacc")) {
       bashOutputNoAddr = s.takeRight(9).toString()
@@ -104,12 +104,12 @@ class FullPairTypeTests extends AnyFlatSpec {
   }
 
   def checkFailure(file: File): Unit = {
-    var bashOutput = s"./compile_and_run $file ${in}" !!
+    var bashOutput = s"./compile_and_run $file $in" !!
 
     val exitCode = "echo $?" !!
 
     if (exitCode != "0") {
-      assert(true)
+      assert(condition = true)
     }
 
   }
@@ -117,7 +117,7 @@ class FullPairTypeTests extends AnyFlatSpec {
 
 
   behavior of "extension full pair type tests"
-  it should "succeed with exit code 0" taggedAs (FullPairTypeTests) in {
+  it should "succeed with exit code 0" taggedAs FullPairTypeTests in {
     applyRecursively("/src/test/scala/wacc/extensions/fullPairTypes", exampleFn)
   }
 

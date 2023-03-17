@@ -1,11 +1,11 @@
 package wacc.ExtensionTests
 
-import org.scalatest.Assertions.fail
 import org.scalatest.Tag
 import org.scalatest.flatspec.AnyFlatSpec
 
 import java.io.File
-import scala.Console.{in, out}
+import scala.Console.out
+import scala.collection.mutable
 import scala.language.postfixOps
 import scala.io.Source
 import scala.collection.mutable.ListBuffer
@@ -15,8 +15,8 @@ object ClassesTests extends Tag("ClassesTests")
 
 class ClassesTests extends AnyFlatSpec {
 
-  def applyRecursively(dir: String, fn: (File) => Any) {
-    def listAndProcess(dir: File) {
+  def applyRecursively(dir: String, fn: File => Any): Unit = {
+    def listAndProcess(dir: File): Unit = {
       dir.listFiles match {
         case null => out.println("exception: dir cannot be listed: " + dir.getPath); List[File]()
         case files => files.toList.sortBy(_.getName).foreach(file => {
@@ -31,7 +31,7 @@ class ClassesTests extends AnyFlatSpec {
     listAndProcess(new File(dir))
   }
 
-  def exampleFn(file: File) = {
+  def exampleFn(file: File): Unit = {
     val source = Source.fromFile(file)
     val lb = ListBuffer[String]()
     val out = ListBuffer[String]()
@@ -70,12 +70,12 @@ class ClassesTests extends AnyFlatSpec {
     input.append(lb(inputLine).drop(9))
 
 
-    val s = new StringBuilder()
+    val s = new mutable.StringBuilder()
     for (x <- out) {
       s ++= x
     }
 
-    val in = new StringBuilder()
+    val in = new mutable.StringBuilder()
     for (x <- input) {
       in ++= x
     }
@@ -85,11 +85,11 @@ class ClassesTests extends AnyFlatSpec {
       s ++= "3 4 6 7 9"
     }
 
-    var bashOutput = s"./compile_and_run $file ${in}" !!
+    var bashOutput = s"./compile_and_run $file $in" !!
 
     val exitCode = "echo $?" !!
 
-    var bashOutputNoAddr = bashOutput.replaceAll("\\b0x\\w*", "#addrs#")
+    var bashOutputNoAddr = bashOutput.replaceAll("""\b0x\w*""", "#addrs#")
 
     if (exitCode != "100" || exitCode != "200") {
 
@@ -110,7 +110,7 @@ class ClassesTests extends AnyFlatSpec {
       if (lb(a).startsWith("# Exit")) {
         val exitCode = lb(a+1).drop(2)
         if (exitCode != "0") {
-          assert(true)
+          assert(condition = true)
         }
       }
     }
@@ -125,10 +125,10 @@ class ClassesTests extends AnyFlatSpec {
   //  }
 
   behavior of "valid arrayOfClasses class extension test"
-  it should "succeed with exit code 0" taggedAs (ClassesTests) in {
+  it should "succeed with exit code 0" taggedAs ClassesTests in {
     var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/classes/validClasses/arrayOfClasses.wacc" !!
 
-    val s = new StringBuilder()
+    val s = new mutable.StringBuilder()
     s.append("21\n")
     println(s.toString())
 
@@ -139,10 +139,10 @@ class ClassesTests extends AnyFlatSpec {
   }
 
   behavior of "valid classFunctionality class extension test"
-  it should "succeed with exit code 0" taggedAs (ClassesTests) in {
+  it should "succeed with exit code 0" taggedAs ClassesTests in {
     var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/classes/validClasses/classFunctionality.wacc" !!
 
-    val s = new StringBuilder()
+    val s = new mutable.StringBuilder()
     s.append("14\n")
     println(s.toString())
 
@@ -153,10 +153,10 @@ class ClassesTests extends AnyFlatSpec {
   }
 
   behavior of "valid classInstantiation class extension test"
-  it should "succeed with exit code 0" taggedAs (ClassesTests) in {
+  it should "succeed with exit code 0" taggedAs ClassesTests in {
     var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/classes/validClasses/classInstantiation.wacc" !!
 
-    val s = new StringBuilder()
+    val s = new mutable.StringBuilder()
     s.append("k\n")
     s.append("k\n")
     println(s.toString())
@@ -168,10 +168,10 @@ class ClassesTests extends AnyFlatSpec {
   }
 
   behavior of "valid pairOfClasses class extension test"
-  it should "succeed with exit code 0" taggedAs (ClassesTests) in {
+  it should "succeed with exit code 0" taggedAs ClassesTests in {
     var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/classes/validClasses/pairOfClasses.wacc" !!
 
-    val s = new StringBuilder()
+    val s = new mutable.StringBuilder()
     s.append("79\n")
     println(s.toString())
 
@@ -182,10 +182,10 @@ class ClassesTests extends AnyFlatSpec {
   }
 
   behavior of "valid privatePublic class extension test"
-  it should "succeed with exit code 0" taggedAs (ClassesTests) in {
+  it should "succeed with exit code 0" taggedAs ClassesTests in {
     var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/classes/validClasses/privatePublic.wacc" !!
 
-    val s = new StringBuilder()
+    val s = new mutable.StringBuilder()
     s.append("14\n")
     println(s.toString())
 
@@ -196,10 +196,10 @@ class ClassesTests extends AnyFlatSpec {
   }
 
   behavior of "valid publicDefault class extension test"
-  it should "succeed with exit code 0" taggedAs (ClassesTests) in {
+  it should "succeed with exit code 0" taggedAs ClassesTests in {
     var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/classes/validClasses/publicDefault.wacc" !!
 
-    val s = new StringBuilder()
+    val s = new mutable.StringBuilder()
     s.append("14\n")
     println(s.toString())
 
@@ -210,10 +210,10 @@ class ClassesTests extends AnyFlatSpec {
   }
 
   behavior of "valid structInClass class extension test"
-  it should "succeed with exit code 0" taggedAs (ClassesTests) in {
+  it should "succeed with exit code 0" taggedAs ClassesTests in {
     var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/classes/validClasses/structInClass.wacc" !!
 
-    val s = new StringBuilder()
+    val s = new mutable.StringBuilder()
     s.append("")
     println(s.toString())
 
@@ -224,7 +224,7 @@ class ClassesTests extends AnyFlatSpec {
   }
 
   behavior of "extension invalid struct tests"
-  it should "succeed with exit code 0" taggedAs (ClassesTests) in {
+  it should "succeed with exit code 0" taggedAs ClassesTests in {
     applyRecursively("src/test/scala/wacc/extensions/classes/invalidClasses", checkCompileFailure)
   }
 
