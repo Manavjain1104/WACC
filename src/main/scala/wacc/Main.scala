@@ -51,18 +51,20 @@ object Main {
     // inliningFlag is SECOND argument AFTER file.
 
     if (args.length >= 2) {
-      try {
-        optimiseFlag = args(1).toBoolean
-      } catch {
-        case _: Exception =>
-      }
+      optimiseFlag = args(1).toBoolean
+//      try {
+//        optimiseFlag = args(1).toBoolean
+//      } catch {
+//        case _: IllegalArgumentException =>
+//      }
     }
     if (args.length == 3) {
-      try {
-        inliningFlag = args(2).toBoolean
-      } catch {
-        case _: Exception =>
-      }
+      inliningFlag = args(2).toBoolean
+//      try {
+//
+//      } catch {
+//        case _: IllegalArgumentException =>
+//      }
     }
     fully(program).parseFromFile(file) match {
       case util.Success(value) => {
