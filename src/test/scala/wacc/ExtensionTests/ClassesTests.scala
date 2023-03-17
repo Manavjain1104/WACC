@@ -85,11 +85,11 @@ class ClassesTests extends AnyFlatSpec {
       s ++= "3 4 6 7 9"
     }
 
-    var bashOutput = s"./compile_and_run $file $in" !!
+    val bashOutput = s"./compile_and_run $file $in" !!
 
     val exitCode = "echo $?" !!
 
-    var bashOutputNoAddr = bashOutput.replaceAll("""\b0x\w*""", "#addrs#")
+    val bashOutputNoAddr = bashOutput.replaceAll("""\b0x\w*""", "#addrs#")
 
     if (exitCode != "100" || exitCode != "200") {
 
@@ -126,7 +126,7 @@ class ClassesTests extends AnyFlatSpec {
 
   behavior of "valid arrayOfClasses class extension test"
   it should "succeed with exit code 0" taggedAs ClassesTests in {
-    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/classes/validClasses/arrayOfClasses.wacc" !!
+    val bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/classes/validClasses/arrayOfClasses.wacc" !!
 
     val s = new mutable.StringBuilder()
     s.append("21\n")
@@ -140,7 +140,7 @@ class ClassesTests extends AnyFlatSpec {
 
   behavior of "valid classFunctionality class extension test"
   it should "succeed with exit code 0" taggedAs ClassesTests in {
-    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/classes/validClasses/classFunctionality.wacc" !!
+    val bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/classes/validClasses/classFunctionality.wacc" !!
 
     val s = new mutable.StringBuilder()
     s.append("14\n")
@@ -154,7 +154,7 @@ class ClassesTests extends AnyFlatSpec {
 
   behavior of "valid classInstantiation class extension test"
   it should "succeed with exit code 0" taggedAs ClassesTests in {
-    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/classes/validClasses/classInstantiation.wacc" !!
+    val bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/classes/validClasses/classInstantiation.wacc" !!
 
     val s = new mutable.StringBuilder()
     s.append("k\n")
@@ -169,7 +169,7 @@ class ClassesTests extends AnyFlatSpec {
 
   behavior of "valid pairOfClasses class extension test"
   it should "succeed with exit code 0" taggedAs ClassesTests in {
-    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/classes/validClasses/pairOfClasses.wacc" !!
+    val bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/classes/validClasses/pairOfClasses.wacc" !!
 
     val s = new mutable.StringBuilder()
     s.append("79\n")
@@ -183,7 +183,7 @@ class ClassesTests extends AnyFlatSpec {
 
   behavior of "valid privatePublic class extension test"
   it should "succeed with exit code 0" taggedAs ClassesTests in {
-    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/classes/validClasses/privatePublic.wacc" !!
+    val bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/classes/validClasses/privatePublic.wacc" !!
 
     val s = new mutable.StringBuilder()
     s.append("14\n")
@@ -197,7 +197,7 @@ class ClassesTests extends AnyFlatSpec {
 
   behavior of "valid publicDefault class extension test"
   it should "succeed with exit code 0" taggedAs ClassesTests in {
-    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/classes/validClasses/publicDefault.wacc" !!
+    val bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/classes/validClasses/publicDefault.wacc" !!
 
     val s = new mutable.StringBuilder()
     s.append("14\n")
@@ -211,7 +211,7 @@ class ClassesTests extends AnyFlatSpec {
 
   behavior of "valid structInClass class extension test"
   it should "succeed with exit code 0" taggedAs ClassesTests in {
-    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/classes/validClasses/structInClass.wacc" !!
+    val bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/classes/validClasses/structInClass.wacc" !!
 
     val s = new mutable.StringBuilder()
     s.append("")

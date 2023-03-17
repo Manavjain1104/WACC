@@ -85,11 +85,11 @@ class BranchingStatementTests extends AnyFlatSpec {
       s ++= "3 4 6 7 9"
     }
 
-    var bashOutput = s"./compile_and_run $file $in" !!
+    val bashOutput = s"./compile_and_run $file $in" !!
 
     val exitCode = "echo $?" !!
 
-    var bashOutputNoAddr = bashOutput.replaceAll("\\b0x\\w*", "#addrs#")
+    val bashOutputNoAddr = bashOutput.replaceAll("\\b0x\\w*", "#addrs#")
 
     if (exitCode != "100" || exitCode != "200") {
 
@@ -123,7 +123,7 @@ class BranchingStatementTests extends AnyFlatSpec {
 
   behavior of "valid ifNoElse valid branching statement extension test"
   it should "succeed with exit code 0" taggedAs BranchingStatementTests in {
-    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/branchingStatements/validBranchingStatements/ifNoElse.wacc" !!
+    val bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/branchingStatements/validBranchingStatements/ifNoElse.wacc" !!
 
     val s = new mutable.StringBuilder()
     s.append("correct\n")
@@ -137,7 +137,7 @@ class BranchingStatementTests extends AnyFlatSpec {
 
   behavior of "valid ifNoElse2 valid branching statement extension test"
   it should "succeed with exit code 0" taggedAs BranchingStatementTests in {
-    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/branchingStatements/validBranchingStatements/ifNoElse2.wacc" !!
+    val bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/branchingStatements/validBranchingStatements/ifNoElse2.wacc" !!
 
     val s = new mutable.StringBuilder()
     s.append("it is 4\n")
@@ -151,7 +151,7 @@ class BranchingStatementTests extends AnyFlatSpec {
 
   behavior of "valid matchCaseStatement valid branching statement extension test"
   it should "succeed with exit code 0" taggedAs BranchingStatementTests in {
-    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/branchingStatements/validBranchingStatements/matchCaseStatement.wacc" !!
+    val bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/branchingStatements/validBranchingStatements/matchCaseStatement.wacc" !!
 
     val s = new mutable.StringBuilder()
     s.append("bye\n")
@@ -165,7 +165,7 @@ class BranchingStatementTests extends AnyFlatSpec {
 
   behavior of "valid matchCaseStatement2 valid branching statement extension test"
   it should "succeed with exit code 0" taggedAs BranchingStatementTests in {
-    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/branchingStatements/validBranchingStatements/matchCaseStatement2.wacc" !!
+    val bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/branchingStatements/validBranchingStatements/matchCaseStatement2.wacc" !!
 
     val s = new mutable.StringBuilder()
     s.append("it is a\n")

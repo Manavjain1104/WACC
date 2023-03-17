@@ -6,15 +6,14 @@ import org.scalatest.flatspec.AnyFlatSpec
 import java.io.File
 import scala.Console.out
 import scala.language.postfixOps
-import scala.util.control.Breaks.break
 import sys.process._
 
 object ChecksAllValid extends Tag("ChecksAllValid")
 
 class ChecksAllValid extends AnyFlatSpec {
 
-  def applyRecursively(dir: String, fn: (File) => Any) {
-    def listAndProcess(dir: File) {
+  def applyRecursively(dir: String, fn: (File) => Any): Unit = {
+    def listAndProcess(dir: File): Unit = {
       dir.listFiles match {
         case null => out.println("exception: dir cannot be listed: " + dir.getPath); List[File]()
         case files => files.toList.sortBy(_.getName).foreach(file => {
@@ -28,7 +27,7 @@ class ChecksAllValid extends AnyFlatSpec {
 
 
 
-  def exampleFn(file: File) {
+  def exampleFn(file: File): Unit = {
     file.toString.endsWith(".wacc") match {
       case true => {
         println(s"processing $file")

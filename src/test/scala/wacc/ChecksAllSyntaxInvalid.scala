@@ -5,15 +5,14 @@ import org.scalatest.Tag
 import org.scalatest.flatspec.AnyFlatSpec
 
 import scala.language.postfixOps
-import scala.util.control.Breaks.break
 import sys.process._
 
 object ChecksAllSyntaxInvalid extends Tag("ChecksAllSyntaxInvalid")
 
 class ChecksAllSyntaxInvalid extends AnyFlatSpec {
 
-  def applyRecursively(dir: String, fn: (File) => Any) {
-    def listAndProcess(dir: File) {
+  def applyRecursively(dir: String, fn: (File) => Any): Unit = {
+    def listAndProcess(dir: File): Unit = {
       dir.listFiles match {
         case null => {
           println(dir.getPath + " couldn't find files")
@@ -27,7 +26,7 @@ class ChecksAllSyntaxInvalid extends AnyFlatSpec {
     listAndProcess(new File(dir))
   }
 
-  def exampleFn(file: File) {
+  def exampleFn(file: File): Unit = {
     file.toString.endsWith(".wacc") match {
       case true => {
         println(s"processing $file")

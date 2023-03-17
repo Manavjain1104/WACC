@@ -80,11 +80,11 @@ class VoidTypeTests extends AnyFlatSpec {
       in ++= x
     }
 
-    var bashOutput = s"./compile_and_run $file $in" !!
+    val bashOutput = s"./compile_and_run $file $in" !!
 
     val exitCode = "echo $?" !!
 
-    var bashOutputNoAddr = bashOutput.replaceAll("""\b0x\w*""", "#addrs#")
+    val bashOutputNoAddr = bashOutput.replaceAll("""\b0x\w*""", "#addrs#")
 
     if (exitCode != "100" || exitCode != "200") {
 
@@ -119,7 +119,7 @@ class VoidTypeTests extends AnyFlatSpec {
 
   behavior of "valid functionReturningVoid extension test"
   it should "succeed with exit code 0" taggedAs VoidTypeTests in {
-    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/voidTypes/validVoid/functionReturningVoid.wacc" !!
+    val bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/voidTypes/validVoid/functionReturningVoid.wacc" !!
 
     val s = new mutable.StringBuilder()
     s.append("Here\n")
@@ -134,7 +134,7 @@ class VoidTypeTests extends AnyFlatSpec {
 
   behavior of "valid voidFunctionCall extension test"
   it should "succeed with exit code 0" taggedAs VoidTypeTests in {
-    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/voidTypes/validVoid/voidFunctionCall.wacc" !!
+    val bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/voidTypes/validVoid/voidFunctionCall.wacc" !!
 
     val s = new mutable.StringBuilder()
     s.append("Here\n")
@@ -150,7 +150,7 @@ class VoidTypeTests extends AnyFlatSpec {
 
   behavior of "valid voidFunctionEmptyReturn extension test"
   it should "succeed with exit code 0" taggedAs VoidTypeTests in {
-    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/voidTypes/validVoid/voidFunctionEmptyReturn.wacc" !!
+    val bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/voidTypes/validVoid/voidFunctionEmptyReturn.wacc" !!
 
     val s = new mutable.StringBuilder()
     s.append("\n")
@@ -165,7 +165,7 @@ class VoidTypeTests extends AnyFlatSpec {
 
   behavior of "valid voidFunctionWithParameter extension test"
   it should "succeed with exit code 0" taggedAs VoidTypeTests in {
-    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/voidTypes/validVoid/voidFunctionWithParameter.wacc" !!
+    val bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/voidTypes/validVoid/voidFunctionWithParameter.wacc" !!
 
     val s = new mutable.StringBuilder()
     s.append("5\n")

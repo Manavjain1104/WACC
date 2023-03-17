@@ -80,11 +80,11 @@ class StructTests extends AnyFlatSpec {
       in ++= x
     }
 
-    var bashOutput = s"./compile_and_run $file $in" !!
+    val bashOutput = s"./compile_and_run $file $in" !!
 
     val exitCode = "echo $?" !!
 
-    var bashOutputNoAddr = bashOutput.replaceAll("""\b0x\w*""", "#addrs#")
+    val bashOutputNoAddr = bashOutput.replaceAll("""\b0x\w*""", "#addrs#")
 
     if (exitCode != "100" || exitCode != "200") {
 
@@ -120,7 +120,7 @@ class StructTests extends AnyFlatSpec {
 
   behavior of "valid elementAccess struct extension test"
   it should "succeed with exit code 0" taggedAs StructTests in {
-    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/structs/validStructs/elementAccess.wacc" !!
+    val bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/structs/validStructs/elementAccess.wacc" !!
 
     val s = new mutable.StringBuilder()
     s.append("d\n")
@@ -135,7 +135,7 @@ class StructTests extends AnyFlatSpec {
 
   behavior of "valid nestedStructs1 struct extension test"
   it should "succeed with exit code 0" taggedAs StructTests in {
-    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/structs/validStructs/nestedStructs1.wacc" !!
+    val bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/structs/validStructs/nestedStructs1.wacc" !!
 
     val s = new mutable.StringBuilder()
     s.append("1\n")
@@ -149,7 +149,7 @@ class StructTests extends AnyFlatSpec {
 
   behavior of "valid nestedStructs2 struct extension test"
   it should "succeed with exit code 0" taggedAs StructTests in {
-    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/structs/validStructs/nestedStructs2.wacc" !!
+    val bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/structs/validStructs/nestedStructs2.wacc" !!
 
     val s = new mutable.StringBuilder()
     s.append("e\n")
@@ -164,7 +164,7 @@ class StructTests extends AnyFlatSpec {
 
   behavior of "valid passStructElemToFunction struct extension test"
   it should "succeed with exit code 0" taggedAs StructTests in {
-    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/structs/validStructs/passStructElemToFunction.wacc" !!
+    val bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/structs/validStructs/passStructElemToFunction.wacc" !!
 
     val s = new mutable.StringBuilder()
     s.append("a\n")
@@ -178,7 +178,7 @@ class StructTests extends AnyFlatSpec {
   }
   behavior of "valid readStructElement struct extension test"
   it should "succeed with exit code 0" taggedAs StructTests in {
-    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/structs/validStructs/readStructElement.wacc" !!
+    val bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/structs/validStructs/readStructElement.wacc" !!
 
     val s = new mutable.StringBuilder()
     s.append("")
@@ -191,7 +191,7 @@ class StructTests extends AnyFlatSpec {
   }
   behavior of "valid structInArray struct extension test"
   it should "succeed with exit code 0" taggedAs StructTests in {
-    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/structs/validStructs/structInArray.wacc" !!
+    val bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/structs/validStructs/structInArray.wacc" !!
 
     val s = new mutable.StringBuilder()
     s.append("b\n")
@@ -205,7 +205,7 @@ class StructTests extends AnyFlatSpec {
 
   behavior of "valid structInPair struct extension test"
   it should "succeed with exit code 0" taggedAs StructTests in {
-    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/structs/validStructs/structInPair.wacc" !!
+    val bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/structs/validStructs/structInPair.wacc" !!
 
     val s = new mutable.StringBuilder()
     s.append("1\n")
@@ -219,7 +219,7 @@ class StructTests extends AnyFlatSpec {
 
   behavior of "valid structInstantiation struct extension test"
   it should "succeed with exit code 0" taggedAs StructTests in {
-    var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/structs/validStructs/structInstantiation.wacc" !!
+    val bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/structs/validStructs/structInstantiation.wacc" !!
 
     val s = new mutable.StringBuilder()
     s.append("")

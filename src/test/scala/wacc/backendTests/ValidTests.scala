@@ -1,7 +1,9 @@
 import org.scalatest.Tag
 import org.scalatest.flatspec.AnyFlatSpec
+
 import java.io.File
 import scala.Console.{in, out}
+import scala.collection.mutable
 import scala.language.postfixOps
 import scala.io.Source
 import scala.collection.mutable.ListBuffer
@@ -11,8 +13,8 @@ object ValidTests extends Tag("ValidTests")
 
 class ValidTests extends AnyFlatSpec {
 
-  def applyRecursively(dir: String, fn: (File) => Any) {
-    def listAndProcess(dir: File) {
+  def applyRecursively(dir: String, fn: (File) => Any): Unit = {
+    def listAndProcess(dir: File): Unit = {
       dir.listFiles match {
         case null => out.println("exception: dir cannot be listed: " + dir.getPath); List[File]()
         case files => files.toList.sortBy(_.getName).foreach(file => {
@@ -27,7 +29,7 @@ class ValidTests extends AnyFlatSpec {
     listAndProcess(new File(dir))
   }
 
-  def exampleFn(file: File) = {
+  def exampleFn(file: File): Unit = {
     val source = Source.fromFile(file)
     val lb = ListBuffer[String]()
     val out = ListBuffer[String]()
@@ -66,12 +68,12 @@ class ValidTests extends AnyFlatSpec {
     input.append(lb(inputLine).drop(9))
 
 
-    val s = new StringBuilder()
+    val s = new mutable.StringBuilder()
     for (x <- out) {
       s ++= x
     }
 
-    val in = new StringBuilder()
+    val in = new mutable.StringBuilder()
     for (x <- input) {
       in ++= x
     }
@@ -104,7 +106,7 @@ class ValidTests extends AnyFlatSpec {
 
     val exitCode = "echo $?" !!
 
-    if (exitCode != 0) {
+    if (exitCode != "0") {
       assert(true)
     }
 
