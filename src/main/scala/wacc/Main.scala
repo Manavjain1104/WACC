@@ -50,22 +50,21 @@ object Main {
     // optimiseFlag is FIRST argument AFTER file.
     // inliningFlag is SECOND argument AFTER file.
 
-    if (args.length >= 2) {
-      optimiseFlag = args(1).toBoolean
-//      try {
-//        optimiseFlag = args(1).toBoolean
-//      } catch {
-//        case _: IllegalArgumentException =>
-//      }
+    if (args.length >= 2 && args(1).contains("-true")) {
+      try {
+        optimiseFlag = args(1).toBoolean
+      } catch {
+        case _: IllegalArgumentException =>
+      }
     }
-    if (args.length == 3) {
-      inliningFlag = args(2).toBoolean
-//      try {
-//
-//      } catch {
-//        case _: IllegalArgumentException =>
-//      }
+    if (args.length == 3 && args(2).contains("-true")) {
+      try {
+        inliningFlag = args(2).tail.toBoolean
+      } catch {
+        case _: IllegalArgumentException =>
+      }
     }
+
     fully(program).parseFromFile(file) match {
       case util.Success(value) => {
         value match {
