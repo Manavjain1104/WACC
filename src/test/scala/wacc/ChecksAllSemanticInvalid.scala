@@ -15,12 +15,11 @@ class ChecksAllSemanticInvalid extends AnyFlatSpec {
   def applyRecursively(dir: String, fn: (File) => Any): Unit = {
     def listAndProcess(dir: File): Unit = {
       dir.listFiles match {
-        //case null => out.println("exception: dir cannot be listed: " + dir.getPath); List[File]()
+        case null => out.println("exception: dir cannot be listed: " + dir.getPath); List[File]()
         case files => files.toList.sortBy(_.getName).foreach(file => {
           fn(file)
           if (!java.nio.file.Files.isSymbolicLink(file.toPath) && file.isDirectory) listAndProcess(file)
         })
-        case _ =>
       }
     }
     listAndProcess(new File(dir))
