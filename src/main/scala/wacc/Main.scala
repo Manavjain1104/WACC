@@ -51,10 +51,18 @@ object Main {
     // inliningFlag is SECOND argument AFTER file.
 
     if (args.length >= 2) {
-      optimiseFlag = args(1).toBoolean
+      try {
+        optimiseFlag = args(1).toBoolean
+      } catch {
+        case _: Exception => System.err.println("Optimisation flag read error - turned on flag")
+      }
     }
     if (args.length == 3) {
-      inliningFlag = args(2).toBoolean
+      try {
+        inliningFlag = args(2).toBoolean
+      } catch {
+        case _: Exception => System.err.println("Inlining flag read error - turned on flag")
+      }
     }
     fully(program).parseFromFile(file) match {
       case util.Success(value) => {
