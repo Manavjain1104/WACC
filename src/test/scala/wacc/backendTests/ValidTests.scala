@@ -83,7 +83,7 @@ class ValidTests extends AnyFlatSpec {
       s ++= "3 4 6 7 9"
     }
 
-    val bashOutput = s"./compile_and_run $file ${in}" !!
+    val bashOutput = s"./compile_and_run $file -false -false ${in}" !!
 
     val exitCode = "echo $?" !!
 
