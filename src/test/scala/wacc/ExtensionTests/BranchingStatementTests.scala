@@ -122,7 +122,7 @@ class BranchingStatementTests extends AnyFlatSpec {
 //  }
 
   behavior of "valid ifNoElse valid branching statement extension test"
-  it should "succeed with exit code 0" taggedAs (ClassesTests) in {
+  it should "succeed with exit code 0" taggedAs (BranchingStatementTests) in {
     var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/branchingStatements/validBranchingStatements/ifNoElse.wacc" !!
 
     val s = new StringBuilder()
@@ -136,7 +136,7 @@ class BranchingStatementTests extends AnyFlatSpec {
   }
 
   behavior of "valid ifNoElse2 valid branching statement extension test"
-  it should "succeed with exit code 0" taggedAs (ClassesTests) in {
+  it should "succeed with exit code 0" taggedAs (BranchingStatementTests) in {
     var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/branchingStatements/validBranchingStatements/ifNoElse2.wacc" !!
 
     val s = new StringBuilder()
@@ -150,7 +150,7 @@ class BranchingStatementTests extends AnyFlatSpec {
   }
 
   behavior of "valid matchCaseStatement valid branching statement extension test"
-  it should "succeed with exit code 0" taggedAs (ClassesTests) in {
+  it should "succeed with exit code 0" taggedAs (BranchingStatementTests) in {
     var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/branchingStatements/validBranchingStatements/matchCaseStatement.wacc" !!
 
     val s = new StringBuilder()
@@ -164,7 +164,7 @@ class BranchingStatementTests extends AnyFlatSpec {
   }
 
   behavior of "valid matchCaseStatement2 valid branching statement extension test"
-  it should "succeed with exit code 0" taggedAs (ClassesTests) in {
+  it should "succeed with exit code 0" taggedAs (BranchingStatementTests) in {
     var bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/branchingStatements/validBranchingStatements/matchCaseStatement2.wacc" !!
 
     val s = new StringBuilder()
