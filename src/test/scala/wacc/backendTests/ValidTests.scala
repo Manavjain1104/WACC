@@ -89,7 +89,7 @@ class ValidTests extends AnyFlatSpec {
 
     var bashOutputNoAddr = bashOutput.replaceAll("\\b0x\\w*", "#addrs#")
 
-    if (file == new File("/src/test/scala/wacc/valid/advanced/binarySortTree.wacc")) {
+    if (file == new File("src/test/scala/wacc/valid/advanced/binarySortTree.wacc")) {
       bashOutputNoAddr = s.takeRight(9).toString()
     }
 
