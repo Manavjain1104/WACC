@@ -2,9 +2,8 @@ package wacc.ExtensionTests
 
 import org.scalatest.Tag
 import org.scalatest.flatspec.AnyFlatSpec
-
 import java.io.File
-import scala.Console.{in, out}
+import scala.Console.in
 import scala.collection.mutable
 import scala.language.postfixOps
 import scala.io.Source
