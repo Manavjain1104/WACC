@@ -18,11 +18,11 @@ class FullPairTypeTests extends AnyFlatSpec {
   def applyRecursively(dir: String, fn: File => Any): Unit = {
     def listAndProcess(dir: File): Unit = {
       dir.listFiles match {
+        case null => out.println(s"Processing $dir ...")
         case files => files.toList.sortBy(_.getName).foreach(file => {
           fn(file)
           if (!java.nio.file.Files.isSymbolicLink(file.toPath) && file.isDirectory) listAndProcess(file)
         })
-        case _ =>
       }
 
     }

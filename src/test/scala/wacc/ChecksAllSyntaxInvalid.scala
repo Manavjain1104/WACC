@@ -4,6 +4,7 @@ import java.io.File
 import org.scalatest.Tag
 import org.scalatest.flatspec.AnyFlatSpec
 
+import scala.Console.out
 import scala.language.postfixOps
 import sys.process._
 
