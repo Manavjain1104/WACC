@@ -51,7 +51,7 @@ object Main {
     // inliningFlag is SECOND argument AFTER file.
 
 
-    if (args.length >= 2 && args(1).contains("-true")) {
+    if (args.length >= 2 && (args(1).contains("-true") || args(1).contains("-false"))) {
       try {
         optimiseFlag = args(1).tail.toBoolean
       } catch {
@@ -59,7 +59,7 @@ object Main {
       }
     }
 
-    if (args.length == 3 && args(2).contains("-true")) {
+    if (args.length == 3 && (args(2).contains("-true") || args(2).contains("-false"))) {
       try {
         inliningFlag = args(2).tail.toBoolean
       } catch {
