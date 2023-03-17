@@ -102,7 +102,7 @@ class IfExpressionTests extends AnyFlatSpec {
       if (lb(a).startsWith("# Exit")) {
         val exitCode = lb(a + 1).drop(2)
         if (exitCode != "0") {
-          assert(condition = true)
+          assert(true)
         }
       }
     }
