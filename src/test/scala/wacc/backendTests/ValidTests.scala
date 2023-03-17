@@ -102,7 +102,7 @@ class ValidTests extends AnyFlatSpec {
   }
 
   def checkFailure(file: File): Unit = {
-    var bashOutput = s"./compile_and_run $file ${in}" !!
+    s"./compile_and_run $file $in" !!
 
     val exitCode = "echo $?" !!
 

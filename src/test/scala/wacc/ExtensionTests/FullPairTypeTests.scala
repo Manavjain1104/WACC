@@ -104,7 +104,7 @@ class FullPairTypeTests extends AnyFlatSpec {
   }
 
   def checkFailure(file: File): Unit = {
-    val bashOutput = s"./compile_and_run $file $in" !!
+    s"./compile_and_run $file $in" !!
 
     val exitCode = "echo $?" !!
 
