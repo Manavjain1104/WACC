@@ -113,7 +113,7 @@ class IfExpressionTests extends AnyFlatSpec {
     val bashOutput = s"./compile_and_run src/test/scala/wacc/extensions/ifExpressions/validIfExprs/exitIfExpression.wacc" !!
 
     val s = new mutable.StringBuilder()
-    s.append("\n")
+    s.append("")
     println(s.toString())
 
     if (s.toString() != bashOutput) {
