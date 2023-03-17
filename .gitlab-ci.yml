@@ -38,7 +38,7 @@ extension-tests:
   script:
     - make
     - sbt "testOnly -- -n FullPairTypeTests"
-    - sbt "testOnly -- -n IfExprTests"
+    - sbt "testOnly -- -n IfExpressionTests"
     - sbt "testOnly -- -n InliningTests"
     - sbt "testOnly -- -n StructTests"
     - sbt "testOnly -- -n VoidTypeTests"
