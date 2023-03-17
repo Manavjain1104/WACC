@@ -78,20 +78,20 @@ class ValidTests extends AnyFlatSpec {
       in ++= x
     }
 
-//    if (file == new File("/src/test/scala/wacc/valid/advanced/binarySortTree.wacc")) {
-//      in ++= "5 3 6 4 7 9"
-//      s ++= "3 4 6 7 9"
-//    }
-//
+    if (file == new File("/src/test/scala/wacc/valid/advanced/binarySortTree.wacc")) {
+      in ++= "5 3 6 4 7 9"
+      s ++= "3 4 6 7 9"
+    }
+
     val bashOutput = s"./compile_and_run $file ${in}" !!
-//
+
     val exitCode = "echo $?" !!
-//
+
     var bashOutputNoAddr = bashOutput.replaceAll("\\b0x\\w*", "#addrs#")
-//
-//    if (file == new File("/src/test/scala/wacc/valid/advanced/binarySortTree.wacc")) {
-//      bashOutputNoAddr = s.takeRight(9).toString()
-//    }
+
+    if (file == new File("/src/test/scala/wacc/valid/advanced/binarySortTree.wacc")) {
+      bashOutputNoAddr = s.takeRight(9).toString()
+    }
 
     if (exitCode != "100" || exitCode != "200") {
 
@@ -214,7 +214,4 @@ class ValidTests extends AnyFlatSpec {
     applyRecursively("/src/test/scala/wacc/valid/while/", exampleFn)
   }
 }
-
-
-
 
