@@ -37,7 +37,7 @@ class ChecksAllSemanticInvalid extends AnyFlatSpec {
           fail("Wrong exit code")
         }
       }
-      case false => Nil
+      case false =>
     }
 
   }

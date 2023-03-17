@@ -32,7 +32,9 @@ class InliningTests extends AnyFlatSpec {
 
     val assemblyFile = new File(file.getName.dropRight(4) + "s")
 
-    for (line <- Source.fromFile(assemblyFile).getLines) {
+    val source = Source.fromFile(assemblyFile).getLines()
+
+    for (line <- source) {
       if (line.contains(lookFor)) {
         fail("Should be inlinable but isn't")
       }
