@@ -20,7 +20,6 @@ class ClassesTests extends AnyFlatSpec {
       dir.listFiles match {
         case null => out.println("exception: dir cannot be listed: " + dir.getPath); List[File]()
         case files => files.toList.sortBy(_.getName).foreach(file => {
-          println(s"processing $file")
           fn(file)
           if (!java.nio.file.Files.isSymbolicLink(file.toPath) && file.isDirectory) listAndProcess(file)
         })
@@ -117,7 +116,6 @@ class ClassesTests extends AnyFlatSpec {
   }
 
 
-
   //  behavior of "extension valid classes tests"
   //  it should "succeed with exit code 0" taggedAs (ClassesTests) in {
   //    applyRecursively("src/test/scala/wacc/extensions/classes/validClasses", exampleFn)
@@ -130,7 +128,6 @@ class ClassesTests extends AnyFlatSpec {
 
     val s = new mutable.StringBuilder()
     s.append("21\n")
-    println(s.toString())
 
     if (s.toString() != bashOutput) {
       fail("WRONG OUTPUT")
@@ -144,7 +141,6 @@ class ClassesTests extends AnyFlatSpec {
 
     val s = new mutable.StringBuilder()
     s.append("14\n")
-    println(s.toString())
 
     if (s.toString() != bashOutput) {
       fail("WRONG OUTPUT")
@@ -159,7 +155,6 @@ class ClassesTests extends AnyFlatSpec {
     val s = new mutable.StringBuilder()
     s.append("k\n")
     s.append("k\n")
-    println(s.toString())
 
     if (s.toString() != bashOutput) {
       fail("WRONG OUTPUT")
@@ -173,7 +168,6 @@ class ClassesTests extends AnyFlatSpec {
 
     val s = new mutable.StringBuilder()
     s.append("79\n")
-    println(s.toString())
 
     if (s.toString() != bashOutput) {
       fail("WRONG OUTPUT")
@@ -187,7 +181,6 @@ class ClassesTests extends AnyFlatSpec {
 
     val s = new mutable.StringBuilder()
     s.append("14\n")
-    println(s.toString())
 
     if (s.toString() != bashOutput) {
       fail("WRONG OUTPUT")
@@ -201,7 +194,6 @@ class ClassesTests extends AnyFlatSpec {
 
     val s = new mutable.StringBuilder()
     s.append("14\n")
-    println(s.toString())
 
     if (s.toString() != bashOutput) {
       fail("WRONG OUTPUT")
@@ -215,7 +207,6 @@ class ClassesTests extends AnyFlatSpec {
 
     val s = new mutable.StringBuilder()
     s.append("")
-    println(s.toString())
 
     if (s.toString() != bashOutput) {
       fail("WRONG OUTPUT")

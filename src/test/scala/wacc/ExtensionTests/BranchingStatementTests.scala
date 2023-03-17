@@ -20,7 +20,6 @@ class BranchingStatementTests extends AnyFlatSpec {
       dir.listFiles match {
         case null => out.println("exception: dir cannot be listed: " + dir.getPath); List[File]()
         case files => files.toList.sortBy(_.getName).foreach(file => {
-          println(s"processing $file")
           fn(file)
           if (!java.nio.file.Files.isSymbolicLink(file.toPath) && file.isDirectory) listAndProcess(file)
         })
@@ -127,7 +126,6 @@ class BranchingStatementTests extends AnyFlatSpec {
 
     val s = new mutable.StringBuilder()
     s.append("correct\n")
-    println(s.toString())
 
     if (s.toString() != bashOutput) {
       fail("WRONG OUTPUT")
@@ -141,7 +139,6 @@ class BranchingStatementTests extends AnyFlatSpec {
 
     val s = new mutable.StringBuilder()
     s.append("it is 4\n")
-    println(s.toString())
 
     if (s.toString() != bashOutput) {
       fail("WRONG OUTPUT")
@@ -155,7 +152,6 @@ class BranchingStatementTests extends AnyFlatSpec {
 
     val s = new mutable.StringBuilder()
     s.append("bye\n")
-    println(s.toString())
 
     if (s.toString() != bashOutput) {
       fail("WRONG OUTPUT")
@@ -169,7 +165,6 @@ class BranchingStatementTests extends AnyFlatSpec {
 
     val s = new mutable.StringBuilder()
     s.append("it is a\n")
-    println(s.toString())
 
     if (s.toString() != bashOutput) {
       fail("WRONG OUTPUT")

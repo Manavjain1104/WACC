@@ -16,7 +16,6 @@ class InliningTests extends AnyFlatSpec {
       dir.listFiles match {
         case null => out.println("exception: dir cannot be listed: " + dir.getPath); List[File]()
         case files => files.toList.sortBy(_.getName).foreach(file => {
-          println(s"processing $file")
           fn(lookFor, file)
           if (!java.nio.file.Files.isSymbolicLink(file.toPath) && file.isDirectory) listAndProcess(file)
         })

@@ -20,14 +20,11 @@ class VoidTypeTests extends AnyFlatSpec {
       dir.listFiles match {
         case null => out.println("exception: dir cannot be listed: " + dir.getPath); List[File]()
         case files => files.toList.sortBy(_.getName).foreach(file => {
-          println(s"processing $file")
           fn(file)
           if (!java.nio.file.Files.isSymbolicLink(file.toPath) && file.isDirectory) listAndProcess(file)
         })
       }
-
     }
-
     listAndProcess(new File(dir))
   }
 
@@ -124,7 +121,6 @@ class VoidTypeTests extends AnyFlatSpec {
     val s = new mutable.StringBuilder()
     s.append("Here\n")
     s.append("There\n")
-    println(s.toString())
 
     if (s.toString() != bashOutput) {
       fail("WRONG OUTPUT")
@@ -139,7 +135,6 @@ class VoidTypeTests extends AnyFlatSpec {
     val s = new mutable.StringBuilder()
     s.append("Here\n")
     s.append("There\n")
-    println(s.toString())
 
     if (s.toString() != bashOutput) {
       fail("WRONG OUTPUT")
@@ -154,7 +149,6 @@ class VoidTypeTests extends AnyFlatSpec {
 
     val s = new mutable.StringBuilder()
     s.append("\n")
-    println(s.toString())
 
     if (s.toString() != bashOutput) {
       fail("WRONG OUTPUT")
@@ -171,7 +165,6 @@ class VoidTypeTests extends AnyFlatSpec {
     s.append("5\n")
     s.append("Here\n")
     s.append("There\n")
-    println(s.toString())
 
     if (s.toString() != bashOutput) {
       fail("WRONG OUTPUT")

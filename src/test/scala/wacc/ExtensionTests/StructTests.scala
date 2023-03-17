@@ -20,7 +20,6 @@ class StructTests extends AnyFlatSpec {
       dir.listFiles match {
         case null => out.println("exception: dir cannot be listed: " + dir.getPath); List[File]()
         case files => files.toList.sortBy(_.getName).foreach(file => {
-          println(s"processing $file")
           fn(file)
           if (!java.nio.file.Files.isSymbolicLink(file.toPath) && file.isDirectory) listAndProcess(file)
         })
@@ -125,7 +124,6 @@ class StructTests extends AnyFlatSpec {
     val s = new mutable.StringBuilder()
     s.append("d\n")
     s.append("1\n")
-    println(s.toString())
 
     if (s.toString() != bashOutput) {
       fail("WRONG OUTPUT")
@@ -139,7 +137,6 @@ class StructTests extends AnyFlatSpec {
 
     val s = new mutable.StringBuilder()
     s.append("1\n")
-    println(s.toString())
 
     if (s.toString() != bashOutput) {
       fail("WRONG OUTPUT")
@@ -154,7 +151,6 @@ class StructTests extends AnyFlatSpec {
     val s = new mutable.StringBuilder()
     s.append("e\n")
     s.append("d\n")
-    println(s.toString())
 
     if (s.toString() != bashOutput) {
       fail("WRONG OUTPUT")
@@ -169,7 +165,6 @@ class StructTests extends AnyFlatSpec {
     val s = new mutable.StringBuilder()
     s.append("a\n")
     s.append("1\n")
-    println(s.toString())
 
     if (s.toString() != bashOutput) {
       fail("WRONG OUTPUT")
@@ -182,7 +177,6 @@ class StructTests extends AnyFlatSpec {
 
     val s = new mutable.StringBuilder()
     s.append("")
-    println(s.toString())
 
     if (s.toString() != bashOutput) {
       fail("WRONG OUTPUT")
@@ -195,7 +189,6 @@ class StructTests extends AnyFlatSpec {
 
     val s = new mutable.StringBuilder()
     s.append("b\n")
-    println(s.toString())
 
     if (s.toString() != bashOutput) {
       fail("WRONG OUTPUT")
@@ -209,7 +202,6 @@ class StructTests extends AnyFlatSpec {
 
     val s = new mutable.StringBuilder()
     s.append("1\n")
-    println(s.toString())
 
     if (s.toString() != bashOutput) {
       fail("WRONG OUTPUT")
@@ -223,7 +215,6 @@ class StructTests extends AnyFlatSpec {
 
     val s = new mutable.StringBuilder()
     s.append("")
-    println(s.toString())
 
     if (s.toString() != bashOutput) {
       fail("WRONG OUTPUT")
